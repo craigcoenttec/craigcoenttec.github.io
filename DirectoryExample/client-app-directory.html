@@ -655,6 +655,16 @@
               dialButton.setAttribute('accent', 'inline');
               buttonCell.appendChild(dialButton);
 
+              //Transfer Button
+              let button2Cell = row.insertCell();
+              let transferButton = document.createElement('gux-button');
+              transferButton.innerText = 'Transfer';
+              transferButton.setAttribute('onclick', 'transferContact(this)');
+              transferButton.setAttribute('name','transferButton');
+              transferButton.setAttribute('disabled','true');
+             
+              transferButton.setAttribute('accent', 'inline');
+              button2Cell.appendChild(transferButton);
 
               
 
@@ -670,7 +680,9 @@
               let contextEditItem = document.createElement('gux-list-item');
               contextEditItem.setAttribute('onclick',"editContact(this)");
               let text = document.createTextNode("Edit");
+              
               contextEditItem.appendChild(text);
+              contextEditItem.setAttribute('disabled','true');
             
               contextMenu.appendChild(contextEditItem);
               //delete button
@@ -712,6 +724,11 @@
         //th.appendChild(document.createElement('gux-sort-control'));
         headerRow.appendChild(th);
 
+        th = document.createElement("th");
+         text = document.createTextNode("Action");
+         th.setAttribute('data-column-action','Action');
+         th.appendChild(text);
+         headerRow.appendChild(th);
        
         }
         
