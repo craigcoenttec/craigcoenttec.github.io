@@ -527,8 +527,10 @@
              }
              
              myPermissions.push(group);
-             //addDirectory(group.Name, group.Name, group.isOwner,false);
-
+             if(group.Name == "San Antonio Contacts") 
+             {
+              addDirectory(group.Name, group.Name, group.isOwner,false);
+             }
              
           })
           .catch((err) => {
