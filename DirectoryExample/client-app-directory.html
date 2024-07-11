@@ -558,7 +558,18 @@
       const architectAPI = new platformClient.ArchitectApi();
       let datatableId = "";
       currentDirectoryGroup = listToLoad;
-      
+      let enableButton = document.getElementById("enableButton");
+      if (currentDirectoryGroup == "San Antonio Contacts")
+      {
+        
+        enableButton.setAttribute("disabled","true");
+        
+
+      }
+      else
+      {
+        enableButton.setAttribute("disabled","false");
+      }
       let opts = { 
         //"expand": "expand_example", // String | Expand instructions for the result
         "pageNumber": 1, // Number | Page number
@@ -611,7 +622,7 @@
             console.error(err);
             currentDirectoryID = listToLoad;
             console.warn(`Directory is currently ${currentDirectoryID}`)
-
+            
             let emptyTable = [];
             createTable(emptyTable);
           });
@@ -1097,7 +1108,7 @@
         <gux-table-toolbar-action action="refresh" onclick="refresh()"></gux-table-toolbar-action>
       </div>
     
-      <gux-table-toolbar-custom-action slot="primary-action" accent="primary">
+      <gux-table-toolbar-custom-action slot="primary-action" accent="primary" id="enableButton">
         <span slot="text">Add</span>
         <gux-icon slot="icon" icon-name="add" decorative onclick="addContact()"></gux-icon>
       </gux-table-toolbar-custom-action>
