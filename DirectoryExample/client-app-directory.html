@@ -355,25 +355,51 @@
 
       switch (contact.contactType) {
         case "USER":
-         body = {callUserId: contact.contactGCID}
+         body = {
+                destination: {
+                    userId: contact.contactGCID
+                }
+              }
           break;
           
-          case "QUEUE":
-          body = {phoneNumber: contact.contactNumber}
-          break;
+          // case "QUEUE":
+          // body = {phoneNumber: contact.contactNumber}
+          // break;
 
         default:
-        body = {address: contact.contactNumber}
-          break;
+        body = {
+          destination: {
+            address: contact.contactNumber
+          }
+        }
+          
+        break;
       }
             
 
             const client = platformClient.ApiClient.instance
             const capi = new platformClient.ConversationsApi()
 
-            let call = await capi.postConversationsCalls(body)
-             console.log('Call: ', call)
+            // let call = await capi.postConversationsCalls(body)
+            // console.log('Call: ', call)
         
+
+            //First get conversations
+            var opts = {
+                communicationType: "Call" // String | Call or Chat communication filtering
+            }
+            let conversations = await capi.getConversations(opts)
+            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "external")
+            var conversationId = conversations.entities[0].id
+            var participantId = externalParticipant.id
+
+            // var body = {
+            //     destination: {
+            //         userId: transferUserId
+            //     }
+            // }
+            let transferCall = await capi.postConversationsCallParticipantConsult(conversationId, participantId, body)
+            if (debug) console.log('Transfering: ', transferCall)
       
     }
 
