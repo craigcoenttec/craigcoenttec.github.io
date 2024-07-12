@@ -315,15 +315,15 @@
 
       switch (contact.contactType) {
         case "USER":
-         body = {callUserId: contact.contactGCID}
+         body = {callUserId: contact.contactGCID, sessionType: "softphone"}
           break;
           
           case "QUEUE":
-          body = {phoneNumber: contact.contactNumber}
+          body = {phoneNumber: contact.contactNumber, sessionType: "softphone"}
           break;
 
         default:
-        body = {phoneNumber: contact.contactNumber}
+        body = {phoneNumber: contact.contactNumber, sessionType: "softphone"}
           break;
       }
             
