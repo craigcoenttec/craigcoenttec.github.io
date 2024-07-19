@@ -4,7 +4,7 @@
 const deploymentId = 'de9be94e-2637-4149-8daa-4f15649d0d66' //Your WebMessenger DeploymentId
 const hexColor = '#0D6EFD' //Color theme
 
-function toggleMessenger() {
+function toggleMessenger(wasIframe=false) {
   Genesys(
     'command',
     'Messenger.open',
@@ -23,9 +23,15 @@ function toggleMessenger() {
           
         },
       })
+      if (wasIframe){
+        Genesys("command", "MessagingService.sendMessage", {
+            message: "Form completed"})
+             
+      }
+      else{
       Genesys("command", "MessagingService.sendMessage", {
     message: "Form completed by " + document.getElementById('fname').value})
-      
+      }
     },
     function (o) {
       Genesys('command', 'Messenger.close')
@@ -73,11 +79,13 @@ function showForm()
    Genesys('command', 'Messenger.close')
 }
 
-function showFrame()
+function showFrame(url)
 {
 	input.hidden = false;
   form.hidden = true;
+  iFramewin.src = url;
   iFrame.hidden = false;
+  
    Genesys('command', 'Messenger.close')
 }
 
@@ -245,7 +253,7 @@ iFramewin.style = `
     height: 100%;
     width: 100%; `
 iFrame.id = 'theFrame'
-iFramewin.src = 'https://www.wikipedia.com'
+iFramewin.src = ''
 iFrame.visible = false
 iFrame.appendChild(iFramewin)
 
@@ -299,10 +307,10 @@ Genesys("subscribe", "MessagingService.messagesReceived", function (o) {
                     console.log('iFrame popup detected')
                     showForm();
                 }
-                else if (o.data.messages[0].text === 'iFrame') {
+                else if (o.data.messages[0].text.startsWith('iFrame::')) {
                 	console.log('iFrame popup detected')
                     
-                    showFrame();
+                    showFrame(o.data.messages[0].text.replace("iFrame::",""));
                 }
             } catch (err) {
                 console.error(err)
