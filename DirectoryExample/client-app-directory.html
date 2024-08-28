@@ -837,6 +837,7 @@
         body.name = `DirectoryUpdate-${myUserID}`;
         body.inputData = workflowRequest;
 
+        console.log(body)
 
           //call our workflow
           apiInstance.postFlowsExecutions(body)
@@ -1123,7 +1124,7 @@
     
       <gux-table-toolbar-custom-action slot="primary-action" accent="primary" id="enableButton">
         <span slot="text">Add</span>
-        <gux-icon slot="icon" icon-name="add" decorative onclick="addContact()"></gux-icon>
+        <gux-icon slot="icon" icon-name="add" decorative onclick="addContact()" actionClick="addContact()"></gux-icon>
       </gux-table-toolbar-custom-action>
     </gux-table-toolbar>
 
