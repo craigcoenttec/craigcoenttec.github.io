@@ -84,7 +84,7 @@
           myUserID = userDetails.id;
           myGroups = userDetails.groups;
           addDirectory(userDetails.name,myUserID,true,true);
-          callSocketSetup(myUserID);
+          //callSocketSetup(myUserID);   Temp removing to simplify for hands on.
           
 
           // myClientApp.alerting.showToastPopup(
@@ -347,9 +347,10 @@
     */
     async function transferContact(rowObject)
     {
+      console.log('%cTransfer Clicked', 'color: green');
       let parent = rowObject.closest("tr"); //using the class for selection
       let contactID = parent.getAttribute("id");
-      console.log(`transfer button clicked ${contactID}`);
+      console.log(`Contact ID is ${contactID}`);
 
       let contact = currentDirectory.find(c => c.recordID == contactID);
 
@@ -1144,7 +1145,7 @@
     <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
     <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
     <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
-    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.2 </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.3 </em></p>
      <div><span id="ModalPlaceHolder"></span></div>
   
   </section>
