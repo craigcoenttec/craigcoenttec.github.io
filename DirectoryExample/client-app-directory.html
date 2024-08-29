@@ -361,9 +361,9 @@
       switch (contact.contactType) {
         case "USER":
          body = {
-                destination: {
+                
                     userId: contact.contactGCID
-                }
+                
               }
           break;
           
@@ -373,9 +373,9 @@
 
         default:
         body = {
-          destination: {
+          
             address: contact.contactNumber
-          }
+          
         }
           
         break;
@@ -404,14 +404,10 @@
             var participantId = internalParticipant.id;
 
             console.log(`transferring participant: ${participantId}` );
-            // var body = {
-            //     destination: {
-            //         userId: transferUserId
-            //     }
-            // }
+            
             //let transferCall = await capi.postConversationsCallParticipantConsult(conversationId, participantId, body)
             let transferCall = await capi.postConversationParticipantReplace(conversationId, participantId, body);
-            if (debug) console.log('Transfering: ', transferCall)
+            console.log('Transfering: ', transferCall)
       
     }
 
@@ -1149,7 +1145,7 @@
     <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
     <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
     <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
-    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.3 </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.4 </em></p>
      <div><span id="ModalPlaceHolder"></span></div>
   
   </section>
