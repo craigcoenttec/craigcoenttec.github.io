@@ -707,7 +707,7 @@
               transferButton.innerText = 'Transfer';
               transferButton.setAttribute('onclick', 'transferContact(this)');
               transferButton.setAttribute('name','transferButton');
-              transferButton.setAttribute('disabled','true');
+              transferButton.setAttribute('disabled','false');
              
               transferButton.setAttribute('accent', 'inline');
               button2Cell.appendChild(transferButton);
@@ -1047,10 +1047,10 @@
                              if (participant.state === 'contacting') {
 
                               const buttons = document.getElementsByName("transferButton");
-                              for (let i = 0; i < buttons.length; i++)
-                                {
-                                  buttons[i].setAttribute('disabled','false');
-                                }
+                              // for (let i = 0; i < buttons.length; i++)
+                              //   {
+                              //     buttons[i].setAttribute('disabled','false');
+                              //   }
                              
                                 
                                 
@@ -1063,10 +1063,10 @@
                             }
                              if (participant.state === 'terminated') {
                               const buttons = document.getElementsByName("transferButton");   
-                              for (let i = 0; i < buttons.length; i++)
-                                {
-                                  buttons[i].setAttribute('disabled','true');
-                                }
+                              // for (let i = 0; i < buttons.length; i++)
+                              //   {
+                              //     buttons[i].setAttribute('disabled','true');
+                              //   }
                              }
                         }
                     }
@@ -1144,7 +1144,7 @@
     <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
     <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
     <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
-    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.1 </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.2 </em></p>
      <div><span id="ModalPlaceHolder"></span></div>
   
   </section>
