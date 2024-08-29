@@ -102,8 +102,8 @@
     function createModalForm(type,name="",contacttype="",gcid="",recordid="")
     {
 
-      let validTypes = ['USER','EXTERNAL','GROUP','QUEUE'];
-
+      //let validTypes = ['USER','EXTERNAL','GROUP','QUEUE'];
+      let validTypes = ['EXTERNAL'];
       //Modal
       let Modal = document.createElement('gux-modal');
       Modal.setAttribute('id',`contact-${type}-modal`);
@@ -145,7 +145,7 @@
       let typeField = document.createElement('gux-form-field-dropdown');
       typeField.setAttribute('label-position','above');
       let typeDropdown = document.createElement('gux-dropdown');
-
+      typeDropdown.setAttribute('value',"EXTERNAL");
       let typeListBox = document.createElement('gux-listbox');
       typeListBox.setAttribute('id','modalTypeField');
       for (let i = 0; i < validTypes.length; i++) 
@@ -192,7 +192,7 @@
       gcInput.setAttribute('slot','input');
       gcInput.setAttribute('type','text');
       gcInput.setAttribute('id','modalgcIDField');
-      
+      gcInput.setAttribute('disabled','true');
       gcIDField.appendChild(gcInput);
       let gcIDLabel = document.createElement('label');
       gcIDLabel.setAttribute('slot','label');
@@ -215,7 +215,7 @@
       recordIDLabel.setAttribute('slot','label');
       recordIDLabel.appendChild(document.createTextNode('Record ID'));
       recordIDField.appendChild(recordIDLabel);
-      recordIDField.style.display = hidden;
+      
       form.appendChild(recordIDField);
 
       //Accept Button
