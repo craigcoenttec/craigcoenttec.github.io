@@ -392,11 +392,13 @@
             var opts = {
                 communicationType: "Call" // String | Call or Chat communication filtering
             }
-            let conversations = await capi.getConversations(opts)
-            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "external")
-            var conversationId = conversations.entities[0].id
-            var participantId = externalParticipant.id
+            let conversations = await capi.getConversations(opts);
+            console.log(JSON.stringify(conversations,null,2));
+            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "external");
+            var conversationId = conversations.entities[0].id;
+            var participantId = externalParticipant.id;
 
+            console.log(`transferring participant: ${participantId}` );
             // var body = {
             //     destination: {
             //         userId: transferUserId
@@ -1141,7 +1143,7 @@
     <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
     <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
     <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
-    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.0 </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.1 </em></p>
      <div><span id="ModalPlaceHolder"></span></div>
   
   </section>
