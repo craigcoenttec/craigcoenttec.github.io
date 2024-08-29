@@ -395,9 +395,13 @@
             }
             let conversations = await capi.getConversations(opts);
             console.log(JSON.stringify(conversations,null,2));
-            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "agent");
+            var internalParticipant = conversations.entities[0].participants.find(p => p.purpose === "agent" || p.purpose === "user");
+            //console.log(JSON.stringify(conversations,null,2));
+            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "external");
             var conversationId = conversations.entities[0].id;
-            var participantId = externalParticipant.id;
+
+            //using internal
+            var participantId = internalParticipant.id;
 
             console.log(`transferring participant: ${participantId}` );
             // var body = {
