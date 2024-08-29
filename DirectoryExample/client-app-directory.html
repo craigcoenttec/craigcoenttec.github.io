@@ -353,7 +353,7 @@
 
       let contact = currentDirectory.find(c => c.recordID == contactID);
 
-      console.log(JSON.stringify(contact));
+      //console.log(contact);
       
       var body;
 
@@ -394,7 +394,7 @@
             }
             let conversations = await capi.getConversations(opts);
             console.log(JSON.stringify(conversations,null,2));
-            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "external");
+            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "agent");
             var conversationId = conversations.entities[0].id;
             var participantId = externalParticipant.id;
 
@@ -404,7 +404,8 @@
             //         userId: transferUserId
             //     }
             // }
-            let transferCall = await capi.postConversationsCallParticipantConsult(conversationId, participantId, body)
+            //let transferCall = await capi.postConversationsCallParticipantConsult(conversationId, participantId, body)
+            let transferCall = await capi.postConversationParticipantReplace(conversationId, participantId, body);
             if (debug) console.log('Transfering: ', transferCall)
       
     }
