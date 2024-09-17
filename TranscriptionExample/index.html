@@ -40,6 +40,10 @@
       let currentTargetLang = "es"
       let currentDelay = 4000
       let messageIds = [];
+      let messageDetailList = [];
+      let showAgent =false;
+      let currentCustomerClass = "message-customer-small";
+      let currentAgentClass = "message-agent";
       
 
 
@@ -82,6 +86,9 @@
         subscribeLiveTranscripton(gc_conversationId);
         subscribeMessageEvents();
         getCurrentConversationDetails() ;
+        document.getElementById("typedMessage").addEventListener('keyup',function(e) {
+          if(e.key === 'Enter') {sendTranslatedMessage()}
+        })
 
       } //End of start() function
 
@@ -176,6 +183,79 @@
             
     }
 
+    function timer(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+
+async function TranslateExistingConversation(customerMessages, agentMessages)
+{
+      console.log(customerMessages);
+      let workingList = [];
+                  // customerMessages.forEach(message => {
+                  //     console.log(message);
+                  //     if(!messageIds.includes(message.messageId))
+                  //     {
+                  //       messageIds.push(message.mmessageId);
+                  //       messageDetailList.push(message);
+                  //       console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+                  //       translateMessage(message.messageId);
+                        
+                        
+                  //     }
+                    
+
+                  // });
+
+                  for (const message of customerMessages){
+                    //if(!messageIds.includes(message.messageId))
+                      //{
+                        //messageIds.push(message.mmessageId);
+                        message.messageSender = "Customer";
+                        workingList.push(message);
+                        //messageDetailList.push(message);
+                         //console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+                        //await translateMessage(message.messageId);
+                        
+                        
+                  //     }
+                  
+
+          
+                  
+
+                }
+
+                for (const message of agentMessages){
+                    
+                        //messageIds.push(message.mmessageId);
+                        message.messageSender = "agent";
+                        workingList.push(message);
+                         //console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+                        //await translateMessage(message.messageId);
+                        
+                        
+                  //     }
+                      
+
+                  
+
+                }
+
+                
+
+                for (const message of workingList.sort((m1,m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0))
+                {
+                  if(!messageIds.includes(message.messageId))
+                      {
+                        messageIds.push(message.mmessageId);
+                        messageDetailList.push(message);
+                        console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+                        await timer(250);
+                        await translateMessage(message.messageId);
+                      }
+                }
+                
+}
+
 async function subscribeMessageEvents()
 {
 
@@ -222,12 +302,14 @@ async function subscribeMessageEvents()
                   console.log('***Customer Participant: ', customerParticipant)
                   customerParticipant.messages.reverse().forEach(message => {
                     //message.messages.forEach(msg => {
+                      console.log(messageIds);
+                      console.log(message.message.id)
                       if(!messageIds.includes(message.message.id))
                       {
                         messageIds.push(message.message.id);
                         console.log(`%cNew Message: ${message.message.id}`, 'color: green');
                         translateMessage(message.message.id);
-                        //translateLatestMessage();s
+                        //translateLatestMessage();
                         
                       }
                     //});
@@ -251,6 +333,7 @@ async function subscribeMessageEvents()
         let messageId = conversation.participants[0].messages[0].messageId
         console.log(`messageId = ${messageId}`)
         translateMessage(messageId);
+        addStatementCard("Original Text","Translated Text","en","de","NONE","message-agent")
       
       
     }
@@ -260,8 +343,8 @@ async function subscribeMessageEvents()
         
         
         let message = await capi.getConversationsMessageMessage(gc_conversationId, messageId)
-        console.log(message.normalizedMessage.text)
-        getTranslation(message.normalizedMessage.text)
+        console.log(message.normalizedMessage.text);
+        getTranslation(message.normalizedMessage.text, messageId);
       
       
     }
@@ -287,11 +370,11 @@ async function subscribeMessageEvents()
 
       document.getElementById("typedMessage").value = "";
 
-      postTranslationAPI(messageText, "auto", lastSourceLang, sendMessage);
+      postTranslationAPI(messageText, "auto", lastSourceLang, "NONE", sendMessage);
 
     }
 
-    function sendMessage(text)
+    async function sendMessage(text)
     {
       console.log(text)
       let textToSend = text
@@ -301,16 +384,28 @@ async function subscribeMessageEvents()
       let opts = { 
         "useNormalizedMessage": false // Boolean | If true, response removes deprecated fields (textBody, media, stickers)
       };
-
+      
+     
       // Send message
-      capi.postConversationsMessageCommunicationMessages(gc_conversationId, gc_agentCommunicationId, body, opts)
-        .then((data) => {
-          console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
-        })
-        .catch((err) => {
-          console.log("There was a failure calling postConversationsMessageCommunicationMessages");
-          console.error(err);
-        });
+      let data = await capi.postConversationsMessageCommunicationMessages(gc_conversationId, gc_agentCommunicationId, body, opts);
+      console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
+            
+      messageDetailList.push({"messageId":data.id,"messageTime":data.timestamp,"messageSender":"agent"})
+      addStatementCard(text.originalText,text.translatedText,text.sourceLanguage,text.targetLanguage,data.id,currentAgentClass);
+
+      
+      
+      // .then((data) => {
+      //     console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
+          
+      //     messageDetailList({"messageId":data.id,"messageTime":data.timestamp,"messageSender":"agent"})
+      //     addStatementCard(text.originalText,text.translatedText,text.sourceLanguage,text.targetLanguage,data.id,currentAgentClass);
+      
+      //   })
+      //   .catch((err) => {
+      //     console.log("There was a failure calling postConversationsMessageCommunicationMessages");
+      //     console.error(err);
+      //   });
   }
 
 function getCurrentConversationDetails() 
@@ -333,6 +428,12 @@ function getCurrentConversationDetails()
           gc_agentCommunicationId = agentParticipant.messages[0].id;
           gc_mediaType = "MESSAGE"
           document.getElementById("footer").style.visibility = "visible";
+
+          let customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
+          let agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
+          console.log(customerMessages[0].messages);
+          TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages);
+
         }
         else if (agentParticipant.calls.length > 0)
         {
@@ -361,7 +462,8 @@ function getCurrentConversationDetails()
 }
 
 
-     function getTranslation(text)
+    
+     function getTranslation(text,messageId="")
     {
         if (text.length > 0) //Change this back to > 0 when ready to translate again.
         {
@@ -373,7 +475,7 @@ function getCurrentConversationDetails()
 
             
 
-             let translation =  postTranslationAPI(text,currentSourceLang, currentTargetLang,postTranslationProcesing)//.then((translation) => {
+             let translation =  postTranslationAPI(text,currentSourceLang, currentTargetLang,messageId,postTranslationProcesing)//.then((translation) => {
             //   if (translation.source_language != "NONE" && translation.source_language != "ERROR")
             //     {
             //     document.getElementById('span_lastTranslation').innerText = translation.translatedText;   
@@ -398,13 +500,14 @@ function getCurrentConversationDetails()
       if (translation.error == false && translation.translatedText.length > 0 )
       {
         document.getElementById('span_lastTranslation').innerText = translation.translatedText;   
-        addStatementCard(translation.originalText,translation.translatedText,translation.sourceLanguage,translation.targetLanguage);
+        addStatementCard(translation.originalText,translation.translatedText,translation.sourceLanguage,translation.targetLanguage,translation.messageId,currentCustomerClass);
         lastSourceLang = translation.sourceLanguage;
+        document.getElementById("sendLanguage").innerText = document.getElementById("TargetLanguageDropdown").value
       }
       
     }
 
-    function postTranslationAPI(text,sourceLanguage, targetLanguage, postTranslationProcessor)
+    function postTranslationAPI(text,sourceLanguage, targetLanguage, messageId, postTranslationProcessor)
     {
         
         let resultObject = {
@@ -412,7 +515,8 @@ function getCurrentConversationDetails()
           "translatedText":"",
           "sourceLanguage":sourceLanguage,
           "targetLanguage":targetLanguage,
-          "error":false
+          "error":false,
+          "messageId":messageId
         }
       
         if (text.length > 0) //Change this back to > 0 when ready to translate again.
@@ -488,30 +592,107 @@ function getCurrentConversationDetails()
 
 function toggleAgentDiv() {
   console.log("toggled")
-  let agentDiv = document.getElementById("conversation-agent");
-  let agentToggle = document.getElementById("agentToggle");
-  if (agentDiv.className == "conversation-agent-hidden")
-  {
-    agentDiv.className = "conversation-agent";
-  }
-  else {
-    agentDiv.className = "conversation-agent-hidden";
-  }
+  showAgent = !showAgent
+   let agentToggle = document.getElementById("agentToggle");
+   if (showAgent == true)
+   {
+    let agentDivs = document.getElementsByClassName(currentAgentClass);
+    let customerDivs = document.getElementsByClassName(currentCustomerClass);
+    
+    
+    currentAgentClass = "message-agent";
+    currentCustomerClass = "message-customer-small"
+
+    while (agentDivs.length)
+    {
+      agentDivs[0].className = currentAgentClass;
+    }
+    while (customerDivs.length) {
+      customerDivs[0].className = currentCustomerClass;
+    }
+   }
+   else {
+    let agentDivs = document.getElementsByClassName(currentAgentClass);
+    let customerDivs = document.getElementsByClassName(currentCustomerClass);
+    currentAgentClass = "message-agent-hidden";
+    currentCustomerClass = "message-customer"
+    
+    while (agentDivs.length) {
+      agentDivs[0].className = currentAgentClass;
+    }
+    while (customerDivs.length) {
+      customerDivs[0].className = currentCustomerClass;
+    }
+   }
+
+
+
+
 }
 
-    function addStatementCard(originalText, translatedText, sourceLanguage, destinationLanguage){
+    function addStatementCard(originalText, translatedText, sourceLanguage, destinationLanguage, messageId, className = "message-customer"){
     
 
 
     let card = document.createElement("gux-card");
-    card.style.width = "100%"
+    card.id = messageId;
+    
+    //card.style.width = "100%"
     card.setAttribute('accent','raised');
     //card.style.color = "#761c1c";
-    let cardHeader = document.createElement("h2");
+    //let cardHeader = document.createElement("h6");
+
+    let cardHeader = document.createElement("div");
     
-    if (sourceLanguage == "en")
+    let cardTimestamp = document.createElement("gux-tag");
+    cardTimestamp.setAttribute("size","small");
+    cardTimestamp.className = "message-details-time";
+    cardTimestamp.setAttribute("disabled","true")
+    let cardUser = document.createElement("gux-tag");
+    cardUser.setAttribute("size","small");
+    cardUser.className = "message-details-user";
+
+    console.log(messageDetailList);
+    //let index = messageDetailList.findIndex(m => m.messageId == messageId)
+    if (true)
+    {
+      console.log("true")
+      let currentMessage = messageDetailList.find(m => m.messageId == messageId);
+      if (typeof currentMessage != "undefined"){
+        cardTimestamp.innerHTML = currentMessage.messageTime;
+        
+        if (currentMessage.messageSender && currentMessage.messageSender != "Customer") {
+          cardUser.className = "message-details-user";
+          cardHeader.className = "message-details-userdiv";
+          cardUser.innerHTML = currentMessage.messageSender;
+          cardUser.setAttribute("accent","10");
+          cardHeader.appendChild(cardTimestamp);
+          cardHeader.appendChild(cardUser);
+          card.className = currentAgentClass;
+        }
+        else{
+          cardUser.className = "message-details-customer";
+          cardHeader.className = "message-details-customerdiv";
+          cardUser.innerHTML = "Customer"
+          cardUser.setAttribute("accent","3");
+          cardHeader.appendChild(cardUser);
+          cardHeader.appendChild(cardTimestamp);
+          card.className = currentCustomerClass;
+    
+        }
+        
+
+      }
+      
+    }
+    
+    if (sourceLanguage === "en")
     {
         sourceLanguage = "us";
+    }
+    if (destinationLanguage === "en")
+    {
+       destinationLanguage = "us";
     }
     let cardOriginal = document.createElement("gux-card");
     
@@ -541,18 +722,18 @@ function toggleAgentDiv() {
     cardNewTextBlock.innerHTML = translatedText;
     cardNew.appendChild(newFlag);
     cardNew.appendChild(cardNewTextBlock);
-
+    
     card.appendChild(cardOriginal);
     card.appendChild(cardNew);
-
+    card.appendChild(cardHeader);
 
     
     
     
     
     document.getElementById("conversation").appendChild(card)
-
-    window.scrollTo(0, document.body.scrollHeight);
+    document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;
+    //window.scrollTo(0, document.body.scrollHeight);
     //return cardHeaderIntent;
 }
 
@@ -592,7 +773,7 @@ function toggleAgentDiv() {
         <div style="width:30%;padding:5px">
           
           <gux-form-field-dropdown>
-            <gux-dropdown id='TargetLanguageDropdown' value="de">
+            <gux-dropdown id='TargetLanguageDropdown' value="en">
               <gux-listbox aria-label="Languages">
                 <gux-option value="auto">Auto</gux-option>
                 <gux-option value="en">English</gux-option>
@@ -621,7 +802,7 @@ function toggleAgentDiv() {
   
         </div>
   
-        <gux-toggle id = "agentToggle" checked-label="Translate Agent On" unchecked-label="Translate Agent Off" onclick="toggleAgentDiv()"></gux-toggle>
+        <!--gux-toggle id = "agentToggle" checked-label="Translate Agent On" unchecked-label="Translate Agent Off" onclick="toggleAgentDiv()"></gux-toggle-->
   
       </div>
 
@@ -630,7 +811,7 @@ function toggleAgentDiv() {
      <!-- Conversation Div is where we fill with messages -->
     <div id="conversation-panel" class="conversation-pane" >
       <div id="conversation" class="conversation-customer"></div>
-      <div id="conversation-agent" class="conversation-agent-hidden"></div>
+      <!--div id="conversation-agent" class="conversation-agent-hidden"></div-->
 
     </div>
       
@@ -657,7 +838,7 @@ function toggleAgentDiv() {
       </div>
     </div>
       
-    <div class="sms-footer"></div>
+    <div class="sms-footer"><span id="sendLanguage">German</span> to <span id="sendTranslateLanguage">English</span></div>
   </div>
   </div>
 </div>
@@ -730,7 +911,7 @@ function toggleAgentDiv() {
     -->
  
   <!-- This is our debug section -->
-  <div>
+  <div style="visibility: hidden;">
     <gux-accordion>
       <gux-accordion-section>
         <h2 slot="header">Debug Info</h2>
