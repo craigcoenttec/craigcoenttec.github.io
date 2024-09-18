@@ -408,7 +408,7 @@ async function subscribeMessageEvents()
       let data = await capi.postConversationsMessageCommunicationMessages(gc_conversationId, gc_agentCommunicationId, body, opts);
       console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
             
-      messageDetailList.push({"messageId":data.id,"messageTime":data.timestamp,"messageSender":"agent"})
+      messageDetailList.push({"messageId":data.id,"messageTime":data.timestamp,"messageSender":"Agent"})
       addStatementCard(text.originalText,text.translatedText,text.sourceLanguage,text.targetLanguage,data.id,currentAgentClass);
 
       
@@ -681,7 +681,7 @@ function toggleAgentDiv() {
       if (typeof currentMessage != "undefined"){
         cardTimestamp.innerHTML = currentMessage.messageTime;
         
-        if (currentMessage.messageSender && currentMessage.messageSender == "Agent") {
+        if (currentMessage.messageSender && currentMessage.messageSender === "Agent" ) {
           cardUser.className = "message-details-user";
           cardHeader.className = "message-details-userdiv";
           cardUser.innerHTML = currentMessage.messageSender;
@@ -761,7 +761,11 @@ function toggleAgentDiv() {
     
     
     document.getElementById("conversation").appendChild(card)
-    document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;
+    //card.scrollIntoView();
+    setTimeout(() => {
+      document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;
+}, 500); 
+     //document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;
     //window.scrollTo(0, document.body.scrollHeight);
     //return cardHeaderIntent;
 }
