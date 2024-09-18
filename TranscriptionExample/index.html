@@ -45,6 +45,7 @@
       let currentCustomerClass = "message-customer-small";
       let currentSystemClass = "message-system";
       let currentAgentClass = "message-agent";
+      let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto"}
       
 
 
@@ -191,83 +192,46 @@ async function TranslateExistingConversation(customerMessages, agentMessages, wo
 {
       console.log(customerMessages);
       let workingList = [];
-                  // customerMessages.forEach(message => {
-                  //     console.log(message);
-                  //     if(!messageIds.includes(message.messageId))
-                  //     {
-                  //       messageIds.push(message.mmessageId);
-                  //       messageDetailList.push(message);
-                  //       console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-                  //       translateMessage(message.messageId);
-                        
-                        
-                  //     }
-                    
-
-                  // });
+                 
 
                   for (const message of customerMessages){
-                    //if(!messageIds.includes(message.messageId))
-                      //{
-                        //messageIds.push(message.mmessageId);
+                    messageIds.push(message.messageId);
                         message.messageSender = "Customer";
                         workingList.push(message);
-                        //messageDetailList.push(message);
-                         //console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-                        //await translateMessage(message.messageId);
                         
-                        
-                  //     }
-                  
-
-          
-                  
 
                 }
 
                 for (const message of agentMessages){
                     
-                        //messageIds.push(message.mmessageId);
+                  messageIds.push(message.messageId);
                         message.messageSender = "Agent";
                         workingList.push(message);
-                         //console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-                        //await translateMessage(message.messageId);
                         
-                        
-                  //     }
-                      
-
                   
 
                 }
 
                 for (const message of workflowMessages){
                     
-                    //messageIds.push(message.mmessageId);
+                  messageIds.push(message.messageId);
                     message.messageSender = "Workflow";
                     workingList.push(message);
-                     //console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-                    //await translateMessage(message.messageId);
                     
-                    
-              //     }
                   
-
-              
-
             }
                 
 
                 for (const message of workingList.sort((m1,m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0))
                 {
-                  if(!messageIds.includes(message.messageId))
-                      {
-                        messageIds.push(message.mmessageId);
+                  //if(!messageIds.includes(message.messageId))
+                      //{
+                        //messageIds.push(message.messageId);
                         messageDetailList.push(message);
                         console.log(`%cNew Message: ${message.messageId}`, 'color: green');
                         await timer(225);
                         await translateMessage(message.messageId);
-                      }
+                      //}
                 }
                 
 }
@@ -522,8 +486,7 @@ function getCurrentConversationDetails()
         document.getElementById('span_lastTranslation').innerText = translation.translatedText;   
         addStatementCard(translation.originalText,translation.translatedText,translation.sourceLanguage,translation.targetLanguage,translation.messageId,currentCustomerClass);
         lastSourceLang = translation.sourceLanguage;
-        document.getElementById("sendLanguage").innerText = document.getElementById("TargetLanguageDropdown").value
-      }
+        }
       
     }
 
@@ -707,6 +670,12 @@ function toggleAgentDiv() {
           cardHeader.appendChild(cardUser);
           cardHeader.appendChild(cardTimestamp);
           card.className = currentCustomerClass;
+
+          
+
+          document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage]; 
+          document.getElementById("sendLanguage").innerText = "Auto";
+          
     
         }
         
@@ -723,6 +692,13 @@ function toggleAgentDiv() {
     {
        destinationLanguage = "gb";
     }
+
+
+   
+     
+
+
+
     let cardOriginal = document.createElement("gux-card");
     
     cardOriginal.setAttribute('accent','bordered');
@@ -761,6 +737,7 @@ function toggleAgentDiv() {
     
     
     document.getElementById("conversation").appendChild(card)
+    
     //card.scrollIntoView();
     setTimeout(() => {
       document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;
