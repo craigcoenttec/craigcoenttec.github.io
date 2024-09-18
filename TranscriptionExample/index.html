@@ -464,7 +464,7 @@ function getCurrentConversationDetails()
             //     {
             //     document.getElementById('span_lastTranslation').innerText = translation.translatedText;   
             //     addStatementCard(text,translation.translatedText,translation.source_language,currentTargetLang);
-                 lastSourceLang = translation.source_language;
+                 //lastSourceLang = translation.source_language;
             //     }
             // });   
 
@@ -485,7 +485,7 @@ function getCurrentConversationDetails()
       {
         document.getElementById('span_lastTranslation').innerText = translation.translatedText;   
         addStatementCard(translation.originalText,translation.translatedText,translation.sourceLanguage,translation.targetLanguage,translation.messageId,currentCustomerClass);
-        lastSourceLang = translation.sourceLanguage;
+        
         }
       
     }
@@ -675,6 +675,7 @@ function toggleAgentDiv() {
 
           document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage]; 
           document.getElementById("sendLanguage").innerText = "Auto";
+          lastSourceLang = sourceLanguage;
           
     
         }
