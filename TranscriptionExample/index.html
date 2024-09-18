@@ -307,6 +307,8 @@ async function subscribeMessageEvents()
                       if(!messageIds.includes(message.message.id))
                       {
                         messageIds.push(message.message.id);
+                         messageDetailList.push({"messageId":message.message.id,"messageTime":message.messageTime,"messageSender":"Customer"})
+                       
                         console.log(`%cNew Message: ${message.message.id}`, 'color: green');
                         translateMessage(message.message.id);
                         //translateLatestMessage();
@@ -426,8 +428,9 @@ function getCurrentConversationDetails()
         if ( agentParticipant.messages.length > 0)
         {
           gc_agentCommunicationId = agentParticipant.messages[0].id;
-          gc_mediaType = "MESSAGE"
+          gc_mediaType = "MESSAGE";
           document.getElementById("footer").style.visibility = "visible";
+          document.getElementById("delayDiv").style.visibility = "hidden";
 
           let customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
           let agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
@@ -753,7 +756,7 @@ function toggleAgentDiv() {
 
 <div class="control-div" style="display:flex;">
 
-        <div style="width:30%;height:20px;padding:5px;  ">
+        <div style="width:40%;height:20px;padding:5px;  ">
         
           <gux-form-field-dropdown>
             <gux-dropdown id='SourceLanguageDropdown' value="auto"  >
@@ -765,12 +768,12 @@ function toggleAgentDiv() {
               
               </gux-listbox>
             </gux-dropdown>
-            <label slot="label">Source</label>
+            <label slot="label">Customer Language</label>
           </gux-form-field-dropdown>
         </div>
         
   
-        <div style="width:30%;padding:5px">
+        <div style="width:40%;padding:5px">
           
           <gux-form-field-dropdown>
             <gux-dropdown id='TargetLanguageDropdown' value="en">
@@ -784,12 +787,12 @@ function toggleAgentDiv() {
                 
               </gux-listbox>
             </gux-dropdown>
-            <label slot="label">Target</label>
+            <label slot="label">Agent Language</label>
           </gux-form-field-dropdown>
           
         </div>
   
-        <div style="width:30%;padding:5px">
+        <div id = "delayDiv" style="width:20%;padding:5px">
           
           <gux-form-field-number >
             <input slot="input" id="delay" type="number" name="delay" value="5000" aria-label="delay" />
