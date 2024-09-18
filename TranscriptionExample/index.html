@@ -43,6 +43,7 @@
       let messageDetailList = [];
       let showAgent =false;
       let currentCustomerClass = "message-customer-small";
+      let currentSystemClass = "message-system";
       let currentAgentClass = "message-agent";
       
 
@@ -186,7 +187,7 @@
     function timer(ms) { return new Promise(res => setTimeout(res, ms)); }
 
 
-async function TranslateExistingConversation(customerMessages, agentMessages)
+async function TranslateExistingConversation(customerMessages, agentMessages, workflowMessages)
 {
       console.log(customerMessages);
       let workingList = [];
@@ -227,7 +228,7 @@ async function TranslateExistingConversation(customerMessages, agentMessages)
                 for (const message of agentMessages){
                     
                         //messageIds.push(message.mmessageId);
-                        message.messageSender = "agent";
+                        message.messageSender = "Agent";
                         workingList.push(message);
                          //console.log(`%cNew Message: ${message.messageId}`, 'color: green');
                         //await translateMessage(message.messageId);
@@ -240,6 +241,21 @@ async function TranslateExistingConversation(customerMessages, agentMessages)
 
                 }
 
+                for (const message of workflowMessages){
+                    
+                    //messageIds.push(message.mmessageId);
+                    message.messageSender = "Workflow";
+                    workingList.push(message);
+                     //console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+                    //await translateMessage(message.messageId);
+                    
+                    
+              //     }
+                  
+
+              
+
+            }
                 
 
                 for (const message of workingList.sort((m1,m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0))
@@ -249,7 +265,7 @@ async function TranslateExistingConversation(customerMessages, agentMessages)
                         messageIds.push(message.mmessageId);
                         messageDetailList.push(message);
                         console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-                        await timer(250);
+                        await timer(225);
                         await translateMessage(message.messageId);
                       }
                 }
@@ -434,8 +450,9 @@ function getCurrentConversationDetails()
 
           let customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
           let agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
+          let workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
           console.log(customerMessages[0].messages);
-          TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages);
+          TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages,workflowMessages[0].messages);
 
         }
         else if (agentParticipant.calls.length > 0)
@@ -664,7 +681,7 @@ function toggleAgentDiv() {
       if (typeof currentMessage != "undefined"){
         cardTimestamp.innerHTML = currentMessage.messageTime;
         
-        if (currentMessage.messageSender && currentMessage.messageSender != "Customer") {
+        if (currentMessage.messageSender && currentMessage.messageSender == "Agent") {
           cardUser.className = "message-details-user";
           cardHeader.className = "message-details-userdiv";
           cardUser.innerHTML = currentMessage.messageSender;
@@ -672,6 +689,15 @@ function toggleAgentDiv() {
           cardHeader.appendChild(cardTimestamp);
           cardHeader.appendChild(cardUser);
           card.className = currentAgentClass;
+        }
+        else if (currentMessage.messageSender && currentMessage.messageSender != "Customer") {
+          cardUser.className = "message-details-user";
+          cardHeader.className = "message-details-userdiv";
+          cardUser.innerHTML = currentMessage.messageSender;
+          cardUser.setAttribute("accent","2");
+          cardHeader.appendChild(cardTimestamp);
+          cardHeader.appendChild(cardUser);
+          card.className = currentSystemClass;
         }
         else{
           cardUser.className = "message-details-customer";
@@ -691,11 +717,11 @@ function toggleAgentDiv() {
     
     if (sourceLanguage === "en")
     {
-        sourceLanguage = "us";
+        sourceLanguage = "gb";
     }
     if (destinationLanguage === "en")
     {
-       destinationLanguage = "us";
+       destinationLanguage = "gb";
     }
     let cardOriginal = document.createElement("gux-card");
     
