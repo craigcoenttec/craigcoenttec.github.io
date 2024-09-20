@@ -46,7 +46,8 @@
       let currentSystemClass = "message-system";
       let currentAgentClass = "message-agent";
       let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto"}
-      
+      let myImage ="";
+      let myName = "";
 
 
       //Getting and setting the GC details from dynamic URL and session storage
@@ -77,6 +78,8 @@
           let user = await uapi.getUsersMe({})
           console.log(user)
           userId = user.id
+          myName = user.name;
+          myImage = user.images[0].imageUri; 
           updateDebug(gc_region, gc_language, version, user.name, gc_clientId, translateToken, gc_redirectUrl, gc_conversationId )
 
           
@@ -617,7 +620,8 @@ function toggleAgentDiv() {
     
 
 
-    let card = document.createElement("gux-card");
+    //let card = document.createElement("gux-card");
+    let card = document.createElement("div");
     card.id = messageId;
     
     //card.style.width = "100%"
@@ -634,6 +638,11 @@ function toggleAgentDiv() {
     let cardUser = document.createElement("gux-tag");
     cardUser.setAttribute("size","small");
     cardUser.className = "message-details-user";
+    let cardAvatar = document.createElement("gux-avatar-beta");
+    cardAvatar.setAttribute("size","small")
+    let cardAvatarImage = document.createElement("img");
+    
+
 
     console.log(messageDetailList);
     //let index = messageDetailList.findIndex(m => m.messageId == messageId)
@@ -649,28 +658,53 @@ function toggleAgentDiv() {
           cardHeader.className = "message-details-userdiv";
           cardUser.innerHTML = currentMessage.messageSender;
           cardUser.setAttribute("accent","10");
+          cardAvatarImage.setAttribute("slot","image");
+          cardAvatarImage.setAttribute("src",myImage);
+          cardAvatarImage.setAttribute("alt",myName);
+          cardAvatar.setAttribute("name",myName);
           cardHeader.appendChild(cardTimestamp);
           cardHeader.appendChild(cardUser);
-          card.className = currentAgentClass;
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
+          
+          //card.className = currentAgentClass;
+          card.className = currentAgentClass + " talk-bubble tri-right round btm-right-in"
+   
         }
         else if (currentMessage.messageSender && currentMessage.messageSender != "Customer") {
           cardUser.className = "message-details-user";
           cardHeader.className = "message-details-userdiv";
           cardUser.innerHTML = currentMessage.messageSender;
           cardUser.setAttribute("accent","2");
+          cardAvatarImage.setAttribute("slot","image");
+          cardAvatarImage.setAttribute("src","https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg");
+          cardAvatarImage.setAttribute("alt","Workflow");
+          cardAvatar.setAttribute("name","Workflow");
+          
           cardHeader.appendChild(cardTimestamp);
           cardHeader.appendChild(cardUser);
-          card.className = currentSystemClass;
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
+          //card.className = currentSystemClass;
+          card.className = currentSystemClass + " talk-bubble tri-right round btm-right-in"
+          
         }
         else{
           cardUser.className = "message-details-customer";
           cardHeader.className = "message-details-customerdiv";
           cardUser.innerHTML = "Customer"
           cardUser.setAttribute("accent","3");
+          cardAvatarImage.setAttribute("slot","image");
+          cardAvatarImage.setAttribute("src","https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg");
+          cardAvatarImage.setAttribute("alt","Customer");
+          cardAvatar.setAttribute("name","Customer");
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
           cardHeader.appendChild(cardUser);
           cardHeader.appendChild(cardTimestamp);
-          card.className = currentCustomerClass;
-
+          //card.className = currentCustomerClass;
+          card.className = currentCustomerClass + " talk-bubble-left tri-right round btm-left-in"
+          
           
 
           document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage]; 
@@ -700,11 +734,13 @@ function toggleAgentDiv() {
 
 
 
-    let cardOriginal = document.createElement("gux-card");
+    let cardOriginal = document.createElement("div");
+    //let cardOriginal = document.createElement("gux-card");
     
     cardOriginal.setAttribute('accent','bordered');
-    cardOriginal.style.width = "100%";
-    cardOriginal.style.color = "#767c8d";
+    cardOriginal.className = "original-message-text"
+    //cardOriginal.style.width = "100%";
+    //cardOriginal.style.color = "#767c8d";
     let sourceFlag = document.createElement("gux-flag-icon-beta");
     sourceFlag.setAttribute('flag',sourceLanguage);
     let cardOriginalTextBlock = document.createElement("span");
@@ -715,10 +751,15 @@ function toggleAgentDiv() {
     cardOriginal.appendChild(sourceFlag);
     cardOriginal.appendChild(cardOriginalTextBlock);
 
-    let cardNew = document.createElement("gux-card");
+    let borderDiv = document.createElement("div");
+    borderDiv.className = "border-divider"
+
+    let cardNew = document.createElement("div");
+    //let cardNew = document.createElement("gux-card");
+    cardNew.className = "translated-message-text"
     cardNew.setAttribute('accent','bordered');
-    cardNew.style.width = "100%";
-    cardNew.style.color = "#1b2c48";
+    //cardNew.style.width = "100%";
+    //cardNew.style.color = "#1b2c48";
     let newFlag = document.createElement("gux-flag-icon-beta");
     newFlag.setAttribute('flag',destinationLanguage);
     let cardNewTextBlock = document.createElement("span");
@@ -730,15 +771,16 @@ function toggleAgentDiv() {
     cardNew.appendChild(cardNewTextBlock);
     
     card.appendChild(cardOriginal);
+    card.appendChild(borderDiv);
     card.appendChild(cardNew);
-    card.appendChild(cardHeader);
+    //card.appendChild(cardHeader);
 
     
     
     
     
     document.getElementById("conversation").appendChild(card)
-    
+    document.getElementById("conversation").appendChild(cardHeader)
     //card.scrollIntoView();
     setTimeout(() => {
       document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;
