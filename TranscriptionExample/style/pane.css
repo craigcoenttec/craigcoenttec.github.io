@@ -393,7 +393,7 @@ body{
     position: relative;
        /*width: 60%;*/
       height: auto;
-      background-color: #d1d7ef;
+      background-color: #deeaff;
   }
   .talk-bubble-left {
     margin: 40px;
@@ -539,7 +539,7 @@ body{
       right: 38px;
       bottom: -20px;
       border: 12px solid;
-      border-color: #d1d7ef #d1d7ef transparent transparent;
+      border-color: #deeaff #deeaff transparent transparent;
   }
   /*
       left: -8px;
