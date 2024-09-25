@@ -107,14 +107,22 @@ body, html {width: 100%; height: 100%; margin: 0; padding: 0; overflow:hidden;}
 
 }
 .message-customer-small {
-    width:49%;
+    width:fit-content;
     background-color: #767c8d;
+    max-width: 60%;
+    min-width: 20%;
+    padding-right: 10px;
+    padding-left: 10px;
 
 }
 .message-system {
     width:49%;
     background-color: #69c083;
     margin-left: auto;
+    max-width: 60%;
+    min-width: 20%;
+    padding-right: 10px;
+    padding-left: 10px;
 }
 
 .message-system > .gux-card.gux-card-raised {
@@ -124,9 +132,13 @@ body, html {width: 100%; height: 100%; margin: 0; padding: 0; overflow:hidden;}
 }
 
 .message-agent {
-    width:49%;
+    /*width:49%;*/
     margin-left: auto;
     background-color: #e77d1a;
+    max-width: 60%;
+    min-width: 20%;
+    padding-right: 10px;
+    padding-left: 10px;
 }
 .message-agent-hidden {
     width:50%;
@@ -337,25 +349,27 @@ margin:4px;
 .border-divider {
     border:none;
     border-top:1px solid;
-    margin:1em 15%
+    margin:1em 15%;
+    border-color: #9b9d9e;
 }
 .translated-message-text 
 {
-    width:100%;
+    /*width:100%;*/
     color:#1b2c48;
-    text-align:center;
+    /*text-align:center;*/
     /* padding: 1em; */
-    padding-bottom:5px;
+    padding:0px 10px 10px 10px;
+    /*padding-bottom:5px*/;
     line-height: 1.5em;
 }
 
 .original-message-text
 {
-    width:100%;
+    /*width:100%;*/
     color:#767c8d;
-    text-align:center;
+    /*text-align:center;*/
     /* padding: 1em; */
-    padding-top:5px;
+    padding:10px 10px 0px 10px;
     line-height: 1.5em;
 }
 
@@ -377,7 +391,7 @@ body{
     display: inline-block;
     margin-left: auto;
     position: relative;
-      width: 60%;
+       /*width: 60%;*/
       height: auto;
       background-color: #d1d7ef;
   }
@@ -386,7 +400,7 @@ body{
   display: inline-block;
   
   position: relative;
-    width: 60%;
+    /*width: 60%;*/
     height: auto;
     background-color: #faebd7;
 }
@@ -627,4 +641,13 @@ body{
     /* remove webkit p margins */
     -webkit-margin-before: 0em;
     -webkit-margin-after: 0em;
+  }
+
+  :root {
+    --gse-ui-formControl-input-contentText-fontFamily: roboto;
+    --gse-ui-formControl-label-textBold-fontFamily: roboto;
+    --gse-ui-tag-text-fontFamily: roboto;
+    --gse-core-typography-body-lg-fontFamily: Roboto;
+    --gse-ui-menu-option-label-active-text-fontFamily: Roboto;
+    --gse-ui-menu-option-label-default-text-fontFamily: Roboto;
   }
