@@ -716,6 +716,30 @@ function toggleAgentDiv() {
         
 
       }
+      //voice
+      else
+      {
+        cardUser.className = "message-details-customer";
+          cardHeader.className = "message-details-customerdiv";
+          cardUser.innerHTML = "Customer"
+          cardUser.setAttribute("accent","3");
+          cardAvatarImage.setAttribute("slot","image");
+          cardAvatarImage.setAttribute("src","https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg");
+          cardAvatarImage.setAttribute("alt","Customer");
+          cardAvatar.setAttribute("name","Customer");
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
+          cardHeader.appendChild(cardUser);
+          cardHeader.appendChild(cardTimestamp);
+          //card.className = currentCustomerClass;
+          card.className = currentCustomerClass + " talk-bubble-left tri-right round btm-left-in"
+          
+          
+
+          document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage]; 
+          document.getElementById("sendLanguage").innerText = "Auto";
+          lastSourceLang = sourceLanguage;
+      }
       
     }
     
