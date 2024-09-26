@@ -45,7 +45,7 @@
       let currentCustomerClass = "message-customer-small";
       let currentSystemClass = "message-system";
       let currentAgentClass = "message-agent";
-      let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto"}
+      let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","tr":"Turkish"}
       let myImage ="";
       let myName = "";
 
@@ -345,7 +345,9 @@ async function subscribeMessageEvents()
 
     function setSourceLanguage(language)
     {
-
+      currentSourceLang = language;
+      document.getElementById("SourceLanguageDropdown").value = language;
+      console.log("The Source language is now: " + language);
     }
 
 
@@ -405,7 +407,13 @@ function getCurrentConversationDetails()
         //get some agent data we will need
         let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
         gc_agentParticipantId = agentParticipant.id
-        
+
+        let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
+       
+        if (customerAttributes.speaker_language)
+        {
+          setSourceLanguage(customerAttributes.speaker_language);
+        }
         
         
         if ( agentParticipant.messages.length > 0)
@@ -433,10 +441,12 @@ function getCurrentConversationDetails()
           document.getElementById("footer").style.visibility = "hidden";
         }
 
+        
         console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}`,'color: green')
         document.getElementById('span_communication').innerText = gc_agentCommunicationId;
             document.getElementById('span_participant').innerText = gc_agentParticipantId;
             document.getElementById('span_media').innerText = gc_mediaType;
+
         //let customerParticipant = data.participants.slice().reverse().find(p => p.purpose === 'customer');
 
 
@@ -837,8 +847,10 @@ function toggleAgentDiv() {
               <gux-listbox aria-label="Languages" >
                 <gux-option value="auto" >Auto</gux-option>
                 <gux-option value="en">English</gux-option>
-                <gux-option value="es">Spanish</gux-option>
                 <gux-option value="de">German</gux-option>
+                <gux-option value="es">Spanish</gux-option>
+                <gux-option value="tr">Turkish</gux-option>
+                
               
               </gux-listbox>
             </gux-dropdown>
@@ -854,9 +866,9 @@ function toggleAgentDiv() {
               <gux-listbox aria-label="Languages">
                 <gux-option value="auto">Auto</gux-option>
                 <gux-option value="en">English</gux-option>
-                <gux-option value="es">Spanish</gux-option>
                 <gux-option value="de">German</gux-option>
-                
+                <gux-option value="es">Spanish</gux-option>
+                <gux-option value="tr">Turkish</gux-option>
                 <gux-option value="debug">debug</gux-option>
                 
               </gux-listbox>
@@ -1003,6 +1015,7 @@ function toggleAgentDiv() {
           <p><em>ConversationId:&nbsp;<span id="span_conversation"></span> </em></p>
           <p><em>AgentParticipantId:&nbsp;<span id="span_participant"></span> </em></p>
           <p><em>AgentCommunicationId:&nbsp;<span id="span_communication"></span> </em></p>
+          <p><em>PassedInSpeakerLanguage:&nbsp;<span id="span_speakerLanguage"></span> </em></p>
           <p><em>MediaType:&nbsp;<span id="span_media"></span> </em></p>
           <p><em>Last English Utterance:&nbsp;<span id="span_lastUtterance"></span> </em></p>
           <p><em>Last Translated Utterance:&nbsp;<span id="span_lastTranslation"></span> </em></p>
