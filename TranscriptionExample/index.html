@@ -463,7 +463,7 @@ function getCurrentConversationDetails()
     
      function getTranslation(text,messageId="")
     {
-        if (text.length > 0) //Change this back to > 0 when ready to translate again.
+        if (!text || text.length > 0) //Change this back to > 0 when ready to translate again.
         {
 
           
