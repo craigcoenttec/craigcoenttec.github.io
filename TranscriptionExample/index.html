@@ -48,6 +48,7 @@
       let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","tr":"Turkish"}
       let myImage ="";
       let myName = "";
+      let translationURL = 'https://qx4fkw52e1.execute-api.us-west-2.amazonaws.com/Prod/ttec_sc_translate'
 
 
       //Getting and setting the GC details from dynamic URL and session storage
@@ -546,7 +547,8 @@ function getCurrentConversationDetails()
             redirect: "follow"
             };
 
-            fetch("https://axdok64nnc.execute-api.us-west-2.amazonaws.com/default/myTranslateTest", requestOptions)
+            //fetch("https://axdok64nnc.execute-api.us-west-2.amazonaws.com/default/myTranslateTest", requestOptions)
+            fetch(translationURL, requestOptions)
             .then((response) => response.text())
             .then((result) => {
                 console.log(result);
