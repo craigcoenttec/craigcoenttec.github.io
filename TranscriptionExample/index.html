@@ -45,10 +45,13 @@
       let currentCustomerClass = "message-customer-small";
       let currentSystemClass = "message-system";
       let currentAgentClass = "message-agent";
-      let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","tr":"Turkish"}
+      let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","tr":"Turkish","it":"Italian","fr":"French"}
       let myImage ="";
       let myName = "";
-      let translationURL = 'https://qx4fkw52e1.execute-api.us-west-2.amazonaws.com/Prod/ttec_sc_translate'
+      let translationURL = 'https://qx4fkw52e1.execute-api.us-west-2.amazonaws.com/Prod/ttec_sc_translate';
+      let workflowImage = "https://craigcoenttec.github.io/TranscriptionExample/LG_Umbrella.png";
+      //let workflowImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg";
+      let customerImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg";
 
 
       //Getting and setting the GC details from dynamic URL and session storage
@@ -689,7 +692,7 @@ function toggleAgentDiv() {
           cardUser.innerHTML = currentMessage.messageSender;
           cardUser.setAttribute("accent","2");
           cardAvatarImage.setAttribute("slot","image");
-          cardAvatarImage.setAttribute("src","https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg");
+          cardAvatarImage.setAttribute("src",workflowImage);
           cardAvatarImage.setAttribute("alt","Workflow");
           cardAvatar.setAttribute("name","Workflow");
           
@@ -707,7 +710,7 @@ function toggleAgentDiv() {
           cardUser.innerHTML = "Customer"
           cardUser.setAttribute("accent","3");
           cardAvatarImage.setAttribute("slot","image");
-          cardAvatarImage.setAttribute("src","https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg");
+          cardAvatarImage.setAttribute("src",customerImage);
           cardAvatarImage.setAttribute("alt","Customer");
           cardAvatar.setAttribute("name","Customer");
           cardAvatar.appendChild(cardAvatarImage);
@@ -736,7 +739,7 @@ function toggleAgentDiv() {
           cardUser.innerHTML = "Customer"
           cardUser.setAttribute("accent","3");
           cardAvatarImage.setAttribute("slot","image");
-          cardAvatarImage.setAttribute("src","https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg");
+          cardAvatarImage.setAttribute("src",customerImage);
           cardAvatarImage.setAttribute("alt","Customer");
           cardAvatar.setAttribute("name","Customer");
           cardAvatar.appendChild(cardAvatarImage);
@@ -849,7 +852,9 @@ function toggleAgentDiv() {
               <gux-listbox aria-label="Languages" >
                 <gux-option value="auto" >Auto</gux-option>
                 <gux-option value="en">English</gux-option>
+                <gux-option value="fr">French</gux-option>
                 <gux-option value="de">German</gux-option>
+                <gux-option value="it">Italian</gux-option>
                 <gux-option value="es">Spanish</gux-option>
                 <gux-option value="tr">Turkish</gux-option>
                 
@@ -868,7 +873,9 @@ function toggleAgentDiv() {
               <gux-listbox aria-label="Languages">
                 <gux-option value="auto">Auto</gux-option>
                 <gux-option value="en">English</gux-option>
+                <gux-option value="fr">French</gux-option>
                 <gux-option value="de">German</gux-option>
+                <gux-option value="it">Italian</gux-option>
                 <gux-option value="es">Spanish</gux-option>
                 <gux-option value="tr">Turkish</gux-option>
                 <gux-option value="debug">debug</gux-option>
