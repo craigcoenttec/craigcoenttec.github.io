@@ -225,7 +225,7 @@ async function TranslateExistingConversation(customerMessages, agentMessages, wo
                   
             }
                 
-
+              //sort and translate
                 for (const message of workingList.sort((m1,m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0))
                 {
                   //if(!messageIds.includes(message.messageId))
@@ -233,7 +233,7 @@ async function TranslateExistingConversation(customerMessages, agentMessages, wo
                         //messageIds.push(message.messageId);
                         messageDetailList.push(message);
                         console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-                        await timer(225);
+                        await timer(750);
                         await translateMessage(message.messageId);
                       //}
                 }
