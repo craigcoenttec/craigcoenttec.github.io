@@ -53,6 +53,7 @@
       //let workflowImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg";
       let customerImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg";
       let ADDIURLHOST = "http://34.121.76.130:9000"
+      let ADDIWEBSOCKETHOST = "ws://34.121.76.130:9000"
       let currentTransaction ="";
 
 
@@ -260,7 +261,8 @@ async function subscribeADDITranscription()
 
           //Create websocket for events
           try {
-            let socket = new WebSocket(`${ADDIURLHOST}/live/${currentTransaction}/ws`)
+            console.log("starting web socket")
+            let socket = new WebSocket(`${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`);
 
             socket.onmessage = async function (event) {
               let details = JSON.parse(event.data)
@@ -271,8 +273,17 @@ async function subscribeADDITranscription()
               //if Message notification
               
             }
+            socket.onclose = async function (event) {
+              
+              console.log(event);
+              
+              
+              //if Message notification
+              
+            }
            
-          } catch (err) {
+          } 
+          catch (err) {
             console.error('Websocket error: ', err)
           }
             
