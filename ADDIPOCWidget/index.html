@@ -257,15 +257,13 @@ async function subscribeLiveTranscripton(conversationId)
 async function subscribeADDITranscription()
 {
 
- 
-
           //Create websocket for events
           try {
             console.log("starting web socket")
             let socket = new WebSocket(`${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`);
 
             socket.onmessage = async function (event) {
-              let details = JSON.parse(event.data)
+              
               console.log("%cTRANSCRIPTION EVENT", 'color: red');
               console.log(event);
               
@@ -276,10 +274,12 @@ async function subscribeADDITranscription()
             socket.onclose = async function (event) {
               
               console.log(event);
+             
+            }
+            socket.onerror = async function (event) {
               
-              
-              //if Message notification
-              
+              console.log(event);
+             
             }
            
           } 
