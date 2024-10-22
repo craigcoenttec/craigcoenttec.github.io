@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Created as an example by https://github.com/mcphee11 Version 2.1 -->
+
 <html>
   <head>
     <meta name="robots" content="noindex" />
@@ -35,7 +35,7 @@
       let translateToken = "" //url.searchParams.get('translateToken')
       let version = "0.0.0.1"
       let mySendTimer
-      let currentSourceLang = "auto"
+      let currentSourceLang = "auto"on
       let lastSourceLang = "en"
       let currentTargetLang = "es"
       let currentDelay = 4000
@@ -259,7 +259,7 @@ async function subscribeADDITranscription()
 
           //Create websocket for events
           try {
-            console.log("starting web socket")
+            console.log(`starting web socket connection to ${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`)
             let socket = new WebSocket(`${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`);
 
             socket.onmessage = async function (event) {
