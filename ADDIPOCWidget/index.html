@@ -28,7 +28,7 @@
       let gc_conversationId = url.searchParams.get('gc_conversationId')
       let userId
       let gc_agentCommunicationId
-      
+      let currentEvent = 0;
       let gc_agentParticipantId
       let gc_mediaType
       let gc_language = url.searchParams.get('gc_language')
@@ -55,9 +55,27 @@
       let workflowImage = "https://craigcoenttec.github.io/TranscriptionExample/LG_Umbrella.png";
       //let workflowImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg";
       let customerImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg";
-      let ADDIURLHOST = "http://34.121.76.130:9000"
-      let ADDIWEBSOCKETHOST = "ws://34.121.76.130:9000"
+      let ADDIURLHOST = "https://addi.smldev.com"
+      let ADDIWEBSOCKETHOST = "wss://addi.smldev.com"
       let currentTransaction ="";
+      let sampleMessages = [{
+"participant": "caller",
+"timestamp": "2024-10-23T12:46:21.991367361Z",
+"text": "cómo está",
+"translated": "how are you"
+},
+{
+"participant": "caller",
+"timestamp": "2024-10-23T12:46:32.059910671Z",
+"text": "Alright.",
+"translated": "Está bien."
+},
+{
+"participant": "caller",
+"timestamp": "2024-10-23T12:46:33.867261812Z",
+"text": " hola señor call cómo está",
+"translated": "Hello Mr. Call, how are you?"
+}];
 
 
       //Getting and setting the GC details from dynamic URL and session storage
@@ -101,6 +119,7 @@
 
         //subscribeLiveTranscripton(gc_conversationId);
         //subscribeMessageEvents();
+        //subscribeEchoTest()
         getCurrentConversationDetails() ;
         document.getElementById("typedMessage").addEventListener('keyup',function(e) {
           if(e.key === 'Enter') {sendTranslatedMessage()}
@@ -270,6 +289,7 @@ async function subscribeADDITranscription()
               
               console.log("%cTRANSCRIPTION EVENT", 'color: red');
               console.log(event);
+              parseAndDisplayEvent(JSON.parse(event.data))
               
               
               //if Message notification
@@ -291,6 +311,39 @@ async function subscribeADDITranscription()
             console.error('Websocket error: ', err)
           }
             
+}
+
+async function subscribeEchoTest()
+{
+  //Create websocket for events
+  try {
+            console.log(`starting web socket connection to wss://echo.websocket.org/`)
+            let socket = new WebSocket(`wss://echo.websocket.org/`);
+
+            socket.onmessage = async function (event) {
+              
+              console.log("%cTRANSCRIPTION EVENT", 'color: red');
+              console.log(event);
+              addStatementCard("echoTest",JSON.stringify(event),"en","en","123")
+              
+              //if Message notification
+              
+            }
+            socket.onclose = async function (event) {
+              
+              console.log(event);
+             
+            }
+            socket.onerror = async function (event) {
+              
+              console.log(event);
+             
+            }
+           
+          } 
+          catch (err) {
+            console.error('Websocket error: ', err)
+          }
 }
 
 
@@ -888,6 +941,35 @@ function getCurrentConversationDetails()
 }
 
 
+function runTestEvents()
+{
+  for(const event in sampleMessages)
+{
+  parseAndDisplayEvent(sampleMessages[event])
+}
+}
+
+
+async function parseAndDisplayEvent(jsonEvent) {
+ 
+  let ourEvent = toString(currentEvent);
+  currentEvent++;
+  let sourceLang = document.getElementById("SourceLanguageDropdown").value
+  let targetLang = document.getElementById("TargetLanguageDropdown").value
+  let ourParticipant = "Customer";
+  let ourClass = currentCustomerClass;
+  if (jsonEvent.participant != "caller")
+    {
+      ourParticipant = "Agent"
+      ourClass = currentAgentClass;
+      targetLang = document.getElementById("SourceLanguageDropdown").value
+      sourceLang = document.getElementById("TargetLanguageDropdown").value
+    }
+  
+  messageDetailList.push({"messageId":ourEvent,"messageTime":jsonEvent.timestamp,"messageSender":ourParticipant})
+  addStatementCard(jsonEvent.text,jsonEvent.translated,sourceLang,targetLang,ourEvent,currentAgentClass);
+}
+
 //-----------------
 //ADDI APIs
 //Get all active Transactions
@@ -902,7 +984,7 @@ async function ADDI_getActiveTransactions(setTopToCurrent=false) {
     .then((response) => response.text())
     .then((result) => {
       console.log(result);
-      
+      addStatementCard(`Active Transactions`,result,"en","123");
       
     })
     .catch((error) => console.error(error));
@@ -1065,6 +1147,7 @@ async function updateLanguages()
           <button type="button" onclick="ADDI_getActiveTransaction()">Get Specific Transactions</button>
           <button type="button" onclick="ADDI_getActiveTransactionLanguage()">Get Transaction Language</button>
           <button type="button" onclick="updateLanguages()">Update Transactions</button>
+          <button type="button" onclick="runTestEvents()">Run test events</button>
         </div>
         
         <!--gux-toggle id = "agentToggle" checked-label="Translate Agent On" unchecked-label="Translate Agent Off" onclick="toggleAgentDiv()"></gux-toggle-->
