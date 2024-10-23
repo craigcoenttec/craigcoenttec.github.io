@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!-- Created as an example by https://github.com/mcphee11 Version 2.1 -->
+<html>
+  <head>
+    <meta name="robots" content="noindex" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title></title>
+    <meta name="Template" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Genesys CSS https://spark.genesys.com/  In PROD set a version -->
+    <link href="https://unpkg.com/genesys-spark-components@latest/dist/genesys-webcomponents/genesys-webcomponents.css" rel="stylesheet" />
+    <script type="module" src="https://unpkg.com/genesys-spark-components@latest/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+    <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+  </head>
+    <body onload="start()">
+    <script>
+      'use strict' //Enables strict mode is JavaScript
+      let url = new URL(document.location.href)
+      let gc_region = url.searchParams.get('gc_region')
+      let gc_clientId = url.searchParams.get('gc_clientId')
+      let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+      let gc_conversationId = url.searchParams.get('gc_conversationId')
+      let userId
+
+      //Getting and setting the GC details from dynamic URL and session storage
+      gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
+      gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
+      gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
+      gc_conversationId ? sessionStorage.setItem('gc_conversationId', gc_conversationId) : gc_conversationId = sessionStorage.getItem('gc_conversationId')
+
+      let platformClient = require('platformClient')
+      const client = platformClient.ApiClient.instance
+      const uapi = new platformClient.UsersApi()
+      const napi = new platformClient.NotificationsApi()
+      const capi = new platformClient.ConversationsApi()
+
+      
+
+      async function createNewTab()
+      {
+
+        
+        
+        const myHeaders = new Headers();
+        myHeaders.append("Authorization", "Bearer 7StSZpeHXafPqKd8kBuZyxi36YpOHsHRMFRZHjKZ--fgY3KcucQ8ce3IRGLt6gJh--1u0VSsMuvQxRpIeqyIiQ");
+        myHeaders.append("Content-Type", "application/json");
+
+        const raw = JSON.stringify({
+        "tabOrder": 0,
+        "period": "NONE",
+        "interval": "2024-10-22T05:00:00.000Z/2024-10-23T05:00:00.000Z",
+        "showEmptyRows": true,
+        "sortColumnPickerAlphabetically": true,
+        "showColumnChart": true,
+        "expandSummaryRow": true,
+        "sortOrder": "ascending",
+        "viewType": "LANDING_PAGE",
+        "name": "New Tab"
+        });
+
+        const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+        };
+
+        fetch("https://api.mypurecloud.com/api/v2/analytics/reporting/settings/tabconfigurations", requestOptions)
+        .then((response) => response.text())
+        .then((result) => console.log(result))
+        .catch((error) => console.error(error));
+      }
+
+
+
+      async function start() {
+        try {
+          client.setEnvironment(gc_region)
+          client.setPersistSettings(true, '_mm_')
+
+          console.log('%cLogging in to Genesys Cloud', 'color: green')
+          await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
+
+          //GET Current UserId
+          let user = await uapi.getUsersMe({})
+          console.log(user)
+          userId = user.id
+
+          console.log(client)
+        } catch (err) {
+          console.log('Error: ', err)
+        }
+      } //End of start() function
+    </script>
+
+    Temproary body
+
+  </body>
+</html>
