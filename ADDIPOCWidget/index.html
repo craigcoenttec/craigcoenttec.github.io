@@ -47,7 +47,7 @@
       let currentAgentClass = "message-agent";
       let activeLanguages = ["auto","en","fi","fr","de","ko","zh","pt","es"]
       let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","fr":"French","pt":"Portuguese","ko":"Korean","fi":"Finnish","zh":"Mandarin","zhc":"Cantonese"}
-      let dialectlanguageMap = {"en":"en-US","de":"de-DE","es":"es-ES","auto":"Auto","fr":"fr-FR","pt":"pt-BR","ko":"ko-KR","fi":"fi-FI","zh":"zh-CN","zhc":"zh"}
+      let dialectlanguageMap = {"en":"english","de":"german","es":"spanish","auto":"auto","fr":"french","pt":"portuguese","ko":"korean","fi":"finnish","zh":"mandarin","zhc":"cantonese"}
       let spokenLanguageMap = {"en-US":"English","de-DE":"German","es-ES":"Spanish","auto":"Auto","fr-FR":"French","pt-BR":"Portuguese","ko-KR":"Korean","fi-FI":"Finnish","zh-CN":"Mandarin","zh":"Cantonese"}
       let myImage ="";
       let myName = "";
@@ -58,6 +58,8 @@
       let ADDIURLHOST = "https://addi.smldev.com"
       let ADDIWEBSOCKETHOST = "wss://addi.smldev.com"
       let currentTransaction ="";
+      let transcriptionWebSocket = null;
+      let pingInterval = null;
       let sampleMessages = [{
 "participant": "caller",
 "timestamp": "2024-10-23T12:46:21.991367361Z",
@@ -283,27 +285,31 @@ async function subscribeADDITranscription()
           //Create websocket for events
           try {
             console.log(`starting web socket connection to ${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`)
-            let socket = new WebSocket(`${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`);
+            transcriptionWebSocket = new WebSocket(`${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`);
 
-            socket.onmessage = async function (event) {
+            transcriptionWebSocket.onmessage = async function (event) {
               
               console.log("%cTRANSCRIPTION EVENT", 'color: red');
-              console.log(event);
+              console.log(JSON.stringify(event));
               parseAndDisplayEvent(JSON.parse(event.data))
               
               
               //if Message notification
               
             }
-            socket.onclose = async function (event) {
+            transcriptionWebSocket.onclose = async function (event) {
+              
+              console.log(event);
+              clearInterval(pingInterval);
+            }
+            transcriptionWebSocket.onerror = async function (event) {
               
               console.log(event);
              
             }
-            socket.onerror = async function (event) {
-              
-              console.log(event);
-             
+            transcriptionWebSocket.onopen = async function (event) 
+            {
+               pingInterval = setInterval(sendPing(transcriptionWebSocket), 5000);
             }
            
           } 
@@ -949,6 +955,16 @@ function runTestEvents()
 }
 }
 
+function sendPing(socket) {
+  if (socket.readyState === WebSocket.OPEN) {
+    console.log('sending ping...')
+    socket.send('Ping');
+  }
+  else
+  {
+    console.log('not sending ping, socket is closed.')
+  }
+}
 
 async function parseAndDisplayEvent(jsonEvent) {
  
@@ -1051,14 +1067,16 @@ fetch(`${ADDIURLHOST}/addi/v1/language`, requestOptions)
 
 }
 
-async function ADDI_sendTTSMessage(transactionId,party,text) {
+async function ADDI_sendTTSMessage(transactionId,party,text, translate = true, cancel_playing = false) {
   const myHeaders = new Headers();
 myHeaders.append("Content-Type", "application/json");
 
 const raw = JSON.stringify({
   "transaction_id": transactionId,
   "party": party,
-  "text": text
+  "text": text,
+  "translate": translate,
+  "cancel_playing": cancel_playing
 });
 
 const requestOptions = {

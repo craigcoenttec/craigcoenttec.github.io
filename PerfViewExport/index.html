@@ -37,17 +37,100 @@
       const capi = new platformClient.ConversationsApi()
 
       
+      const reportExampleBody = 
+      {
+        
+      "name": "API Agent Performance",
+    "active": true,
+    "showColumnChart": true,
+    "tabOrder": 1,
+    "viewType": "AGENT_PERFORMANCE_SUMMARY_VIEW",
+    "sortOrder": "ascending",
+    "showSecondaryStatus": false,
+    "sortColumnPickerAlphabetically": true,
+    "expandSummaryRow": true,
+    "showEmptyRows": true,
+    "interval": "2024-10-22T05:00:00.000Z/2024-10-23T05:00:00.000Z",
+    "hasUnsavedChanges": false,
+    "filter": {
+        "mediaTypes": [
+            "voice"
+        ]
+    },
+    "dataColumns": [
+        "agentPresence",
+        "agent",
+        "timeInStatus",
+        "status",
+        "answerStandalone",
+        "handle",
+        "avgHandle",
+        "avgTalk",
+        "avgHold",
+        "avgAcw",
+        "avgContacting",
+        "hold",
+        "transfer"
+    ],
+    "tableConfigurations": [
+        {
+            "name": "views.SHARED_AGENT_FILTERS",
+            "filter": {}
+        },
+        {
+            "name": "MEDIA_TYPE_FILTER",
+            "filter": {
+                "mediaTypes": [
+                    "voice"
+                ]
+            }
+        },
+        {
+            "name": "views.AGENT_PERFORMANCE",
+            "filter": {
+                "externalContactIds": [],
+                "canonicalContactIds": []
+            },
+            "dataColumns": [
+                "agentPresence",
+                "agent",
+                "timeInStatus",
+                "status",
+                "answerStandalone",
+                "handle",
+                "avgHandle",
+                "avgTalk",
+                "avgHold",
+                "avgAcw",
+                "avgContacting",
+                "hold",
+                "transfer"
+            ]
+        },
+        {
+            "name": "views.AGENT_PERFORMANCE_SUMMARY",
+            "filter": {},
+            "showColumnChart": true,
+            "sortColumnPickerAlphabetically": true,
+            "sortOrder": "ascending"
+        }
+    ],
+    "columnPickerSortOrder": "ascending",
+    "showColumnPickerCategories": true
+}
+
+
 
       async function createNewTab()
       {
 
-        
+        console.log("making request new tab")
         
         const myHeaders = new Headers();
-        myHeaders.append("Authorization", "Bearer 7StSZpeHXafPqKd8kBuZyxi36YpOHsHRMFRZHjKZ--fgY3KcucQ8ce3IRGLt6gJh--1u0VSsMuvQxRpIeqyIiQ");
+        myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
         myHeaders.append("Content-Type", "application/json");
 
-        const raw = JSON.stringify({
+        let raw = JSON.stringify({
         "tabOrder": 0,
         "period": "NONE",
         "interval": "2024-10-22T05:00:00.000Z/2024-10-23T05:00:00.000Z",
@@ -57,8 +140,11 @@
         "expandSummaryRow": true,
         "sortOrder": "ascending",
         "viewType": "LANDING_PAGE",
-        "name": "New Tab"
+        "name": "API Created Tab"
         });
+
+
+        raw = JSON.stringify(reportExampleBody);
 
         const requestOptions = {
         method: "POST",
@@ -67,7 +153,7 @@
         redirect: "follow"
         };
 
-        fetch("https://api.mypurecloud.com/api/v2/analytics/reporting/settings/tabconfigurations", requestOptions)
+        fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/tabconfigurations", requestOptions)
         .then((response) => response.text())
         .then((result) => console.log(result))
         .catch((error) => console.error(error));
@@ -88,14 +174,349 @@
           console.log(user)
           userId = user.id
 
-          console.log(client)
+          const inputElement = document.getElementById("avatar4");
+          inputElement.addEventListener("change", handleFiles, false);
+
+
+
         } catch (err) {
           console.log('Error: ', err)
         }
       } //End of start() function
+
+      
+      
+      async function saveUploadedReport(name, report)
+      {
+
+        let ourUpload = JSON.parse(report)
+        delete ourUpload['id'];
+        delete ourUpload['selfUri']
+        ourUpload.name = name;
+        console.log(JSON.stringify(ourUpload))
+
+
+      const myHeaders = new Headers();
+      myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+      myHeaders.append("Content-Type", "application/json");
+
+      const raw = JSON.stringify(ourUpload)
+
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+      };
+
+      fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/viewconfigurations", requestOptions)
+        .then((response) => response.text())
+        .then((result) => console.log(result))
+        .catch((error) => console.error(error));
+
+    }
+
+    
+
+      
+      async function saveReport()
+      {
+      const myHeaders = new Headers();
+      myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+      myHeaders.append("Content-Type", "application/json");
+
+      const raw = JSON.stringify({
+        //"id": "49555e0d-8ab6-4014-b23f-69121ae3eca2",
+        "name": "test save",
+        "viewType": "CAMPAIGN_PERFORMANCE_SUMMARY_VIEW",
+        "period": "NONE",
+        "filter": {
+          "mediaTypes": [
+            "voice"
+          ]
+        },
+        "dataColumns": [
+          "campaignName",
+          "campaignDials",
+          "campaignContacts",
+          "campaignDialAbandonRate",
+          "campaignComplianceAbandonRate",
+          "campaignConnectRate"
+        ],
+        "sortOrder": "ascending",
+        "tableConfigurations": [
+          {
+            "name": "views.SHARED_CAMPAIGN_FILTERS",
+            "filter": {},
+            "showEmptyRows": false,
+            "showColumnChart": false,
+            "expandSummaryRow": false,
+            "sortColumnPickerAlphabetically": false
+          },
+          {
+            "name": "MEDIA_TYPE_FILTER",
+            "filter": {
+              "mediaTypes": [
+                "voice"
+              ]
+            },
+            "showEmptyRows": false,
+            "showColumnChart": false,
+            "expandSummaryRow": false,
+            "sortColumnPickerAlphabetically": false
+          },
+          {
+            "name": "views.CAMPAIGN_PERFORMANCE",
+            "filter": {},
+            "showEmptyRows": false,
+            "showColumnChart": false,
+            "expandSummaryRow": false,
+            "sortColumnPickerAlphabetically": false
+          },
+          {
+            "name": "views.CAMPAIGN_PERFORMANCE_SUMMARY",
+            "filter": {},
+            "dataColumns": [
+              "campaignName",
+              "campaignDials",
+              "campaignContacts",
+              "campaignDialAbandonRate",
+              "campaignComplianceAbandonRate",
+              "campaignConnectRate"
+            ],
+            "sortOrder": "ascending",
+            "showEmptyRows": false,
+            "showColumnChart": true,
+            "expandSummaryRow": false,
+            "sortColumnPickerAlphabetically": true
+          }
+        ],
+        "showSecondaryStatus": false,
+        "sortColumnPickerAlphabetically": true,
+        "expandSummaryRow": true,
+        "showColumnChart": true,
+        "showEmptyRows": true,
+        "columnPickerSortOrder": "ascending",
+        "showColumnPickerCategories": true
+      });
+
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+      };
+
+      fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/viewconfigurations", requestOptions)
+        .then((response) => response.text())
+        .then((result) => console.log(result))
+        .catch((error) => console.error(error));
+
+    }
+
+    function handleFiles() {
+      console.log("handling files");
+      const fileList = this.files; /* now you can work with the file list */
+      console.log(this.files);
+      const reader = new FileReader();
+      console.log("reading file");
+      let content = reader.readAsText(fileList[0],"UTF8")
+      reader.onload = function(evt) {
+        console.log(evt.target.result)
+        let name = JSON.parse(evt.target.result).name;
+
+        saveUploadedReport(`UPLOADED EXAMPLE - ${name}` ,evt.target.result)
+
+      }
+    }
+
+    function getMySavedViews() 
+    {
+      const myHeaders = new Headers();
+      myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+
+      const raw = "";
+
+      const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+        //body: raw,
+        redirect: "follow"
+      };
+
+      fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/viewconfigurations", requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          console.log(result)
+          createSavedViewTable(JSON.parse(result));
+        
+        })
+        .catch((error) => console.error(error));
+    }
+
+    function download(filename, text) {
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
+
+    function createSavedViewTable(myViewsJSON)
+    
+     {
+      
+        console.log(JSON.stringify(myViewsJSON,null,2));
+        var table,row,guxTable;
+        var update = false;
+        document.getElementById('viewsTable').innerHTML = "";
+
+        
+        
+        table = document.createElement("table");
+        table.setAttribute('id','viewsTable');
+        guxTable = document.createElement("gux-table");
+        guxTable.setAttribute('resizable-columns','');
+        guxTable.setAttribute('compact','');
+        document.getElementById("viewsTable").appendChild(guxTable).appendChild(table);
+        table.setAttribute('slot','data');
+        
+        //Create a table in the view.s
+        
+        
+            for(const contactObject of myViewsJSON.entities)
+            {
+              console.log()
+              row = table.insertRow();
+              row.setAttribute('id',contactObject.id)
+              row.insertCell().innerHTML = contactObject.name;
+              
+              row.insertCell().innerHTML = contactObject.viewType;
+              
+             
+
+              //dial button
+              let buttonCell = row.insertCell();
+
+              
+
+              //create inline button
+              let dialButton = document.createElement('gux-button');
+              dialButton.innerText = 'Export';
+              //dialbutton.setAttribute("data-json",JSON.stringify(contactObject))
+              dialButton.setAttribute('onclick', `download('${contactObject.name}','${JSON.stringify(contactObject)}')`);
+             
+              dialButton.setAttribute('accent', 'inline');
+              buttonCell.appendChild(dialButton);
+
+              // //Transfer Button
+              // let button2Cell = row.insertCell();
+              // let transferButton = document.createElement('gux-button');
+              // transferButton.innerText = 'Transfer';
+              // transferButton.setAttribute('onclick', 'transferContact(this)');
+              // transferButton.setAttribute('name','transferButton');
+              // transferButton.setAttribute('disabled','false');
+             
+              // transferButton.setAttribute('accent', 'inline');
+              // button2Cell.appendChild(transferButton);
+
+              
+
+              //    //Add our Context Menu
+              // let lastcell = row.insertCell();
+              // let lastCellDiv = lastcell.appendChild(document.createElement('div'));
+              
+             
+              // let contextMenu = document.createElement('gux-context-menu');
+              // contextMenu.setAttribute('id','context-' + contactObject.recordID);
+             
+              // //edit button
+              // let contextEditItem = document.createElement('gux-list-item');
+              // contextEditItem.setAttribute('onclick',"editContact(this)");
+              // let text = document.createTextNode("Edit");
+              
+              // contextEditItem.appendChild(text);
+              // //contextEditItem.setAttribute('disabled','false');
+            
+              // contextMenu.appendChild(contextEditItem);
+              // //delete button
+              // let contextDeleteItem = document.createElement('gux-list-item');
+              // contextDeleteItem.setAttribute('onclick',"deleteContact(this)");
+              // text = document.createTextNode("Delete");
+              // contextDeleteItem.appendChild(text);
+              
+              // contextMenu.appendChild(contextDeleteItem);
+              // contextMenu.setAttribute('compact','');
+              // lastcell.setAttribute('data-cell-action','');
+              // lastcell.appendChild(lastCellDiv.appendChild(contextMenu));
+            
+            }
+
+            
+            
+        
+            
+        
+
+        //Add our table header
+        if(update == false)
+        {
+        var headerRow = table.createTHead().insertRow();
+
+        let th = document.createElement("th");
+        let text = document.createTextNode("Name");
+        th.setAttribute('data-column-name','name');
+       
+        th.appendChild(text);
+      
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("Type");
+        th.setAttribute('data-column-name','type');
+        th.appendChild(text);
+        //th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+         text = document.createTextNode("Action");
+         th.setAttribute('data-column-action','Action');
+         th.appendChild(text);
+         headerRow.appendChild(th);
+       
+        }
+        
+
+        
+        //console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
+
+      }
     </script>
 
     Temproary body
+    <button id="newreport" onclick="saveReport()">click to create new report</button>
+    <button id="getreports" onclick="getMySavedViews()">click to check my saved views</button>
+    <fieldset>
+      <legend>Import View</legend>
+      <gux-form-field-file>
+        <label slot="label">Upload an export</label>
+        <input
+          type="file"
+          id="avatar4"
+          name="avatar4"
+          accept="plain/txt, data/JSON"
+          slot="input"
+          required
+        />
+      </gux-form-field-file>
+    </fieldset>
 
+    <div id="viewsTable"></div>
   </body>
 </html>
