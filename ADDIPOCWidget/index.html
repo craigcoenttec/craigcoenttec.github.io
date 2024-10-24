@@ -955,10 +955,10 @@ function runTestEvents()
 }
 }
 
-function sendPing(socket) {
-  if (socket.readyState === WebSocket.OPEN) {
-    console.log('sending ping...')
-    socket.send('Ping');
+function sendPing() {
+  if (transcriptionWebSocket.readyState === WebSocket.OPEN) {
+    console.log('sending pong...')
+    transcriptionWebSocket.send("pong");
   }
   else
   {
@@ -1166,6 +1166,7 @@ async function updateLanguages()
           <button type="button" onclick="ADDI_getActiveTransactionLanguage()">Get Transaction Language</button>
           <button type="button" onclick="updateLanguages()">Update Transactions</button>
           <button type="button" onclick="runTestEvents()">Run test events</button>
+          <button type="button" onclick="sendPing()">ping</button>
         </div>
         
         <!--gux-toggle id = "agentToggle" checked-label="Translate Agent On" unchecked-label="Translate Agent Off" onclick="toggleAgentDiv()"></gux-toggle-->
