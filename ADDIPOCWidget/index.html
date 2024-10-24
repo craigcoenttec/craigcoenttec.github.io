@@ -301,6 +301,7 @@ async function subscribeADDITranscription()
               
               console.log(event);
               clearInterval(pingInterval);
+              subscribeADDITranscription();
             }
             transcriptionWebSocket.onerror = async function (event) {
               
@@ -309,7 +310,7 @@ async function subscribeADDITranscription()
             }
             transcriptionWebSocket.onopen = async function (event) 
             {
-               pingInterval = setInterval(sendPing(transcriptionWebSocket), 5000);
+               //pingInterval = setInterval(sendPing(), 5000);
             }
            
           } 
@@ -968,7 +969,8 @@ function sendPing() {
 
 async function parseAndDisplayEvent(jsonEvent) {
  
-  let ourEvent = toString(currentEvent);
+  let ourEventid = currentEvent.toString();
+  console.log(ourEventid)
   currentEvent++;
   let sourceLang = document.getElementById("SourceLanguageDropdown").value
   let targetLang = document.getElementById("TargetLanguageDropdown").value
@@ -981,9 +983,10 @@ async function parseAndDisplayEvent(jsonEvent) {
       targetLang = document.getElementById("SourceLanguageDropdown").value
       sourceLang = document.getElementById("TargetLanguageDropdown").value
     }
+    
   
-  messageDetailList.push({"messageId":ourEvent,"messageTime":jsonEvent.timestamp,"messageSender":ourParticipant})
-  addStatementCard(jsonEvent.text,jsonEvent.translated,sourceLang,targetLang,ourEvent,currentAgentClass);
+  messageDetailList.push({"messageId":ourEventid,"messageTime":jsonEvent.timestamp,"messageSender":ourParticipant})
+  addStatementCard(jsonEvent.text,jsonEvent.translated,sourceLang,targetLang,ourEventid,ourClass);
 }
 
 //-----------------
