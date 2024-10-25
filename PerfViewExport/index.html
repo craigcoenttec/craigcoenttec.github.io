@@ -33,9 +33,9 @@
       let platformClient = require('platformClient')
       const client = platformClient.ApiClient.instance
       const uapi = new platformClient.UsersApi()
-      const napi = new platformClient.NotificationsApi()
-      const capi = new platformClient.ConversationsApi()
-
+      
+      var currentUploadedReportData;
+      
       
       const reportExampleBody = 
       {
@@ -174,8 +174,11 @@
           console.log(user)
           userId = user.id
 
-          const inputElement = document.getElementById("avatar4");
+          const inputElement = document.getElementById("reportFile");
           inputElement.addEventListener("change", handleFiles, false);
+
+          //initial load of views
+          getMySavedViews();
 
 
 
@@ -184,7 +187,16 @@
         }
       } //End of start() function
 
-      
+      function importButtonAction()
+      {
+        
+        let name = document.getElementById("nameField").value
+
+        
+        saveUploadedReport(name, currentUploadedReportData)
+        currentUploadedReportData = null;
+        enableDisableUpload(false);
+      }
       
       async function saveUploadedReport(name, report)
       {
@@ -209,7 +221,7 @@
         redirect: "follow"
       };
 
-      fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/viewconfigurations", requestOptions)
+      fetch(`https://api.${gc_region}/api/v2/analytics/reporting/settings/viewconfigurations`, requestOptions)
         .then((response) => response.text())
         .then((result) => console.log(result))
         .catch((error) => console.error(error));
@@ -307,7 +319,7 @@
         redirect: "follow"
       };
 
-      fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/viewconfigurations", requestOptions)
+      fetch(`https://api.${gc_region}/api/v2/analytics/reporting/settings/viewconfigurations`, requestOptions)
         .then((response) => response.text())
         .then((result) => console.log(result))
         .catch((error) => console.error(error));
@@ -316,18 +328,54 @@
 
     function handleFiles() {
       console.log("handling files");
+      
+      
       const fileList = this.files; /* now you can work with the file list */
       console.log(this.files);
       const reader = new FileReader();
       console.log("reading file");
       let content = reader.readAsText(fileList[0],"UTF8")
       reader.onload = function(evt) {
+        
         console.log(evt.target.result)
-        let name = JSON.parse(evt.target.result).name;
+        try{
+          let name = JSON.parse(evt.target.result).name;
+          let viewType = JSON.parse(evt.target.result).viewType
+          
+          currentUploadedReportData = evt.target.result;
+          document.getElementById("nameField").value = name;
+          document.getElementById("reportTypeField").value = viewType;
+          enableDisableUpload(true)
+        }
+        catch{
+          console.log("Invalid File")
+          enableDisableUpload(false)
+        }
+        
+        
+          
+       
 
-        saveUploadedReport(`UPLOADED EXAMPLE - ${name}` ,evt.target.result)
+          //saveUploadedReport(`UPLOADED EXAMPLE - ${name}` ,evt.target.result)
 
-      }
+        }
+    }
+
+    function enableDisableUpload(enabled)
+    {
+      if (enabled)
+    {
+      document.getElementById("nameField").removeAttribute("disabled")
+      document.getElementById("importButton").removeAttribute("disabled")
+    }
+    else
+    {
+      document.getElementById("nameField").setAttribute("disabled","")
+      document.getElementById("nameField").value = "";
+      document.getElementById("reportTypeField").value = "";
+      document.getElementById("importButton").setAttribute("disabled","")
+      
+    }
     }
 
     function getMySavedViews() 
@@ -344,7 +392,7 @@
         redirect: "follow"
       };
 
-      fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/viewconfigurations", requestOptions)
+      fetch(`https://api.${gc_region}/api/v2/analytics/reporting/settings/viewconfigurations`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result)
@@ -415,46 +463,7 @@
               dialButton.setAttribute('accent', 'inline');
               buttonCell.appendChild(dialButton);
 
-              // //Transfer Button
-              // let button2Cell = row.insertCell();
-              // let transferButton = document.createElement('gux-button');
-              // transferButton.innerText = 'Transfer';
-              // transferButton.setAttribute('onclick', 'transferContact(this)');
-              // transferButton.setAttribute('name','transferButton');
-              // transferButton.setAttribute('disabled','false');
              
-              // transferButton.setAttribute('accent', 'inline');
-              // button2Cell.appendChild(transferButton);
-
-              
-
-              //    //Add our Context Menu
-              // let lastcell = row.insertCell();
-              // let lastCellDiv = lastcell.appendChild(document.createElement('div'));
-              
-             
-              // let contextMenu = document.createElement('gux-context-menu');
-              // contextMenu.setAttribute('id','context-' + contactObject.recordID);
-             
-              // //edit button
-              // let contextEditItem = document.createElement('gux-list-item');
-              // contextEditItem.setAttribute('onclick',"editContact(this)");
-              // let text = document.createTextNode("Edit");
-              
-              // contextEditItem.appendChild(text);
-              // //contextEditItem.setAttribute('disabled','false');
-            
-              // contextMenu.appendChild(contextEditItem);
-              // //delete button
-              // let contextDeleteItem = document.createElement('gux-list-item');
-              // contextDeleteItem.setAttribute('onclick',"deleteContact(this)");
-              // text = document.createTextNode("Delete");
-              // contextDeleteItem.appendChild(text);
-              
-              // contextMenu.appendChild(contextDeleteItem);
-              // contextMenu.setAttribute('compact','');
-              // lastcell.setAttribute('data-cell-action','');
-              // lastcell.appendChild(lastCellDiv.appendChild(contextMenu));
             
             }
 
@@ -499,24 +508,75 @@
       }
     </script>
 
-    Temproary body
-    <button id="newreport" onclick="saveReport()">click to create new report</button>
-    <button id="getreports" onclick="getMySavedViews()">click to check my saved views</button>
+    
+    <!-- <button id="newreport" onclick="saveReport()">click to create new report</button>
+    <button id="getreports" onclick="getMySavedViews()">click to check my saved views</button> -->
     <fieldset>
-      <legend>Import View</legend>
-      <gux-form-field-file>
+      <legend>Import Performance View</legend>
+      <gux-form-field-file id="fileUploadField">
         <label slot="label">Upload an export</label>
         <input
           type="file"
-          id="avatar4"
-          name="avatar4"
+          id="reportFile"
+          name="reportFile"
           accept="plain/txt, data/JSON"
           slot="input"
           required
+          
         />
+
       </gux-form-field-file>
+      
+ <br>
+      <gux-form-field-text-like label-position="above">
+        <input slot="input" type="text" name="t-1" id="nameField" disabled value="" />
+        <label slot="label">Name</label>
+      </gux-form-field-text-like>
+<br>
+      <gux-form-field-text-like label-position="above">
+        <input slot="input" type="text" name="t-1" id="reportTypeField" disabled value="" />
+        <label slot="label">Report Type</label>
+      </gux-form-field-text-like>
+
+<br>
+      <gux-button accent="primary" id="importButton" onclick="importButtonAction()" disabled>Import</gux-button>
     </fieldset>
 
+<hr>
+    <!--Export Table Area-->
+
+    <fieldset>
+      <legend>My Saved Performance Views</legend>
+
+    <gux-table-toolbar>
+      <div slot="search-and-filter">
+        <gux-form-field-search label-position="screenreader">
+          <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search" onkeyup="filterTable()" />
+          <label slot="label">Toolbar Search</label>
+        </gux-form-field-search>
+       
+      </div>
+    
+      <div slot="contextual-actions">
+      </div>
+    
+      <div slot="permanent-actions">
+        <!--gux-table-toolbar-action action="refresh" onclick="getMySavedViews()"></gux-table-toolbar-action-->
+      </div>
+    
+      <!--div slot="menu-actions">
+       
+        <gux-table-toolbar-action action="refresh" onclick="getMySavedViews()"></gux-table-toolbar-action>
+      </div-->
+    
+      <gux-table-toolbar-custom-action slot="primary-action" accent="primary" id="enableButton">
+        <span slot="text" onclick="getMySavedViews()">Refresh</span>
+        <gux-icon slot="icon" icon-name="refresh" decorative onclick="getMySavedViews()"></gux-icon>
+      </gux-table-toolbar-custom-action>
+    </gux-table-toolbar>
+
     <div id="viewsTable"></div>
+
+  </fieldset>
   </body>
 </html>
