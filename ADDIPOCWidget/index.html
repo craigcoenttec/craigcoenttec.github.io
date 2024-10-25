@@ -649,7 +649,41 @@ function toggleAgentDiv()
 
 }
 
+//Updates language selections
+async function updateLanguageSelections(TransactionObject) 
+{
+  console.log("udpating interface")
 
+  let agentLanguage = TransactionObject.agent
+  let callerLanguage = TransactionObject.caller
+
+  console.log(agentLanguage + " " + callerLanguage)
+  document.getElementById("SourceLanguageDropdown").value = callerLanguage.split("-")[0]
+  document.getElementById("TargetLanguageDropdown").value = agentLanguage.split("-")[0]
+}
+
+//parse and display the live transcription events
+async function parseAndDisplayEvent(jsonEvent) {
+ 
+ let ourEventid = currentEvent.toString();
+ console.log(ourEventid)
+ currentEvent++;
+ let sourceLang = document.getElementById("SourceLanguageDropdown").value
+ let targetLang = document.getElementById("TargetLanguageDropdown").value
+ let ourParticipant = "Customer";
+ let ourClass = currentCustomerClass;
+ if (jsonEvent.participant != "caller")
+   {
+     ourParticipant = "Agent"
+     ourClass = currentAgentClass;
+     targetLang = document.getElementById("SourceLanguageDropdown").value
+     sourceLang = document.getElementById("TargetLanguageDropdown").value
+   }
+   
+ 
+ messageDetailList.push({"messageId":ourEventid,"messageTime":jsonEvent.timestamp,"messageSender":ourParticipant})
+ addStatementCard(jsonEvent.text,jsonEvent.translated,sourceLang,targetLang,ourEventid,ourClass);
+}
 
 //---------------- 
 //Translation Code
@@ -900,6 +934,7 @@ function getCurrentConversationDetails()
           currentTransaction = customerAttributes.ADDI_TransactionId;
           document.getElementById("span_transactionId").innerText=currentTransaction;
           subscribeADDITranscription();
+          ADDI_getActiveTransactionLanguage();
         }
         
         
@@ -949,7 +984,8 @@ function getCurrentConversationDetails()
       });
 }
 
-
+//---------------
+//Test functions
 function runTestEvents()
 {
   for(const event in sampleMessages)
@@ -969,27 +1005,7 @@ function sendPing() {
   }
 }
 
-async function parseAndDisplayEvent(jsonEvent) {
- 
-  let ourEventid = currentEvent.toString();
-  console.log(ourEventid)
-  currentEvent++;
-  let sourceLang = document.getElementById("SourceLanguageDropdown").value
-  let targetLang = document.getElementById("TargetLanguageDropdown").value
-  let ourParticipant = "Customer";
-  let ourClass = currentCustomerClass;
-  if (jsonEvent.participant != "caller")
-    {
-      ourParticipant = "Agent"
-      ourClass = currentAgentClass;
-      targetLang = document.getElementById("SourceLanguageDropdown").value
-      sourceLang = document.getElementById("TargetLanguageDropdown").value
-    }
-    
-  
-  messageDetailList.push({"messageId":ourEventid,"messageTime":jsonEvent.timestamp,"messageSender":ourParticipant})
-  addStatementCard(jsonEvent.text,jsonEvent.translated,sourceLang,targetLang,ourEventid,ourClass);
-}
+
 
 //-----------------
 //ADDI APIs
@@ -1024,6 +1040,7 @@ fetch(`${ADDIURLHOST}/addi/v1/transaction/${transactionId}`, requestOptions)
   .then((result) => {
     console.log(result);
     console.log("AND")
+    
     addStatementCard("Specific Response Response",result,"en","123")
   })
   .catch((error) => console.error(error));
@@ -1040,7 +1057,8 @@ fetch(`${ADDIURLHOST}/addi/v1/language/${transactionId}`, requestOptions)
   .then((response) => response.text())
   .then((result) => {
     console.log(result)
-    addStatementCard("Active Languages",result,"en","123");
+    updateLanguageSelections(JSON.parse(result));
+    //addStatementCard("Active Languages",result,"en","123");
 })
   .catch((error) => console.error(error));
 }
@@ -1105,6 +1123,7 @@ async function updateLanguages()
 
   ADDI_updateActiveTransactionLanguage(dialectlanguageMap[currentTargetLang],dialectlanguageMap[currentSourceLang])
 }
+
 
 </script>
 
