@@ -9,8 +9,8 @@
     <meta name="Template" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Genesys CSS https://spark.genesys.com/  In PROD set a version -->
-    <link href="https://unpkg.com/genesys-spark-components@latest/dist/genesys-webcomponents/genesys-webcomponents.css" rel="stylesheet" />
-    <script type="module" src="https://unpkg.com/genesys-spark-components@latest/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+    <link href="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.css" rel="stylesheet" />
+    <script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
     <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
     <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
   </head>
@@ -35,129 +35,49 @@
       const uapi = new platformClient.UsersApi()
       
       var currentUploadedReportData;
+
       
       
-      const reportExampleBody = 
-      {
+
+
+
+      // async function createNewTab()
+      // {
+
+      //   console.log("making request new tab")
         
-      "name": "API Agent Performance",
-    "active": true,
-    "showColumnChart": true,
-    "tabOrder": 1,
-    "viewType": "AGENT_PERFORMANCE_SUMMARY_VIEW",
-    "sortOrder": "ascending",
-    "showSecondaryStatus": false,
-    "sortColumnPickerAlphabetically": true,
-    "expandSummaryRow": true,
-    "showEmptyRows": true,
-    "interval": "2024-10-22T05:00:00.000Z/2024-10-23T05:00:00.000Z",
-    "hasUnsavedChanges": false,
-    "filter": {
-        "mediaTypes": [
-            "voice"
-        ]
-    },
-    "dataColumns": [
-        "agentPresence",
-        "agent",
-        "timeInStatus",
-        "status",
-        "answerStandalone",
-        "handle",
-        "avgHandle",
-        "avgTalk",
-        "avgHold",
-        "avgAcw",
-        "avgContacting",
-        "hold",
-        "transfer"
-    ],
-    "tableConfigurations": [
-        {
-            "name": "views.SHARED_AGENT_FILTERS",
-            "filter": {}
-        },
-        {
-            "name": "MEDIA_TYPE_FILTER",
-            "filter": {
-                "mediaTypes": [
-                    "voice"
-                ]
-            }
-        },
-        {
-            "name": "views.AGENT_PERFORMANCE",
-            "filter": {
-                "externalContactIds": [],
-                "canonicalContactIds": []
-            },
-            "dataColumns": [
-                "agentPresence",
-                "agent",
-                "timeInStatus",
-                "status",
-                "answerStandalone",
-                "handle",
-                "avgHandle",
-                "avgTalk",
-                "avgHold",
-                "avgAcw",
-                "avgContacting",
-                "hold",
-                "transfer"
-            ]
-        },
-        {
-            "name": "views.AGENT_PERFORMANCE_SUMMARY",
-            "filter": {},
-            "showColumnChart": true,
-            "sortColumnPickerAlphabetically": true,
-            "sortOrder": "ascending"
-        }
-    ],
-    "columnPickerSortOrder": "ascending",
-    "showColumnPickerCategories": true
-}
+      //   const myHeaders = new Headers();
+      //   myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+      //   myHeaders.append("Content-Type", "application/json");
+
+      //   let raw = JSON.stringify({
+      //   "tabOrder": 0,
+      //   "period": "NONE",
+      //   "interval": "2024-10-22T05:00:00.000Z/2024-10-23T05:00:00.000Z",
+      //   "showEmptyRows": true,
+      //   "sortColumnPickerAlphabetically": true,
+      //   "showColumnChart": true,
+      //   "expandSummaryRow": true,
+      //   "sortOrder": "ascending",
+      //   "viewType": "LANDING_PAGE",
+      //   "name": "API Created Tab"
+      //   });
 
 
+      //   raw = JSON.stringify(reportExampleBody);
 
-      async function createNewTab()
-      {
+      //   const requestOptions = {
+      //   method: "POST",
+      //   headers: myHeaders,
+      //   body: raw,
+      //   redirect: "follow"
+      //   };
 
-        console.log("making request new tab")
-        
-        const myHeaders = new Headers();
-        myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
-        myHeaders.append("Content-Type", "application/json");
-
-        let raw = JSON.stringify({
-        "tabOrder": 0,
-        "period": "NONE",
-        "interval": "2024-10-22T05:00:00.000Z/2024-10-23T05:00:00.000Z",
-        "showEmptyRows": true,
-        "sortColumnPickerAlphabetically": true,
-        "showColumnChart": true,
-        "expandSummaryRow": true,
-        "sortOrder": "ascending",
-        "viewType": "LANDING_PAGE",
-        "name": "API Created Tab"
-        });
-
-
-        raw = JSON.stringify(reportExampleBody);
-
-        const requestOptions = {
-        method: "POST",
-        headers: myHeaders,
-        body: raw,
-        redirect: "follow"
-        };
-
-        fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/tabconfigurations", requestOptions)
-        .then((response) => response.text())
-        .then((result) => console.log(result))
-        .catch((error) => console.error(error));
-      }
+      //   fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/tabconfigurations", requestOptions)
+      //   .then((response) => response.text())
+      //   .then((result) => console.log(result))
+      //   .catch((error) => console.error(error));
+      // }
 
 
 
@@ -231,106 +151,107 @@
     
 
       
-      async function saveReport()
-      {
-      const myHeaders = new Headers();
-      myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
-      myHeaders.append("Content-Type", "application/json");
+    //   async function saveReport()
+    //   {
+    //   const myHeaders = new Headers();
+    //   myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+    //   myHeaders.append("Content-Type", "application/json");
 
-      const raw = JSON.stringify({
-        //"id": "49555e0d-8ab6-4014-b23f-69121ae3eca2",
-        "name": "test save",
-        "viewType": "CAMPAIGN_PERFORMANCE_SUMMARY_VIEW",
-        "period": "NONE",
-        "filter": {
-          "mediaTypes": [
-            "voice"
-          ]
-        },
-        "dataColumns": [
-          "campaignName",
-          "campaignDials",
-          "campaignContacts",
-          "campaignDialAbandonRate",
-          "campaignComplianceAbandonRate",
-          "campaignConnectRate"
-        ],
-        "sortOrder": "ascending",
-        "tableConfigurations": [
-          {
-            "name": "views.SHARED_CAMPAIGN_FILTERS",
-            "filter": {},
-            "showEmptyRows": false,
-            "showColumnChart": false,
-            "expandSummaryRow": false,
-            "sortColumnPickerAlphabetically": false
-          },
-          {
-            "name": "MEDIA_TYPE_FILTER",
-            "filter": {
-              "mediaTypes": [
-                "voice"
-              ]
-            },
-            "showEmptyRows": false,
-            "showColumnChart": false,
-            "expandSummaryRow": false,
-            "sortColumnPickerAlphabetically": false
-          },
-          {
-            "name": "views.CAMPAIGN_PERFORMANCE",
-            "filter": {},
-            "showEmptyRows": false,
-            "showColumnChart": false,
-            "expandSummaryRow": false,
-            "sortColumnPickerAlphabetically": false
-          },
-          {
-            "name": "views.CAMPAIGN_PERFORMANCE_SUMMARY",
-            "filter": {},
-            "dataColumns": [
-              "campaignName",
-              "campaignDials",
-              "campaignContacts",
-              "campaignDialAbandonRate",
-              "campaignComplianceAbandonRate",
-              "campaignConnectRate"
-            ],
-            "sortOrder": "ascending",
-            "showEmptyRows": false,
-            "showColumnChart": true,
-            "expandSummaryRow": false,
-            "sortColumnPickerAlphabetically": true
-          }
-        ],
-        "showSecondaryStatus": false,
-        "sortColumnPickerAlphabetically": true,
-        "expandSummaryRow": true,
-        "showColumnChart": true,
-        "showEmptyRows": true,
-        "columnPickerSortOrder": "ascending",
-        "showColumnPickerCategories": true
-      });
+    //   const raw = JSON.stringify({
+    //     //"id": "49555e0d-8ab6-4014-b23f-69121ae3eca2",
+    //     "name": "test save",
+    //     "viewType": "CAMPAIGN_PERFORMANCE_SUMMARY_VIEW",
+    //     "period": "NONE",
+    //     "filter": {
+    //       "mediaTypes": [
+    //         "voice"
+    //       ]
+    //     },
+    //     "dataColumns": [
+    //       "campaignName",
+    //       "campaignDials",
+    //       "campaignContacts",
+    //       "campaignDialAbandonRate",
+    //       "campaignComplianceAbandonRate",
+    //       "campaignConnectRate"
+    //     ],
+    //     "sortOrder": "ascending",
+    //     "tableConfigurations": [
+    //       {
+    //         "name": "views.SHARED_CAMPAIGN_FILTERS",
+    //         "filter": {},
+    //         "showEmptyRows": false,
+    //         "showColumnChart": false,
+    //         "expandSummaryRow": false,
+    //         "sortColumnPickerAlphabetically": false
+    //       },
+    //       {
+    //         "name": "MEDIA_TYPE_FILTER",
+    //         "filter": {
+    //           "mediaTypes": [
+    //             "voice"
+    //           ]
+    //         },
+    //         "showEmptyRows": false,
+    //         "showColumnChart": false,
+    //         "expandSummaryRow": false,
+    //         "sortColumnPickerAlphabetically": false
+    //       },
+    //       {
+    //         "name": "views.CAMPAIGN_PERFORMANCE",
+    //         "filter": {},
+    //         "showEmptyRows": false,
+    //         "showColumnChart": false,
+    //         "expandSummaryRow": false,
+    //         "sortColumnPickerAlphabetically": false
+    //       },
+    //       {
+    //         "name": "views.CAMPAIGN_PERFORMANCE_SUMMARY",
+    //         "filter": {},
+    //         "dataColumns": [
+    //           "campaignName",
+    //           "campaignDials",
+    //           "campaignContacts",
+    //           "campaignDialAbandonRate",
+    //           "campaignComplianceAbandonRate",
+    //           "campaignConnectRate"
+    //         ],
+    //         "sortOrder": "ascending",
+    //         "showEmptyRows": false,
+    //         "showColumnChart": true,
+    //         "expandSummaryRow": false,
+    //         "sortColumnPickerAlphabetically": true
+    //       }
+    //     ],
+    //     "showSecondaryStatus": false,
+    //     "sortColumnPickerAlphabetically": true,
+    //     "expandSummaryRow": true,
+    //     "showColumnChart": true,
+    //     "showEmptyRows": true,
+    //     "columnPickerSortOrder": "ascending",
+    //     "showColumnPickerCategories": true
+    //   });
 
-      const requestOptions = {
-        method: "POST",
-        headers: myHeaders,
-        body: raw,
-        redirect: "follow"
-      };
+    //   const requestOptions = {
+    //     method: "POST",
+    //     headers: myHeaders,
+    //     body: raw,
+    //     redirect: "follow"
+    //   };
 
-      fetch(`https://api.${gc_region}/api/v2/analytics/reporting/settings/viewconfigurations`, requestOptions)
-        .then((response) => response.text())
-        .then((result) => console.log(result))
-        .catch((error) => console.error(error));
+    //   fetch(`https://api.${gc_region}/api/v2/analytics/reporting/settings/viewconfigurations`, requestOptions)
+    //     .then((response) => response.text())
+    //     .then((result) => console.log(result))
+    //     .catch((error) => console.error(error));
 
-    }
+    // }
 
+    //Handles the upload of the file and parsing when complete.
     function handleFiles() {
       console.log("handling files");
       
       
-      const fileList = this.files; /* now you can work with the file list */
+      const fileList = this.files; 
       console.log(this.files);
       const reader = new FileReader();
       console.log("reading file");
@@ -338,6 +259,7 @@
       reader.onload = function(evt) {
         
         console.log(evt.target.result)
+
         try{
           let name = JSON.parse(evt.target.result).name;
           let viewType = JSON.parse(evt.target.result).viewType
@@ -352,15 +274,12 @@
           enableDisableUpload(false)
         }
         
-        
-          
-       
-
           //saveUploadedReport(`UPLOADED EXAMPLE - ${name}` ,evt.target.result)
 
         }
     }
 
+    //helper function to enable and disable the import objects.
     function enableDisableUpload(enabled)
     {
       if (enabled)
@@ -378,6 +297,7 @@
     }
     }
 
+    //API call to get the current user's saved views.
     function getMySavedViews() 
     {
       const myHeaders = new Headers();
@@ -402,6 +322,7 @@
         .catch((error) => console.error(error));
     }
 
+    //handles the client side download of the file.
     function download(filename, text) {
         var element = document.createElement('a');
         element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
@@ -415,7 +336,7 @@
         document.body.removeChild(element);
     }
 
-
+    //UI helper to create the table with the saved views.
     function createSavedViewTable(myViewsJSON)
     
      {
@@ -509,8 +430,7 @@
     </script>
 
     
-    <!-- <button id="newreport" onclick="saveReport()">click to create new report</button>
-    <button id="getreports" onclick="getMySavedViews()">click to check my saved views</button> -->
+  
     <fieldset>
       <legend>Import Performance View</legend>
       <gux-form-field-file id="fileUploadField">
