@@ -28,7 +28,7 @@ display: flex;
 -webkit-box-direction: normal;
 -ms-flex-direction: column;
 flex-direction: column;
-visibility: hidden;
+/*visibility: hidden;*/
 
 }
 
@@ -49,6 +49,12 @@ visibility: hidden;
     flex-direction: column;
     height:60px;
     
+    }
+
+    .control-button-div {
+      width:20%;
+      padding:5px;
+      align-content:center;
     }
 
 body, html {width: 100%; height: 100%; margin: 0; padding: 0; overflow:hidden;}
@@ -650,4 +656,6 @@ body{
     --gse-core-typography-body-lg-fontFamily: Roboto;
     --gse-ui-menu-option-label-active-text-fontFamily: Roboto;
     --gse-ui-menu-option-label-default-text-fontFamily: Roboto;
+    --gse-ui-menu-option-label-default-text-fontFamily: Roboto;
+    --gse-ui-button-text-fontFamily: Roboto
   }

@@ -47,10 +47,18 @@
       let currentCustomerClass = "message-customer-small";
       let currentSystemClass = "message-system";
       let currentAgentClass = "message-agent";
-      let activeLanguages = ["auto","en","fi","fr","de","ko","zh","pt","es"]
-      let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","fr":"French","pt":"Portuguese","ko":"Korean","fi":"Finnish","zh":"Mandarin","zhc":"Cantonese"}
-      let dialectlanguageMap = {"en":"english","de":"german","es":"spanish","auto":"auto","fr":"french","pt":"portuguese","ko":"korean","fi":"finnish","zh":"mandarin","zhc":"cantonese"}
+      // let activeLanguages = ["auto","en","fi","fr","de","ko","zh","pt","es"]
+      // let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","fr":"French","pt":"Portuguese","ko":"Korean","fi":"Finnish","zh":"Mandarin","zhc":"Cantonese"}
+      // let dialectlanguageMap = {"en":"english","de":"german","es":"spanish","auto":"auto","fr":"french","pt":"portuguese","ko":"korean","fi":"finnish","zh":"mandarin","zhc":"cantonese"}
+      // let spokenLanguageMap = {"en-US":"English","de-DE":"German","es-ES":"Spanish","auto":"Auto","fr-FR":"French","pt-BR":"Portuguese","ko-KR":"Korean","fi-FI":"Finnish","zh-CN":"Mandarin","zh":"Cantonese"}
+      let activeLanguages = ["auto","english","finnish","french","german","korean","mandarin","portuguese","spanish"]
+      let languageMap = {"english":"English","german":"German","spanish":"Spanish","auto":"Auto","french":"French","portuguese":"Portuguese","korean":"Korean","finnish":"Finnish","mandarin":"Mandarin","cantonese":"Cantonese"}
+      let flagMap = {"english":"us","german":"de","spanish":"es","auto":"auto","french":"fr","portuguese":"pr","korean":"ko","finnish":"fi","mandarin":"ch","cantonese":"ch"}
       let spokenLanguageMap = {"en-US":"English","de-DE":"German","es-ES":"Spanish","auto":"Auto","fr-FR":"French","pt-BR":"Portuguese","ko-KR":"Korean","fi-FI":"Finnish","zh-CN":"Mandarin","zh":"Cantonese"}
+      
+      
+      
+      
       let myImage ="";
       let myName = "";
       let translationURL = 'https://qx4fkw52e1.execute-api.us-west-2.amazonaws.com/Prod/ttec_sc_translate';
@@ -558,7 +566,7 @@ function addStatementCard(originalText, translatedText, sourceLanguage, destinat
   //cardOriginal.style.width = "100%";
   //cardOriginal.style.color = "#767c8d";
   let sourceFlag = document.createElement("gux-flag-icon-beta");
-  sourceFlag.setAttribute('flag',sourceLanguage);
+  sourceFlag.setAttribute('flag',flagMap[sourceLanguage]);
   let cardOriginalTextBlock = document.createElement("span");
   cardOriginalTextBlock.setAttribute('class','gux-body-lg-semibold');
   let cardOriginalText = document.createElement("span");
@@ -577,7 +585,7 @@ function addStatementCard(originalText, translatedText, sourceLanguage, destinat
   //cardNew.style.width = "100%";
   //cardNew.style.color = "#1b2c48";
   let newFlag = document.createElement("gux-flag-icon-beta");
-  newFlag.setAttribute('flag',destinationLanguage);
+  newFlag.setAttribute('flag',flagMap[destinationLanguage]);
   let cardNewTextBlock = document.createElement("span");
   cardNewTextBlock.setAttribute('class','gux-body-lg-semibold');
   let cardNewText = document.createElement("span");
@@ -658,8 +666,8 @@ async function updateLanguageSelections(TransactionObject)
   let callerLanguage = TransactionObject.caller
 
   console.log(agentLanguage + " " + callerLanguage)
-  document.getElementById("SourceLanguageDropdown").value = callerLanguage.split("-")[0]
-  document.getElementById("TargetLanguageDropdown").value = agentLanguage.split("-")[0]
+  document.getElementById("SourceLanguageDropdown").value = callerLanguage
+  document.getElementById("TargetLanguageDropdown").value = agentLanguage
 }
 
 //parse and display the live transcription events
@@ -1028,6 +1036,21 @@ async function ADDI_getActiveTransactions(setTopToCurrent=false) {
 
 }
 
+//Get Supported languages
+async function ADDI_getAllowedLanguages()
+{
+  const requestOptions = {
+  method: "GET",
+  redirect: "follow"
+};
+
+fetch("https://addi.smldev.com/addi/v1/languages", requestOptions)
+  .then((response) => response.text())
+  .then((result) => {
+    console.log(result)
+  })
+  .catch((error) => console.error(error));
+}
 //Get a specific Transaction
 async function ADDI_getActiveTransaction(transactionId = currentTransaction) {
   const requestOptions = {
@@ -1121,7 +1144,7 @@ async function updateLanguages()
   let currentSourceLang = document.getElementById("SourceLanguageDropdown").value
   let currentTargetLang = document.getElementById("TargetLanguageDropdown").value
 
-  ADDI_updateActiveTransactionLanguage(dialectlanguageMap[currentTargetLang],dialectlanguageMap[currentSourceLang])
+  ADDI_updateActiveTransactionLanguage(currentTargetLang,currentSourceLang)
 }
 
 
@@ -1171,14 +1194,19 @@ async function updateLanguages()
           </gux-form-field-dropdown>
           
         </div>
+
+        <div id = "updateDiv" class="control-button-div" >
+          <gux-button accent="primary" onclick="updateLanguages()">Update</gux-button>
+
+        </div>
   
-        <div id = "delayDiv" style="width:20%;padding:5px">
+       <!--  <div id = "delayDiv" style="width:20%;padding:5px">
           
           <gux-form-field-number >
             <input slot="input" id="delay" type="number" name="delay" value="5000" aria-label="delay" />
             <label slot="label">Delay</label>
           </gux-form-field-number>
-        </div>
+        </div> -->
   
         <div style="width:10%;padding:5px; float:right" >
           <gux-radial-loading id="workingRadial" context="input" screenreader-text="Loading..." style="padding-left: 3%;padding-top: 8%;visibility: hidden;"></gux-radial-loading>
@@ -1188,9 +1216,9 @@ async function updateLanguages()
           <button type="button" onclick="ADDI_getActiveTransactions(true)">Get Active Transactions</button>
           <button type="button" onclick="ADDI_getActiveTransaction()">Get Specific Transactions</button>
           <button type="button" onclick="ADDI_getActiveTransactionLanguage()">Get Transaction Language</button>
-          <button type="button" onclick="updateLanguages()">Update Transactions</button>
+          <!-- <button type="button" onclick="updateLanguages()">Update Transactions</button>
           <button type="button" onclick="runTestEvents()">Run test events</button>
-          <button type="button" onclick="sendPing()">ping</button>
+          <button type="button" onclick="sendPing()">ping</button> -->
         </div>
         
         <!--gux-toggle id = "agentToggle" checked-label="Translate Agent On" unchecked-label="Translate Agent Off" onclick="toggleAgentDiv()"></gux-toggle-->
