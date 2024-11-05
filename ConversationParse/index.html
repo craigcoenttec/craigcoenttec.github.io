@@ -37,9 +37,12 @@
       const uapi = new platformClient.UsersApi()
       const napi = new platformClient.NotificationsApi()
       const capi = new platformClient.ConversationsApi()
+      const aapi = new platformClient.ArchitectApi();
+
       let conversationEvents = [];
       let participants = [];
-
+      let logFullActionDetail = true;
+      let logExecution = true;
       async function start() {
         try {
           client.setEnvironment(gc_region)
@@ -69,7 +72,12 @@
           //get conversation id
           let convID = document.getElementById("conversationID").value;
           conversationEvents = []
-          
+          logExecution = document.getElementById("execHis").checked
+          logFullActionDetail = document.getElementById("execRaw").checked
+
+          document.getElementById('participant-div').innerHTML = `<gux-radial-loading screenreader-text="Loading..."></gux-radial-loading>`;
+          document.getElementById('parse-div').innerHTML = `<gux-radial-loading screenreader-text="Loading..."></gux-radial-loading>`;
+
         // Get conversation
         capi.getConversation(convID)
           .then((data) => {
@@ -193,8 +201,15 @@
  */
             conversationEvents.sort((a, b) => new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime());
             createParticipantTable(data.participants)
-          createEventTable(conversationEvents)
           
+
+          if (logExecution){
+            getFlows();
+            setTimeout(() => {createEventTable(conversationEvents)},"3000")
+          }
+          else {
+            createEventTable(conversationEvents)
+          }
                       
           })
           .catch((err) => {
@@ -203,6 +218,151 @@
           });
 }
 
+async function getFlows(){
+  
+  let conversationId = document.getElementById("conversationID").value;
+
+
+let body = {
+  "query": [
+    {
+      "criteria": {
+        "key": "ConversationId",
+        "operator": "eq",
+        "value": conversationId
+      }
+    }
+  ]
+}; // Object | query
+let opts = { 
+  "indexOnly": false, // Boolean | indexes only
+  "pageSize": 50 // Number | number of results to return
+};
+
+// Query the database of existing flow histories to look for particular flow criteria
+aapi.postFlowsInstancesQuery(body, opts)
+  .then((data) => {
+    console.log(`postFlowsInstancesQuery success! data: ${JSON.stringify(data, null, 2)}`);
+    document.getElementById("flow-div").innerText = JSON.stringify(data, null, 2);
+    for (const entity of data.entities)
+  {
+    getFlowDetail(entity.id,entity.flowName,'FlowType: ' + entity.flowType);
+  }
+  })
+  .catch((err) => {
+    console.log("There was a failure calling postFlowsInstancesQuery");
+    console.error(err);
+  });
+}
+
+async function getFlowDetail(executionId,flowName,flowType) 
+{
+
+ 
+  let opts = { 
+  "expand": "expand_example" // String | Expand various details.
+  };
+
+  // Start a process (job) to prepare a download of a singular flow execution data instance by Id
+  aapi.getFlowsInstance(executionId, opts)
+  .then((data) => {
+    console.log(`getFlowsInstance success! data: ${JSON.stringify(data, null, 2)}`);
+    setTimeout(() => {getFlowDetailJob(data.id,flowName,flowType);}, "1000");
+  })
+  .catch((err) => {
+    console.log("There was a failure calling getFlowsInstance");
+    console.error(err);
+  });
+
+}
+
+async function getFlowDetailJob(jobId,flowName,flowType)
+{
+  
+
+// Get the status and/or results of an asynchronous flow execution data retrieval job
+aapi.getFlowsInstancesJob(jobId)
+  .then((data) => {
+    console.log(`getFlowsInstancesJob success! data: ${JSON.stringify(data, null, 2)}`);
+    downloadJSON(data.entities[0].downloadUri,flowName,flowType);
+  })
+  .catch((err) => {
+    console.log("There was a failure calling getFlowsInstancesJob");
+    console.error(err);
+  });
+}
+
+async function downloadJSON(url,flowName,flowType)
+{
+  const requestOptions = {
+  method: "GET",
+  redirect: "follow"
+};
+
+fetch(url, requestOptions)
+  .then((response) => response.text())
+  .then((result) => {
+    console.log(JSON.stringify(JSON.parse(result), null, 2))
+    parseExecutionHistory(JSON.parse(result).flow,flowName,flowType);
+  })
+  .catch((error) => console.error(error));
+}
+
+async function parseExecutionHistory(executionJSON, flowName,flowType){
+  
+  for (const execution of executionJSON.execution){
+    for (const key of Object.keys(execution)){
+      if (key.startsWith("action"))
+    {
+      if (logFullActionDetail){
+        createEvent(execution[key].dateTime,key,JSON.stringify(execution[key]),'Execution History', flowName,flowType)
+      }
+      else
+      {
+        let detailString = `Name: ${execution[key].actionName} - `;
+        switch (key) {
+          case "actionPlayAudio":
+            for (const audio of execution[key].audio.toParticipant.audioItems)
+            {
+              detailString += ` - Prompt: ${audio.promptName}`
+            }
+            break;
+          
+          case "actionCallTask":
+            detailString += ` - Task Name: ${execution[key].execution[0].startedTask.taskName}`
+            parseExecutionHistory(execution[key], flowName,flowType)
+            break;
+
+          case "actionDataTableLookup":
+            
+              detailString += ` - Input: ${execution[key].inputData.lookupValue}`
+              detailString += ` - Output:`
+              for (const output of execution[key].outputData.foundOutputs)
+            {
+              detailString += ` ${output.outputName} = ${output.value};`
+            }
+              
+
+
+            
+            break;
+            
+        
+          default:
+            
+            break;
+        }
+
+
+        createEvent(execution[key].dateTime,key,detailString,'Execution History', flowName,flowType)
+      }
+      
+    }
+    }
+
+  }
+  //createEventTable(conversationEvents)
+}
 
 function createEvent(eventTime,eventId,eventDetail,eventSource,eventParticipant,eventParticipantType)
 {
@@ -248,13 +408,14 @@ function createEventTable(eventArray)
            {
              console.log()
              row = table.insertRow();
-             
              row.insertCell().innerHTML = eventObject.eventTime;
+             row.insertCell().innerHTML = eventObject.eventSource;
+             
              row.insertCell().innerHTML = eventObject.eventParticipant;
              row.insertCell().innerHTML = eventObject.eventParticipantType;
              row.insertCell().innerHTML = eventObject.eventID;
              row.insertCell().innerHTML = eventObject.eventDetail;
-             row.insertCell().innerHTML = eventObject.eventSource;
+             
 
            }
 
@@ -278,6 +439,14 @@ function createEventTable(eventArray)
        th.appendChild(document.createElement('gux-sort-control'));
        th.appendChild(text);
      
+       headerRow.appendChild(th);
+
+       //Source
+       th = document.createElement("th");
+       text = document.createTextNode("Source");
+       th.setAttribute('data-column-name','eventSource');
+       th.appendChild(text);
+       th.appendChild(document.createElement('gux-sort-control'));
        headerRow.appendChild(th);
 
        //Participant
@@ -313,13 +482,7 @@ function createEventTable(eventArray)
        th.appendChild(document.createElement('gux-sort-control'));
        headerRow.appendChild(th);
 
-        //Source
-       th = document.createElement("th");
-       text = document.createTextNode("Source");
-       th.setAttribute('data-column-name','eventSource');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+        
 
         
       
@@ -572,9 +735,17 @@ function createEventTable(eventArray)
         <legend>Query</legend>
     
         <gux-form-field-text-like label-position="above">
-          <input slot="input" type="text" name="t-1" id="conversationID"  value="15f31b98-cf00-414e-8603-bd45acbb6f98" />
+          <input slot="input" type="text" name="t-1" id="conversationID"  value="8999b858-aa88-4197-9877-0146fe89dc42" />
           <label slot="label">Conversation ID</label>
         </gux-form-field-text-like>
+        <gux-form-field-checkbox>
+          <input slot="input" type="checkbox" id="execHis" value="Include Execution History" checked />
+          <label slot="label">Include Execution History</label>
+        </gux-form-field-checkbox>
+        <gux-form-field-checkbox>
+          <input slot="input" type="checkbox" id="execRaw" value="Show Raw Action Data" checked />
+          <label slot="label">Show Raw Action Data</label>
+        </gux-form-field-checkbox>
   
   <br>
         <gux-button accent="primary" id="parseButton" onclick="parseConversation()" >Import</gux-button>
@@ -610,6 +781,7 @@ function createEventTable(eventArray)
 
     <div id="parse-div" class="formattedDisplay"></div>
     <div id="raw-div" class="rawDisplay">JSON<pre id="jsonDisplay"></pre></div>
+    <div id="flow-div" class="rawDisplay">JSON<pre id="jsonDisplay"></pre></div>
     
   </div> 
   </body>
