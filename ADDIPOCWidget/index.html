@@ -1210,16 +1210,16 @@ async function updateLanguages()
   
         </div>
         <div id= "testButtons">
-          <button type="button" onclick="ADDI_getActiveTransactions(true)">Get Active Transactions</button>
+          <!--button type="button" onclick="ADDI_getActiveTransactions(true)">Get Active Transactions</button>
           <button type="button" onclick="ADDI_getActiveTransaction()">Get Specific Transactions</button>
           <button type="button" onclick="ADDI_getActiveTransactionLanguage()">Get Transaction Language</button>
-          <!-- <button type="button" onclick="updateLanguages()">Update Transactions</button>
+          < <button type="button" onclick="updateLanguages()">Update Transactions</button>
           <button type="button" onclick="runTestEvents()">Run test events</button>
           <button type="button" onclick="sendPing()">ping</button> -->
         </div>
         
         <!--gux-toggle id = "agentToggle" checked-label="Translate Agent On" unchecked-label="Translate Agent Off" onclick="toggleAgentDiv()"></gux-toggle-->
-        <div class="infoPanel" style="display:flex;">
+        <div class="infoPanel" style="visibility: hidden;">
           <p><em>ADDI Transaction ID:&nbsp;<span id="span_transactionId"></span> </em></p>
         </div>
       </div>
