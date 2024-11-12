@@ -962,13 +962,13 @@ function getCurrentConversationDetails()
           gc_agentCommunicationId = agentParticipant.calls[0].id;
           gc_mediaType = "VOICE"
           document.getElementById("footer").style.visibility = "visible";
-          document.getElementById("delayDiv").style.visibility = "hidden";
+          //document.getElementById("delayDiv").style.visibility = "hidden";
           //document.getElementById("footer").style.visibility = "hidden";
         }
         else {
           gc_mediaType = "OTHER"
           document.getElementById("footer").style.visibility = "visible";
-          document.getElementById("delayDiv").style.visibility = "hidden";
+          //document.getElementById("delayDiv").style.visibility = "hidden";
           //document.getElementById("footer").style.visibility = "hidden";
         }
 
@@ -1104,7 +1104,11 @@ fetch(`${ADDIURLHOST}/addi/v1/language`, requestOptions)
   .then((response) => response.status)
   .then((result) => {
     console.log(result)
-    addStatementCard(`Languages Updated using ${JSON.stringify(requestOptions)}`,result,"en","123");
+    
+    if(result == 200)
+  {
+    addStatementCard(`Languages Updated - caller is ${callerLanguage}`,`Agent is ${agentLanguage}`,"en","123");
+  }
   })
   .catch((error) => console.error(error));
 
@@ -1180,7 +1184,7 @@ async function updateLanguages()
         <div style="width:40%;padding:5px">
           
           <gux-form-field-dropdown>
-            <gux-dropdown id='TargetLanguageDropdown' value="en" >
+            <gux-dropdown id='TargetLanguageDropdown' value="english" >
               <gux-listbox id='TargetListBox' aria-label="Languages">
                 
                
