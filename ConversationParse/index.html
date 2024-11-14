@@ -332,10 +332,7 @@ async function parseExecutionHistory(executionJSON, flowName,flowType){
     {
       if (logFullActionDetail){
         createEvent(execution[key].dateTime,key,JSON.stringify(execution[key]),'Execution History', flowName,flowType)
-        if (key = 'actionCallTask') 
-        {
-          parseExecutionHistory(execution[key], flowName,flowType)
-        }
+        
       }
       else
       {
