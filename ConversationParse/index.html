@@ -69,6 +69,7 @@
         }
       } //End of start() function
 
+      
 
       async function parseConversation() 
       {
@@ -91,12 +92,23 @@
 
             createEvent(data.startTime,"001",`Conversation Started - Address = ${data.address}`,"Conversation Model","--","--");
             createEvent(data.endTime,"999",`Conversation Ended - Address = ${data.address}`,"Conversation Model","--","--");
-            
+            let ivrStart = '';
 
             for (const participant of data.participants) {
+
+              let partType = participant.participantType;
+              let partName = participant.name;
+              let partStart = participant.startTime;
+              if (ivrStart == '' && partType =='IVR')
+              {
+                ivrStart = partStart
+              }
+          
               
-              createEvent(participant.startTime,"002",`Participant Entered - ${participant.purpose}`,"Conversation Model",participant.name,participant.participantType);
-              createEvent(participant.endTime,"003",`Participant Exited - ${participant.purpose}`,"Conversation Model",participant.name,participant.participantType);
+
+              
+              createEvent(participant.startTime,"002",`Participant Entered - ${participant.purpose}`,"Conversation Model",partName,partType);
+              createEvent(participant.endTime,"003",`Participant Exited - ${participant.purpose}`,"Conversation Model",partName,partType);
 
               
               //Look for our breadcrumb attribute here -- 
@@ -104,20 +116,20 @@
 
               //look for our calls
               for (const call of participant.calls) {
-                createEvent(call.connectedTime,"004",`Call Media Started - ${participant.purpose}`,"Conversation Model",participant.name,participant.participantType);
-                createEvent(call.disconnectedTime,"005",`Call Media Ended - ${participant.purpose}`,"Conversation Model",participant.name,participant.participantType);
+                createEvent(call.connectedTime,"004",`Call Media Started - ${participant.purpose}`,"Conversation Model",partName,partType);
+                createEvent(call.disconnectedTime,"005",`Call Media Ended - ${participant.purpose}`,"Conversation Model",partName,partType);
 
                 for (const segment of call.segments) {
-                  createEvent(segment.startTime,"008",`Call Segment Started - ${segment.type}`,"Conversation Model",participant.name,participant.participantType);
+                  createEvent(segment.startTime,"008",`Call Segment Started - ${segment.type}`,"Conversation Model",partName,partType);
 
                   if (segment.howEnded == "Disconnect"){
-                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type} - Reason: ${segment.howEnded} - Disconnect Type: ${segment.disconnectType}`,"Conversation Model",participant.name,participant.participantType);
+                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type} - Reason: ${segment.howEnded} - Disconnect Type: ${segment.disconnectType}`,"Conversation Model",partName,partType);
                   }
                   else if (segment.howEnded) {
-                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type} - Reason: ${segment.howEnded}`,"Conversation Model",participant.name,participant.participantType);
+                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type} - Reason: ${segment.howEnded}`,"Conversation Model",partName,partType);
                   }
                   else {
-                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type}`,"Conversation Model",participant.name,participant.participantType);
+                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type}`,"Conversation Model",partName,partType);
                   }
                 }
 
@@ -320,6 +332,10 @@ async function parseExecutionHistory(executionJSON, flowName,flowType){
     {
       if (logFullActionDetail){
         createEvent(execution[key].dateTime,key,JSON.stringify(execution[key]),'Execution History', flowName,flowType)
+        if (key = 'actionCallTask') 
+        {
+          parseExecutionHistory(execution[key], flowName,flowType)
+        }
       }
       else
       {
