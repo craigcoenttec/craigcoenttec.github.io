@@ -98,12 +98,6 @@
 
               let partType = participant.participantType;
               let partName = participant.name;
-              let partStart = participant.startTime;
-              if (ivrStart == '' && partType =='IVR')
-              {
-                ivrStart = partStart
-              }
-          
               
 
               
@@ -332,7 +326,6 @@ async function parseExecutionHistory(executionJSON, flowName,flowType){
     {
       if (logFullActionDetail){
         createEvent(execution[key].dateTime,key,JSON.stringify(execution[key]),'Execution History', flowName,flowType)
-        
       }
       else
       {
