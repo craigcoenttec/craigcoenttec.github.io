@@ -1,697 +1,659 @@
 <!DOCTYPE html>
 <!-- Created as an example by https://github.com/mcphee11 Version 2.1 -->
 <html>
-  <head>
-    <meta name="robots" content="noindex" />
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title></title>
-    <meta name="Template" content="" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Genesys CSS https://spark.genesys.com/  In PROD set a version -->
-    <link href="https://app.mypurecloud.com/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css" rel="stylesheet" />
-    <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script -->
-    <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script -->
-    <script type="module" src="https://app.mypurecloud.com/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
-    <!-- script src="genesys-spark/dist/index.js"></script -->
-    <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
-    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+
+<head>
+  <meta name="robots" content="noindex" />
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title></title>
+  <meta name="Template" content="" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Genesys CSS https://spark.genesys.com/  In PROD set a version -->
+  <link
+    href="https://app.mypurecloud.com/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css"
+    rel="stylesheet" />
+  <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script -->
+  <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script -->
+  <script type="module"
+    src="https://app.mypurecloud.com/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+  <!-- script src="genesys-spark/dist/index.js"></script -->
+  <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
 
 
 
-    <script>
-      'use strict' //Enables strict mode is JavaScript
-      let url = new URL(document.location.href)
-      let gc_region = url.searchParams.get('gc_region')
-      let gc_clientId = url.searchParams.get('gc_clientId')
-      let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
-      let gc_conversationId = url.searchParams.get('gc_conversationId')
-      let userId
-      let attributestoparse = ["breadcrumbs"];
+  <script>
+    'use strict' //Enables strict mode is JavaScript
+    let url = new URL(document.location.href)
+    let gc_region = url.searchParams.get('gc_region')
+    let gc_clientId = url.searchParams.get('gc_clientId')
+    let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+    let gc_conversationId = url.searchParams.get('gc_conversationId')
+    let userId
+    let attributestoparse = ["breadcrumbs", "callLog"];
 
-      //Getting and setting the GC details from dynamic URL and session storage
-      gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
-      gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
-      gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
-      gc_conversationId ? sessionStorage.setItem('gc_conversationId', gc_conversationId) : gc_conversationId = sessionStorage.getItem('gc_conversationId')
+    //Getting and setting the GC details from dynamic URL and session storage
+    gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
+    gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
+    gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
+    gc_conversationId ? sessionStorage.setItem('gc_conversationId', gc_conversationId) : gc_conversationId = sessionStorage.getItem('gc_conversationId')
 
-      let platformClient = require('platformClient')
-      const client = platformClient.ApiClient.instance
-      const uapi = new platformClient.UsersApi()
-      const napi = new platformClient.NotificationsApi()
-      const capi = new platformClient.ConversationsApi()
-      const aapi = new platformClient.ArchitectApi();
+    let platformClient = require('platformClient')
+    const client = platformClient.ApiClient.instance
+    const uapi = new platformClient.UsersApi()
+    const napi = new platformClient.NotificationsApi()
+    const capi = new platformClient.ConversationsApi()
+    const aapi = new platformClient.ArchitectApi();
 
-      let conversationEvents = [];
-      let participants = [];
-      let logFullActionDetail = true;
-      let logExecution = true;
-      async function start() {
-        try {
-          //registerSparkComponents();
-          client.setEnvironment(gc_region)
-          client.setPersistSettings(true, '_mm_')
+    let conversationEvents = [];
+    let participants = [];
+    let logFullActionDetail = true;
+    let logExecution = true;
+    async function start() {
+      try {
+        //registerSparkComponents();
+        client.setEnvironment(gc_region)
+        client.setPersistSettings(true, '_mm_')
 
-          console.log('%cLogging in to Genesys Cloud', 'color: green')
-          await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
+        console.log('%cLogging in to Genesys Cloud', 'color: green')
+        await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
 
-          //GET Current UserId
-          let user = await uapi.getUsersMe({})
-          console.log(user)
-          userId = user.id
-
-          
-         
-
-        } 
-        catch {
-          console.log("Error Starting")
-        }
-      } //End of start() function
-
-      
-
-      async function parseConversation() 
-      {
-      
-          //get conversation id
-          let convID = document.getElementById("conversationID").value;
-          conversationEvents = []
-          logExecution = document.getElementById("execHis").checked
-          logFullActionDetail = document.getElementById("execRaw").checked
-
-          document.getElementById('participant-div').innerHTML = `<gux-radial-loading screenreader-text="Loading..."></gux-radial-loading>`;
-          document.getElementById('parse-div').innerHTML = `<gux-radial-loading screenreader-text="Loading..."></gux-radial-loading>`;
-
-        // Get conversation
-        capi.getConversation(convID)
-          .then((data) => {
-            console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`,'color: green');
-            document.getElementById("jsonDisplay").innerHTML = JSON.stringify(data, null, 2);
+        //GET Current UserId
+        let user = await uapi.getUsersMe({})
+        console.log(user)
+        userId = user.id
 
 
-            createEvent(data.startTime,"001",`Conversation Started - Address = ${data.address}`,"Conversation Model","--","--");
-            createEvent(data.endTime,"999",`Conversation Ended - Address = ${data.address}`,"Conversation Model","--","--");
+
+
+      }
+      catch {
+        console.log("Error Starting")
+      }
+    } //End of start() function
+
+
+
+    async function parseConversation() {
+
+      //get conversation id
+      let convID = document.getElementById("conversationID").value;
+      conversationEvents = []
+      logExecution = document.getElementById("execHis").checked
+      logFullActionDetail = document.getElementById("execRaw").checked
+
+      document.getElementById('participant-div').innerHTML = `<gux-radial-loading screenreader-text="Loading..."></gux-radial-loading>`;
+      document.getElementById('parse-div').innerHTML = `<gux-radial-loading screenreader-text="Loading..."></gux-radial-loading>`;
+
+      // Get conversation
+      capi.getConversation(convID)
+        .then((data) => {
+          console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`, 'color: green');
+          document.getElementById("jsonDisplay").innerHTML = JSON.stringify(data, null, 2);
+
+
+          createEvent(data.startTime, "CONV_START", `Conversation Started - Address = ${data.address}`, "Conversation Model", "--", "--");
+          createEvent(data.endTime, "CONV_END", `Conversation Ended - Address = ${data.address}`, "Conversation Model", "--", "--");
+
+
+          for (const participant of data.participants) {
+
+            console.log(`Participant found - ${participant.purpose}`)
+            let partName = participant.name || participant.participantType;
+            let partType = participant.participantType
+            let partPurp = participant.purpose
+
+
+            createEvent(participant.startTime, "PART_START", `Participant Entered - ${partPurp}`, "Conversation Model", partName, partType);
+            createEvent(participant.endTime, "PART_END", `Participant Exited - ${partPurp}`, "Conversation Model", partName, partType);
             
 
-            for (const participant of data.participants) {
-              
-              createEvent(participant.startTime,"002",`Participant Entered - ${participant.purpose}`,"Conversation Model",participant.name,participant.participantType);
-              createEvent(participant.endTime,"003",`Participant Exited - ${participant.purpose}`,"Conversation Model",participant.name,participant.participantType);
+            //Look for our breadcrumb attribute here -- 
 
-              
-              //Look for our breadcrumb attribute here -- 
-              
 
-              //look for our calls
-              for (const call of participant.calls) {
-                createEvent(call.connectedTime,"004",`Call Media Started - ${participant.purpose}`,"Conversation Model",participant.name,participant.participantType);
-                createEvent(call.disconnectedTime,"005",`Call Media Ended - ${participant.purpose}`,"Conversation Model",participant.name,participant.participantType);
+            //look for our calls
+            for (const call of participant.calls) {
+              createEvent(call.connectedTime, "SES_START", `Session Started - ${partPurp}`, "Conversation Model", partName, partType);
+              createEvent(call.disconnectedTime, "SES_END", `Session Ended - ${partPurp}`, "Conversation Model", partName, partType);
 
-                for (const segment of call.segments) {
-                  createEvent(segment.startTime,"008",`Call Segment Started - ${segment.type}`,"Conversation Model",participant.name,participant.participantType);
+              for (const segment of call.segments) {
+                createEvent(segment.startTime, "SEG_START", `Segment Started - ${segment.type}`, "Conversation Model", partName, partType);
 
-                  if (segment.howEnded == "Disconnect"){
-                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type} - Reason: ${segment.howEnded} - Disconnect Type: ${segment.disconnectType}`,"Conversation Model",participant.name,participant.participantType);
+                if (segment.howEnded == "Disconnect") {
+                  createEvent(segment.endTime, "SEG_END", `Segment Ended - SegmentType: ${segment.type} - Reason: ${segment.howEnded} - Disconnect Type: ${segment.disconnectType}`, "Conversation Model", partName, partType);
+                }
+                else if (segment.howEnded) {
+                  createEvent(segment.endTime, "SEG_END", `Segment Ended - SegmentType: ${segment.type} - Reason: ${segment.howEnded}`, "Conversation Model", partName, partType);
+                }
+                else {
+                  createEvent(segment.endTime, "SEG_END", `Segment Ended - SegmentType: ${segment.type}`, "Conversation Model", partName, partType);
+                }
+              }
+
+            }
+
+
+            for (const attribute in participant.attributes) {
+              console.log(`attribute: ${attribute}`)
+              if (attributestoparse.includes(attribute)) {
+                console.log("found " + attribute)
+                if (attribute === "callLog") {
+                  let callLog = JSON.parse(participant.attributes[attribute]);
+                  for (const key of Object.keys(callLog)) {
+                    createEvent(key, "---", callLog[key], attribute, "---", "---");
+
                   }
-                  else if (segment.howEnded) {
-                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type} - Reason: ${segment.howEnded}`,"Conversation Model",participant.name,participant.participantType);
-                  }
-                  else {
-                    createEvent(segment.endTime,"009",`Call Segment Ended - SegmentType: ${segment.type}`,"Conversation Model",participant.name,participant.participantType);
+
+                }
+                else {
+                  let eventList = participant.attributes[attribute].split("|")
+
+                  for (let index = 0; index < eventList.length; index++) {
+                    const element = eventList[index];
+                    createEvent(`---${((index < 10) ? "0" + index.toString() : index.toString())}`, "---", element, attribute, "---", "---");
                   }
                 }
 
               }
 
-              if (participant.purpose === 'customer')
-              {
-                for (const attribute in participant.attributes)
-                  {
-                      if (attributestoparse.includes(attribute))
-                      {
-                        let eventList = participant.attributes[attribute].split("|")
-
-                        for (let index = 0; index < eventList.length; index++) {
-                          const element = eventList[index];
-                          createEvent(`---${((index < 10) ? "0" + index.toString() :  index.toString())}`,"---",element,attribute,"---","---");
-                        }
-                        
-                          
-                      }
-
-                    }
-                  }
-              
-
-            }
-            
-            
-
-            //get some agent data we will need
-           /*  let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
-            gc_agentParticipantId = agentParticipant.id
-
-            let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
-          
-            if (customerAttributes.speaker_language)
-            {
-              setSourceLanguage(customerAttributes.speaker_language);
-            }
-            if (customerAttributes.ADDI_TransactionId)
-            {
-              currentTransaction = customerAttributes.ADDI_TransactionId;
-              document.getElementById("span_transactionId").innerText=currentTransaction;
-              subscribeADDITranscription();
-              ADDI_getActiveTransactionLanguage();
-            }
-            
-            
-            if ( agentParticipant.messages.length > 0)
-            {
-              gc_agentCommunicationId = agentParticipant.messages[0].id;
-              gc_mediaType = "MESSAGE";
-              document.getElementById("footer").style.visibility = "visible";
-              document.getElementById("delayDiv").style.visibility = "hidden";
-
-              let customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
-              let agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
-              let workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
-              console.log(customerMessages[0].messages);
-              TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages,workflowMessages[0].messages);
-
-            }
-            else if (agentParticipant.calls.length > 0)
-            {
-              gc_agentCommunicationId = agentParticipant.calls[0].id;
-              gc_mediaType = "VOICE"
-              document.getElementById("footer").style.visibility = "visible";
-              document.getElementById("delayDiv").style.visibility = "hidden";
-              //document.getElementById("footer").style.visibility = "hidden";
-            }
-            else {
-              gc_mediaType = "OTHER"
-              document.getElementById("footer").style.visibility = "visible";
-              document.getElementById("delayDiv").style.visibility = "hidden";
-              //document.getElementById("footer").style.visibility = "hidden";
             }
 
-            
-            console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}`,'color: green')
-            document.getElementById('span_communication').innerText = gc_agentCommunicationId;
-                document.getElementById('span_participant').innerText = gc_agentParticipantId;
-                document.getElementById('span_media').innerText = gc_mediaType;
+          }
 
-            //let customerParticipant = data.participants.slice().reverse().find(p => p.purpose === 'customer');
- */
-            conversationEvents.sort((a, b) => new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime());
-            createParticipantTable(data.participants)
-          
+          conversationEvents.sort((a, b) => new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime());
+          createParticipantTable(data.participants)
 
-          if (logExecution){
+
+          if (logExecution) {
             getFlows();
-            setTimeout(() => {createEventTable(conversationEvents)},"3000")
+            setTimeout(() => { createEventTable(conversationEvents) }, "3000")
           }
           else {
             createEventTable(conversationEvents)
           }
-                      
-          })
-          .catch((err) => {
-            console.log("%cThere was a failure calling getConversation",'color: red');
-            console.error(err);
-          });
-}
 
-async function getFlows(){
-  
-  let conversationId = document.getElementById("conversationID").value;
-
-
-let body = {
-  "query": [
-    {
-      "criteria": {
-        "key": "ConversationId",
-        "operator": "eq",
-        "value": conversationId
-      }
+        })
+        .catch((err) => {
+          console.log("%cThere was a failure calling getConversation", 'color: red');
+          console.error(err);
+        });
     }
-  ]
-}; // Object | query
-let opts = { 
-  "indexOnly": false, // Boolean | indexes only
-  "pageSize": 50 // Number | number of results to return
-};
 
-// Query the database of existing flow histories to look for particular flow criteria
-aapi.postFlowsInstancesQuery(body, opts)
-  .then((data) => {
-    console.log(`postFlowsInstancesQuery success! data: ${JSON.stringify(data, null, 2)}`);
-    document.getElementById("flow-div").innerText = JSON.stringify(data, null, 2);
-    for (const entity of data.entities)
-  {
-    getFlowDetail(entity.id,entity.flowName,'FlowType: ' + entity.flowType);
-  }
-  })
-  .catch((err) => {
-    console.log("There was a failure calling postFlowsInstancesQuery");
-    console.error(err);
-  });
-}
+    async function getFlows() {
 
-async function getFlowDetail(executionId,flowName,flowType) 
-{
+      let conversationId = document.getElementById("conversationID").value;
 
- 
-  let opts = { 
-  "expand": "expand_example" // String | Expand various details.
-  };
 
-  // Start a process (job) to prepare a download of a singular flow execution data instance by Id
-  aapi.getFlowsInstance(executionId, opts)
-  .then((data) => {
-    console.log(`getFlowsInstance success! data: ${JSON.stringify(data, null, 2)}`);
-    setTimeout(() => {getFlowDetailJob(data.id,flowName,flowType);}, "1000");
-  })
-  .catch((err) => {
-    console.log("There was a failure calling getFlowsInstance");
-    console.error(err);
-  });
-
-}
-
-async function getFlowDetailJob(jobId,flowName,flowType)
-{
-  
-
-// Get the status and/or results of an asynchronous flow execution data retrieval job
-aapi.getFlowsInstancesJob(jobId)
-  .then((data) => {
-    console.log(`getFlowsInstancesJob success! data: ${JSON.stringify(data, null, 2)}`);
-    downloadJSON(data.entities[0].downloadUri,flowName,flowType);
-  })
-  .catch((err) => {
-    console.log("There was a failure calling getFlowsInstancesJob");
-    console.error(err);
-  });
-}
-
-async function downloadJSON(url,flowName,flowType)
-{
-  const requestOptions = {
-  method: "GET",
-  redirect: "follow"
-};
-
-fetch(url, requestOptions)
-  .then((response) => response.text())
-  .then((result) => {
-    console.log(JSON.stringify(JSON.parse(result), null, 2))
-    parseExecutionHistory(JSON.parse(result).flow,flowName,flowType);
-  })
-  .catch((error) => console.error(error));
-}
-
-async function parseExecutionHistory(executionJSON, flowName,flowType){
-  
-  for (const execution of executionJSON.execution){
-    for (const key of Object.keys(execution)){
-      if (key.startsWith("action"))
-    {
-      if (logFullActionDetail){
-        createEvent(execution[key].dateTime,key,JSON.stringify(execution[key]),'Execution History', flowName,flowType)
-      }
-      else
-      {
-        let detailString = `Name: ${execution[key].actionName} - `;
-        switch (key) {
-          case "actionPlayAudio":
-            for (const audio of execution[key].audio.toParticipant.audioItems)
-            {
-              detailString += ` - Prompt: ${audio.promptName}`
+      let body = {
+        "query": [
+          {
+            "criteria": {
+              "key": "ConversationId",
+              "operator": "eq",
+              "value": conversationId
             }
-            break;
-          
-          case "actionCallTask":
-            detailString += ` - Task Name: ${execution[key].execution[0].startedTask.taskName}`
-            parseExecutionHistory(execution[key], flowName,flowType)
-            break;
+          }
+        ]
+      }; // Object | query
+      let opts = {
+        "indexOnly": false, // Boolean | indexes only
+        "pageSize": 50 // Number | number of results to return
+      };
 
-          case "actionDataTableLookup":
-            
-              detailString += ` - Input: ${execution[key].inputData.lookupValue}`
-              detailString += ` - Output:`
-              for (const output of execution[key].outputData.foundOutputs)
-            {
-              detailString += ` ${output.outputName} = ${output.value};`
-            }
+      // Query the database of existing flow histories to look for particular flow criteria
+      aapi.postFlowsInstancesQuery(body, opts)
+        .then((data) => {
+          //console.log(`postFlowsInstancesQuery success! data: ${JSON.stringify(data, null, 2)}`);
+          document.getElementById("flow-div").innerText = JSON.stringify(data, null, 2);
+          for (const entity of data.entities) {
+            getFlowDetail(entity.id, entity.flowName, 'FlowType: ' + entity.flowType);
+          }
+        })
+        .catch((err) => {
+          console.log("There was a failure calling postFlowsInstancesQuery");
+          console.error(err);
+        });
+    }
+
+    async function getFlowDetail(executionId, flowName, flowType) {
+
+
+      let opts = {
+        "expand": "expand_example" // String | Expand various details.
+      };
+
+      // Start a process (job) to prepare a download of a singular flow execution data instance by Id
+      aapi.getFlowsInstance(executionId, opts)
+        .then((data) => {
+          //console.log(`getFlowsInstance success! data: ${JSON.stringify(data, null, 2)}`);
+          setTimeout(() => { getFlowDetailJob(data.id, flowName, flowType); }, "1000");
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getFlowsInstance");
+          console.error(err);
+        });
+
+    }
+
+    async function getFlowDetailJob(jobId, flowName, flowType) {
+
+
+      // Get the status and/or results of an asynchronous flow execution data retrieval job
+      aapi.getFlowsInstancesJob(jobId)
+        .then((data) => {
+          console.log(`getFlowsInstancesJob success! data: ${JSON.stringify(data, null, 2)}`);
+          downloadJSON(data.entities[0].downloadUri, flowName, flowType);
+        })
+        .catch((err) => {
+          //console.log("There was a failure calling getFlowsInstancesJob");
+          console.error(err);
+        });
+    }
+
+    async function downloadJSON(url, flowName, flowType) {
+      const requestOptions = {
+        method: "GET",
+        redirect: "follow"
+      };
+
+      fetch(url, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          //console.log(JSON.stringify(JSON.parse(result), null, 2))
+          parseExecutionHistory(JSON.parse(result).flow, flowName, flowType);
+        })
+        .catch((error) => console.error(error));
+    }
+
+    async function parseExecutionHistory(executionJSON, flowName, flowType) {
+
+      for (const execution of executionJSON.execution) {
+        for (const key of Object.keys(execution)) {
+          if (key.startsWith("action")) {
+            //if (logFullActionDetail) {
+              //if (key === 'actionCallTask' || key === 'actionCallCommonModule'){
+                //parseExecutionHistory(execution[key], flowName, flowType)
+              //}
               
+            //}
+            //else {
+              let detailString = `Name: ${execution[key].actionName} - `;
+              switch (key) {
+                case "actionPlayAudio":
+                  for (const audio of execution[key].audio.toParticipant.audioItems) {
+                    detailString += ` - Prompt: ${audio.promptName}`
+                  }
+                  break;
+
+                case "actionCallTask":
+                  let thisTaskName = "TASK";
+                  if (execution[key].execution[0].startedTask){
+                    thisTaskName = execution[key].execution[0].startedTask.taskName || "TASK"
+                  }
+                  
+                  detailString += ` - Task Name: ${thisTaskName}`
+
+                  parseExecutionHistory(execution[key], `${flowName} - ${thisTaskName}`, flowType)
+                  break;
+
+                case "actionCallCommonModule":
+                  let thisModName = "Common Module"
+                  detailString += ` - Common Module Name: ${thisModName}`
+                  parseExecutionHistory(execution[key], `${flowName} - ${thisModName}`, flowType)
+                  break;
+
+                case "actionDataTableLookup":
+
+                  detailString += ` - Input: ${execution[key].inputData.lookupValue}`
+                  detailString += ` - Output:`
+                  if (execution[key].outputData){
+                    for (const output of execution[key].outputData.foundOutputs) {
+                      detailString += ` ${output.outputName} = ${output.value};`
+                    }
+                  }
+                    
+
+                  break;
 
 
-            
-            break;
-            
-        
-          default:
-            
-            break;
+                default:
+                    
+                  break;
+              }
+
+
+              
+            //}
+
+            if (logFullActionDetail == false) {
+              createEvent(execution[key].dateTime, key, detailString, 'Execution History', flowName, flowType)
+            }
+            else
+            {
+              createEvent(execution[key].dateTime, key, JSON.stringify(execution[key]), 'Execution History', flowName, flowType)
+            }
+          }
         }
 
-
-        createEvent(execution[key].dateTime,key,detailString,'Execution History', flowName,flowType)
       }
-      
+      //createEventTable(conversationEvents)
     }
+
+    function createEvent(eventTime, eventId, eventDetail, eventSource, eventParticipant, eventParticipantType) {
+      let ourEvent =
+      {
+        "eventTime": eventTime,
+        "eventID": eventId,
+        "eventDetail": eventDetail,
+        "eventParticipant": eventParticipant,
+        "eventParticipantType": eventParticipantType,
+        "eventSource": eventSource
+      }
+
+      conversationEvents.push(ourEvent);
     }
 
-  }
-  //createEventTable(conversationEvents)
-}
 
-function createEvent(eventTime,eventId,eventDetail,eventSource,eventParticipant,eventParticipantType)
-{
-  let ourEvent = 
-            {
-              "eventTime":eventTime,
-              "eventID":eventId,
-              "eventDetail":eventDetail,
-              "eventParticipant":eventParticipant,
-              "eventParticipantType":eventParticipantType,
-              "eventSource":eventSource
-            }
-
-            conversationEvents.push(ourEvent);
-}
+    function createEventTable(eventArray) {
 
 
-function createEventTable(eventArray)
-    
-    {
-     
-       
-       var table,row,guxTable;
-       var update = false;
-       document.getElementById('parse-div').innerHTML = "";
-
-       
-       
-       table = document.createElement("table");
-       table.setAttribute('id','logTable');
-       guxTable = document.createElement("gux-table");
-       guxTable.setAttribute('id','sortable-table')
-       guxTable.setAttribute('resizable-columns','');
-       guxTable.setAttribute('compact','');
-       table.setAttribute('slot','data');
-       document.getElementById("parse-div").appendChild(guxTable).appendChild(table);
-       
-       
-       //Create a table in the view.s
-       
-       
-           for(const eventObject of eventArray)
-           {
-             console.log()
-             row = table.insertRow();
-             row.insertCell().innerHTML = eventObject.eventTime;
-             row.insertCell().innerHTML = eventObject.eventSource;
-             
-             row.insertCell().innerHTML = eventObject.eventParticipant;
-             row.insertCell().innerHTML = eventObject.eventParticipantType;
-             row.insertCell().innerHTML = eventObject.eventID;
-             row.insertCell().innerHTML = eventObject.eventDetail;
-             
-
-           }
-
-           
-           
-       
-           
-       
-
-       //Add our table header
-       if(update == false)
-       {
-       var headerRow = table.createTHead().insertRow();
+      var table, row, guxTable;
+      var update = false;
+      document.getElementById('parse-div').innerHTML = "";
 
 
-       //Time
-       let th = document.createElement("th");
-       let text = document.createTextNode("Time");
-       th.setAttribute('data-column-name','eventTime');
-       th.setAttribute('aria-sort','ascending');
-       th.appendChild(document.createElement('gux-sort-control'));
-       th.appendChild(text);
-     
-       headerRow.appendChild(th);
 
-       //Source
-       th = document.createElement("th");
-       text = document.createTextNode("Source");
-       th.setAttribute('data-column-name','eventSource');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+      table = document.createElement("table");
+      table.setAttribute('id', 'logTable');
+      guxTable = document.createElement("gux-table");
+      guxTable.setAttribute('id', 'sortable-table')
+      guxTable.setAttribute('resizable-columns', '');
+      guxTable.setAttribute('compact', '');
+      table.setAttribute('slot', 'data');
+      document.getElementById("parse-div").appendChild(guxTable).appendChild(table);
 
-       //Participant
-       th = document.createElement("th");
-       text = document.createTextNode("Participant");
-       th.setAttribute('data-column-name','eventParticipant');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
 
-       //Participant Type
-       th = document.createElement("th");
-       text = document.createTextNode("Participant Type");
-       th.setAttribute('data-column-name','eventParticipantType');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
-       
-       //Event ID
-       th = document.createElement("th");
-       text = document.createTextNode("Event ID");
-       th.setAttribute('data-column-name','eventId');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+      //Create a table in the view.s
 
-    
+
+      for (const eventObject of eventArray) {
+        console.log()
+        row = table.insertRow();
+        row.insertCell().innerHTML = eventObject.eventTime;
+        row.insertCell().innerHTML = eventObject.eventSource;
+
+        row.insertCell().innerHTML = eventObject.eventParticipant;
+        row.insertCell().innerHTML = eventObject.eventParticipantType;
+        row.insertCell().innerHTML = eventObject.eventID;
+        row.insertCell().innerHTML = eventObject.eventDetail;
+
+
+      }
+
+
+
+
+
+
+
+      //Add our table header
+      if (update == false) {
+        var headerRow = table.createTHead().insertRow();
+
+
+        //Time
+        let th = document.createElement("th");
+        let text = document.createTextNode("Time");
+        th.setAttribute('data-column-name', 'eventTime');
+        th.setAttribute('aria-sort', 'ascending');
+        th.appendChild(document.createElement('gux-sort-control'));
+        th.appendChild(text);
+
+        headerRow.appendChild(th);
+
+        //Source
+        th = document.createElement("th");
+        text = document.createTextNode("Source");
+        th.setAttribute('data-column-name', 'eventSource');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        //Participant
+        th = document.createElement("th");
+        text = document.createTextNode("Participant");
+        th.setAttribute('data-column-name', 'eventParticipant');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        //Participant Type
+        th = document.createElement("th");
+        text = document.createTextNode("Participant Type");
+        th.setAttribute('data-column-name', 'eventParticipantType');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        //Event ID
+        th = document.createElement("th");
+        text = document.createTextNode("Event ID");
+        th.setAttribute('data-column-name', 'eventId');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+
         //Detail
-       th = document.createElement("th");
-       text = document.createTextNode("Detail");
-       th.setAttribute('data-column-name','eventDetail');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+        th = document.createElement("th");
+        text = document.createTextNode("Detail");
+        th.setAttribute('data-column-name', 'eventDetail');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
 
-        
 
-        
-      
-       }
-       
-       table.addEventListener('guxsortchanged',
+
+
+
+      }
+
+      table.addEventListener('guxsortchanged',
         (event) => {
-        const {columnName, sortDirection} = event.detail;
+          const { columnName, sortDirection } = event.detail;
 
-        const columns = Array.from(table.querySelectorAll('thead tr th')).forEach((column) => column.removeAttribute('aria-sort'));
-        const column = table.querySelector(`thead tr th[data-column-name='` + columnName + `']`);
-        column.setAttribute('aria-sort', sortDirection);
+          const columns = Array.from(table.querySelectorAll('thead tr th')).forEach((column) => column.removeAttribute('aria-sort'));
+          const column = table.querySelector(`thead tr th[data-column-name='` + columnName + `']`);
+          column.setAttribute('aria-sort', sortDirection);
 
-        const tableBody = table.querySelector('tbody');
+          const tableBody = table.querySelector('tbody');
 
-        switch (sortDirection) {
-          case 'ascending':
-            [...tableBody.children].sort(ascending).forEach(node=>tableBody.appendChild(node));
-            break;
-          case 'descending':
-            [...tableBody.children].sort(ascending).reverse().forEach(node=>tableBody.appendChild(node));
-            break;
-          default:
-            [...tableBody.children].sort(shuffle).forEach(node=>tableBody.appendChild(node));
-            break;
+          switch (sortDirection) {
+            case 'ascending':
+              [...tableBody.children].sort(ascending).forEach(node => tableBody.appendChild(node));
+              break;
+            case 'descending':
+              [...tableBody.children].sort(ascending).reverse().forEach(node => tableBody.appendChild(node));
+              break;
+            default:
+              [...tableBody.children].sort(shuffle).forEach(node => tableBody.appendChild(node));
+              break;
+          }
+
+
+        });
+
+      //console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
+
+    }
+
+
+    function createParticipantTable(participantArray) {
+
+
+      var table, row, guxTable;
+      var update = false;
+      document.getElementById('participant-div').innerHTML = "";
+
+
+
+      table = document.createElement("table");
+      table.setAttribute('id', 'participantTable');
+      guxTable = document.createElement("gux-table");
+      guxTable.setAttribute('id', 'sortable-table')
+      guxTable.setAttribute('resizable-columns', '');
+      guxTable.setAttribute('compact', '');
+      table.setAttribute('slot', 'data');
+      document.getElementById("participant-div").appendChild(guxTable).appendChild(table);
+
+
+      //Create a table in the view.s
+
+
+      for (const participant of participantArray) {
+        console.log()
+        row = table.insertRow();
+        row.insertCell().innerHTML = participant.name || participant.participantType;
+        row.insertCell().innerHTML = participant.startTime;
+        row.insertCell().innerHTML = participant.endTime;
+
+        row.insertCell().innerHTML = participant.purpose;
+        row.insertCell().innerHTML = participant.participantType;
+        row.insertCell().innerHTML = participant.ani;
+        row.insertCell().innerHTML = participant.aniName;
+        row.insertCell().innerHTML = participant.dnis;
+        row.insertCell().innerHTML = participant.id;
+
       }
 
 
-    });
-       
-       //console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
-
-     }
 
 
-     function createParticipantTable(participantArray)
-    
-    {
-     
-       
-       var table,row,guxTable;
-       var update = false;
-       document.getElementById('participant-div').innerHTML = "";
-
-       
-       
-       table = document.createElement("table");
-       table.setAttribute('id','participantTable');
-       guxTable = document.createElement("gux-table");
-       guxTable.setAttribute('id','sortable-table')
-       guxTable.setAttribute('resizable-columns','');
-       guxTable.setAttribute('compact','');
-       table.setAttribute('slot','data');
-       document.getElementById("participant-div").appendChild(guxTable).appendChild(table);
-       
-       
-       //Create a table in the view.s
-       
-       
-           for(const participant of participantArray)
-           {
-             console.log()
-             row = table.insertRow();
-             row.insertCell().innerHTML = participant.name;
-             row.insertCell().innerHTML = participant.startTime;
-             row.insertCell().innerHTML = participant.endTime;
-             
-             row.insertCell().innerHTML = participant.purpose;
-             row.insertCell().innerHTML = participant.participantType;
-             row.insertCell().innerHTML = participant.ani;
-             row.insertCell().innerHTML = participant.aniName;
-             row.insertCell().innerHTML = participant.dnis;
-             row.insertCell().innerHTML = participant.id;
-
-           }
-
-           
-           
-       
-           
-       
-
-       //Add our table header
-       if(update == false)
-       {
-       var headerRow = table.createTHead().insertRow();
 
 
-       //Time
-       let th = document.createElement("th");
-       let text = document.createTextNode("Name");
-       th.setAttribute('data-column-name','name');
-       th.setAttribute('aria-sort','ascending');
-       th.appendChild(document.createElement('gux-sort-control'));
-       th.appendChild(text);
-     
-       headerRow.appendChild(th);
 
-       //Participant
-       th = document.createElement("th");
-       text = document.createTextNode("Start Time");
-       th.setAttribute('data-column-name','startTime');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+      //Add our table header
+      if (update == false) {
+        var headerRow = table.createTHead().insertRow();
+
+
+        //Time
+        let th = document.createElement("th");
+        let text = document.createTextNode("Name");
+        th.setAttribute('data-column-name', 'name');
+        th.setAttribute('aria-sort', 'ascending');
+        th.appendChild(document.createElement('gux-sort-control'));
+        th.appendChild(text);
+
+        headerRow.appendChild(th);
+
+        //Participant
+        th = document.createElement("th");
+        text = document.createTextNode("Start Time");
+        th.setAttribute('data-column-name', 'startTime');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
 
         th = document.createElement("th");
         text = document.createTextNode("End Time");
-       th.setAttribute('data-column-name','endTime');
-       th.setAttribute('aria-sort','ascending');
-       th.appendChild(document.createElement('gux-sort-control'));
-       th.appendChild(text);
-     
-       headerRow.appendChild(th);
+        th.setAttribute('data-column-name', 'endTime');
+        th.setAttribute('aria-sort', 'ascending');
+        th.appendChild(document.createElement('gux-sort-control'));
+        th.appendChild(text);
 
-       //Participant
-       th = document.createElement("th");
-       text = document.createTextNode("Purpose");
-       th.setAttribute('data-column-name','purpose');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+        headerRow.appendChild(th);
 
-       //Participant Type
-       th = document.createElement("th");
-       text = document.createTextNode("Participant Type");
-       th.setAttribute('data-column-name','participantType');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
-       
-       //Event ID
-       th = document.createElement("th");
-       text = document.createTextNode("ANI");
-       th.setAttribute('data-column-name','ani');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+        //Participant
+        th = document.createElement("th");
+        text = document.createTextNode("Purpose");
+        th.setAttribute('data-column-name', 'purpose');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
 
-    
+        //Participant Type
+        th = document.createElement("th");
+        text = document.createTextNode("Participant Type");
+        th.setAttribute('data-column-name', 'participantType');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        //Event ID
+        th = document.createElement("th");
+        text = document.createTextNode("ANI");
+        th.setAttribute('data-column-name', 'ani');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+
         //Detail
-       th = document.createElement("th");
-       text = document.createTextNode("ANI Name");
-       th.setAttribute('data-column-name','Ani Name');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+        th = document.createElement("th");
+        text = document.createTextNode("ANI Name");
+        th.setAttribute('data-column-name', 'Ani Name');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
 
         //Source
-       th = document.createElement("th");
-       text = document.createTextNode("DNIS");
-       th.setAttribute('data-column-name','dnis');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
+        th = document.createElement("th");
+        text = document.createTextNode("DNIS");
+        th.setAttribute('data-column-name', 'dnis');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
 
-       th = document.createElement("th");
-       text = document.createTextNode("Participant ID");
-       th.setAttribute('data-column-name','participantID');
-       th.appendChild(text);
-       th.appendChild(document.createElement('gux-sort-control'));
-       headerRow.appendChild(th);
-        
-      
-       }
-       
-       table.addEventListener('guxsortchanged',
-        (event) => {
-        const {columnName, sortDirection} = event.detail;
+        th = document.createElement("th");
+        text = document.createTextNode("Participant ID");
+        th.setAttribute('data-column-name', 'participantID');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
 
-        const columns = Array.from(table.querySelectorAll('thead tr th')).forEach((column) => column.removeAttribute('aria-sort'));
-        const column = table.querySelector(`thead tr th[data-column-name='` + columnName + `']`);
-        column.setAttribute('aria-sort', sortDirection);
 
-        const tableBody = table.querySelector('tbody');
-
-        switch (sortDirection) {
-          case 'ascending':
-            [...tableBody.children].sort(ascending).forEach(node=>tableBody.appendChild(node));
-            break;
-          case 'descending':
-            [...tableBody.children].sort(ascending).reverse().forEach(node=>tableBody.appendChild(node));
-            break;
-          default:
-            [...tableBody.children].sort(shuffle).forEach(node=>tableBody.appendChild(node));
-            break;
       }
 
+      table.addEventListener('guxsortchanged',
+        (event) => {
+          const { columnName, sortDirection } = event.detail;
 
-    });
-       
-       //console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
+          const columns = Array.from(table.querySelectorAll('thead tr th')).forEach((column) => column.removeAttribute('aria-sort'));
+          const column = table.querySelector(`thead tr th[data-column-name='` + columnName + `']`);
+          column.setAttribute('aria-sort', sortDirection);
 
-     }
+          const tableBody = table.querySelector('tbody');
+
+          switch (sortDirection) {
+            case 'ascending':
+              [...tableBody.children].sort(ascending).forEach(node => tableBody.appendChild(node));
+              break;
+            case 'descending':
+              [...tableBody.children].sort(ascending).reverse().forEach(node => tableBody.appendChild(node));
+              break;
+            default:
+              [...tableBody.children].sort(shuffle).forEach(node => tableBody.appendChild(node));
+              break;
+          }
+
+
+        });
+
+      //console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
+
+    }
 
 
 
 
 
-     function ascending( a, b ) {
-      if ( a.textContent < b.textContent ){
+    function ascending(a, b) {
+      if (a.textContent < b.textContent) {
         return -1;
       }
-      if ( a.textContent > b.textContent ){
+      if (a.textContent > b.textContent) {
         return 1;
       }
       return 0;
@@ -699,7 +661,7 @@ function createEventTable(eventArray)
 
 
     function filterTable() {
-  // Declare variables
+      // Declare variables
       var input, filter, table, tr, td, i, txtValue;
       input = document.getElementById("myInput");
       filter = input.value.toUpperCase();
@@ -710,37 +672,38 @@ function createEventTable(eventArray)
       for (i = 1; i < tr.length; i++) {
         //td = tr[i].getElementsByTagName("td")[0];
         let show = false;
-        for (const td of tr[i].getElementsByTagName("td")){
+        for (const td of tr[i].getElementsByTagName("td")) {
           if (td) {
             txtValue = td.textContent || td.innerText;
             if (txtValue.toUpperCase().indexOf(filter) > -1) {
               show = true;
               break;
-            } 
+            }
           }
         }
 
         //hide or show row
         if (show) {
-              tr[i].style.display = "";
-            } else {
-              tr[i].style.display = "none";
-            }
+          tr[i].style.display = "";
+        } else {
+          tr[i].style.display = "none";
+        }
 
       }
     }
-    
-    </script>
-  </head>
-    <body onload="start()">
-    
-    <div class="main-container"> 
+
+  </script>
+</head>
+
+<body onload="start()">
+
+  <div class="main-container">
     <div id="control-div" class="queryField">
       <fieldset>
         <legend>Query</legend>
-    
+
         <gux-form-field-text-like label-position="above">
-          <input slot="input" type="text" name="t-1" id="conversationID"  value="8999b858-aa88-4197-9877-0146fe89dc42" />
+          <input slot="input" type="text" name="t-1" id="conversationID" value="8999b858-aa88-4197-9877-0146fe89dc42" />
           <label slot="label">Conversation ID</label>
         </gux-form-field-text-like>
         <gux-form-field-checkbox>
@@ -748,12 +711,12 @@ function createEventTable(eventArray)
           <label slot="label">Include Execution History</label>
         </gux-form-field-checkbox>
         <gux-form-field-checkbox>
-          <input slot="input" type="checkbox" id="execRaw" value="Show Raw Action Data" checked />
+          <input slot="input" type="checkbox" id="execRaw" value="Show Raw Action Data" />
           <label slot="label">Show Raw Action Data</label>
         </gux-form-field-checkbox>
-  
-  <br>
-        <gux-button accent="primary" id="parseButton" onclick="parseConversation()" >Import</gux-button>
+
+        <br>
+        <gux-button accent="primary" id="parseButton" onclick="parseConversation()">Import</gux-button>
       </fieldset>
     </div>
 
@@ -763,62 +726,67 @@ function createEventTable(eventArray)
     <gux-table-toolbar>
       <div slot="search-and-filter">
         <gux-form-field-search label-position="screenreader">
-          <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search" onkeyup="filterTable()" />
+          <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search"
+            onkeyup="filterTable()" />
           <label slot="label">Toolbar Search</label>
         </gux-form-field-search>
-       
+
       </div>
-    
+
       <div slot="contextual-actions">
       </div>
-    
+
       <div slot="permanent-actions">
         <!--gux-table-toolbar-action action="refresh" onclick="getMySavedViews()"></gux-table-toolbar-action-->
       </div>
-    
+
       <!--div slot="menu-actions">
        
         <gux-table-toolbar-action action="refresh" onclick="getMySavedViews()"></gux-table-toolbar-action>
       </div-->
-    
-      
+
+
     </gux-table-toolbar>
 
     <div id="parse-div" class="formattedDisplay"></div>
-    <div id="raw-div" class="rawDisplay">JSON<pre id="jsonDisplay"></pre></div>
-    <div id="flow-div" class="rawDisplay">JSON<pre id="jsonDisplay"></pre></div>
-    
-  </div> 
-  </body>
+    <div id="raw-div" class="rawDisplay">JSON
+      <pre id="jsonDisplay"></pre>
+    </div>
+    <div id="flow-div" class="rawDisplay">JSON
+      <pre id="jsonDisplay"></pre>
+    </div>
 
-  <style>
-    html,
+  </div>
+</body>
+
+<style>
+  html,
   body {
     height: 100%;
     margin: 0;
   }
-  
+
   .main-container {
     display: flex;
-    flex-flow:column;
-    height:100%;
+    flex-flow: column;
+    height: 100%;
   }
 
-  .main-container .queryField{
-    flex:0 1 auto;
+  .main-container .queryField {
+    flex: 0 1 auto;
   }
-  
+
   .main-container .participantDisplay {
-        flex: 1 1 auto;
+    flex: 1 1 auto;
   }
 
   .main-container .formattedDisplay {
-        flex: 1 1 auto;
-  }
-  
-  .main-container .rawDisplay {
-        flex: 0 1 40px;
+    flex: 1 1 auto;
   }
 
+  .main-container .rawDisplay {
+    flex: 0 1 40px;
+  }
 </style>
+
 </html>
