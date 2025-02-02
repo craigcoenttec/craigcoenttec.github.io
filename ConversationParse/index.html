@@ -21,6 +21,14 @@
   <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
   <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- and it's easy to individually load additional languages -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+
+
+
 
 
   <script>
@@ -31,7 +39,8 @@
     let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
     let gc_conversationId = url.searchParams.get('gc_conversationId')
     let userId
-    let attributestoparse = ["breadcrumbs", "callLog"];
+    let attributestoparse = ["breadcrumbs", "callLog", "pd_breadcrumb"];
+    //let currentStep = 0;
 
     //Getting and setting the GC details from dynamic URL and session storage
     gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
@@ -46,7 +55,81 @@
     const capi = new platformClient.ConversationsApi()
     const aapi = new platformClient.ArchitectApi();
 
+
+
+   const eventMap = {
+
+"0":"Start of call",
+"1":"End of call",
+"2":"Caller Hung Up",
+"3":"Encountered retry",
+"4":"Encountered maximum retries",
+"5":"Encountered timeout",
+"6":"Encountered max timeouts",
+"7":"Call Director used",
+"8":"Played message prompt or set of prompts",
+"9":"Original ANI, TFN and datetime values",
+"24":"Menu selection made via DTMF",
+"25":"Menu selection made via Speech",
+"3060":"SSN authentication success",
+"3061":"DOB authentication success",
+"3062":"SIN authentication success",
+"3063":"DOB authentication success",
+"4002":"DOB authentication failed due to invalid input",
+"4003":"DOB authentication failed due to no input",
+"4004":"SSN authentication failed due to invalid input",
+"4005":"SSN authentication failed due to no input",
+"4006":"SIN authentication failed due to invalid input",
+"4007":"SIN authentication failed due to no input",
+"4008":"DOB authentication failed due to invalid input",
+"4009":"DOB authentication failed due to no input",
+"5161":"Identified US call based on valid caller ANI",
+"5162":"Identified US call based on valid user input ANI",
+"5163":"Identified US call based on valid caller ANI and employee status is active or leave",
+"5164":"Identified US call based on valid user input ANI and employee status is active",
+"5165":"Identified UK call based on valid caller ANI",
+"5166":"Identified UK call based on valid user input ANI",
+"5167":"Identified UK call based on valid caller ANI and employee status is active or leave",
+"5168":"Identified CA call based on valid caller ANI",
+"5169":"Identified CA call based on valid user input ANI",
+"5170":"Identified CA call based on valid caller ANI and employee status is active or leave",
+"5171":"Identified IRE call based on valid caller ANI",
+"5172":"Identified IRE call based on valid user input ANI",
+"5173":"Identified IRE call based on valid caller ANI and employee status is active or leave",
+"6000":"Unidentified US call due to invalid phone number entered by active caller",
+"6001":"Unidentified US caller ANI but type of caller is retiree",
+"6002":"Unidentified US caller ANI but type of caller is candidate",
+"6003":"Unidentified US caller ANI but type of caller is All others",
+"6004":"Unidentified US call based on caller ANI",
+"6005":"Unidentified US call due to no phone number entered by active caller",
+"6006":"Unidentified UK call based on caller ANI",
+"6007":"Unidentified UK call due to invalid phone number entered",
+"6008":"Unidentified UK call due to no phone number entered",
+"6009":"Unidentifed CA call due to invalid phone number entered",
+"6010":"Unidentifed CA call due to no phone number entered",
+"6011":"Unidentified CA call based on caller ANI",
+"6012":"Unidentifed IRE call due to invalid phone number entered",
+"6013":"Unidentifed IRE call due to no phone number entered",
+"6014":"Unidentified IRE call based on caller ANI",
+"6020":"US call due to hash input entered by active caller",
+"6021":"CA call due to hash input entered by caller",
+"6022":"UK call due to hash input entered by caller",
+"6023":"IRE call due to hash input entered by caller",
+"9001":"Chosen first menu item",
+"9002":"Chosen second menu item",
+"9003":"Chosen second menu item",
+"9004":"Chosen second menu item",
+"9005":"Chosen fifth menu item",
+"9006":"Chosen sixth menu item",
+"9007":"Chosen seventh menu item",
+"9008":"Chosen eighth menu item",
+"9009":"Chosen nineth menu item"
+}
+
+
+
     let conversationEvents = [];
+    let callEvents = [];
     let participants = [];
     let logFullActionDetail = true;
     let logExecution = true;
@@ -73,7 +156,7 @@
       }
     } //End of start() function
 
-
+    const copyButtonLabel = "Copy JSON";
 
     async function parseConversation() {
 
@@ -90,8 +173,28 @@
       capi.getConversation(convID)
         .then((data) => {
           console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`, 'color: green');
-          document.getElementById("jsonDisplay").innerHTML = JSON.stringify(data, null, 2);
 
+          //debug panel
+          let codeblock = document.createElement("code");
+          codeblock.setAttribute("class","language-json");
+          let jsonDisplayBlock = document.getElementById("jsonDisplay")
+          jsonDisplayBlock.innerHTML = "";
+          codeblock.innerHTML = JSON.stringify(data, null, 2);
+          
+
+          if (navigator.clipboard) {
+            let button = document.createElement("gux-button");
+
+            button.innerText = copyButtonLabel;
+            jsonDisplayBlock.appendChild(button);
+
+            button.addEventListener("click", async () => {
+              await copyCode(jsonDisplayBlock, button);
+            });
+          }
+          jsonDisplayBlock.appendChild(codeblock);
+
+          hljs.highlightAll();
 
           createEvent(data.startTime, "CONV_START", `Conversation Started - Address = ${data.address}`, "Conversation Model", "--", "--");
           createEvent(data.endTime, "CONV_END", `Conversation Ended - Address = ${data.address}`, "Conversation Model", "--", "--");
@@ -107,7 +210,7 @@
 
             createEvent(participant.startTime, "PART_START", `Participant Entered - ${partPurp}`, "Conversation Model", partName, partType);
             createEvent(participant.endTime, "PART_END", `Participant Exited - ${partPurp}`, "Conversation Model", partName, partType);
-            
+
 
             //Look for our breadcrumb attribute here -- 
 
@@ -146,6 +249,24 @@
                   }
 
                 }
+                
+                else if (attribute === "pd_breadcrumb"){ 
+                  let eventList = participant.attributes[attribute].split("|")
+
+                  for (let index = 0; index < eventList.length; index++) {
+                    const element = eventList[index];
+                    let splitEvent = element.split(":");
+                    createCallEvent(`---${((index < 10) ? "0" + index.toString() : index.toString())}`, splitEvent[1], splitEvent[0] + " - " + eventMap[splitEvent[1]], attribute, "---", "---");
+                  }
+                }
+                /* else if (attribute === "pd_breadcrumb") {
+                  let callLog = JSON.parse(participant.attributes[attribute]);
+                  for (const key of Object.keys(callLog)) {
+                    createEvent(key, "---", callLog[key], attribute, "---", "---");
+
+                  }
+
+                } */
                 else {
                   let eventList = participant.attributes[attribute].split("|")
 
@@ -163,9 +284,11 @@
 
           conversationEvents.sort((a, b) => new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime());
           createParticipantTable(data.participants)
-
+          createEventTable(callEvents,"event-div")
 
           if (logExecution) {
+            let executionPanel = document.getElementById("executionJsonDisplay");
+            executionPanel.innerHTML = "";
             getFlows();
             setTimeout(() => { createEventTable(conversationEvents) }, "3000")
           }
@@ -205,7 +328,7 @@
       aapi.postFlowsInstancesQuery(body, opts)
         .then((data) => {
           //console.log(`postFlowsInstancesQuery success! data: ${JSON.stringify(data, null, 2)}`);
-          document.getElementById("flow-div").innerText = JSON.stringify(data, null, 2);
+          //document.getElementById("flow-div").innerText = JSON.stringify(data, null, 2);
           for (const entity of data.entities) {
             getFlowDetail(entity.id, entity.flowName, 'FlowType: ' + entity.flowType);
           }
@@ -261,77 +384,161 @@
         .then((response) => response.text())
         .then((result) => {
           //console.log(JSON.stringify(JSON.parse(result), null, 2))
+          displayExecutionHistory(JSON.parse(result),flowName);
           parseExecutionHistory(JSON.parse(result).flow, flowName, flowType);
         })
         .catch((error) => console.error(error));
     }
 
-    async function parseExecutionHistory(executionJSON, flowName, flowType) {
-
+    async function parseExecutionHistory(executionJSON, flowName, flowType, currentStep = {"stepID":0}) {
+      
       for (const execution of executionJSON.execution) {
         for (const key of Object.keys(execution)) {
+          
           if (key.startsWith("action")) {
+            currentStep.stepID++;
             //if (logFullActionDetail) {
-              //if (key === 'actionCallTask' || key === 'actionCallCommonModule'){
-                //parseExecutionHistory(execution[key], flowName, flowType)
-              //}
-              
+            //if (key === 'actionCallTask' || key === 'actionCallCommonModule'){
+            //parseExecutionHistory(execution[key], flowName, flowType)
+            //}
+
             //}
             //else {
-              let detailString = `Name: ${execution[key].actionName} - `;
-              switch (key) {
-                case "actionPlayAudio":
-                  for (const audio of execution[key].audio.toParticipant.audioItems) {
-                    detailString += ` - Prompt: ${audio.promptName}`
+            let detailString = `Name: ${execution[key].actionName} - `;
+            switch (key) {
+              case "actionPlayAudio":
+                for (const audio of execution[key].audio.toParticipant.audioItems) {
+                  detailString += ` - Prompt: ${audio.promptName}`
+                }
+                break;
+
+              case "actionCallTask":
+                let thisTaskName = "TASK";
+                if (execution[key].execution[0].startedTask) {
+                  thisTaskName = execution[key].execution[0].startedTask.taskName || "TASK"
+                }
+
+                detailString += ` - Task Name: ${thisTaskName}`
+
+                parseExecutionHistory(execution[key], `${flowName} - ${thisTaskName}`, flowType,currentStep)
+                break;
+
+              case "actionCallCommonModule":
+                let thisModName = "Common Module"
+                if (execution[key].inputData.commonModule.flowName) {
+                  thisModName = execution[key].inputData.commonModule.flowName|| "Common Module"
+                }
+                detailString += ` - Common Module Name: ${thisModName}`
+                parseExecutionHistory(execution[key], `${flowName} - ${thisModName}`, flowType, currentStep)
+                break;
+
+              case "actionDataTableLookup":
+
+                detailString += ` - Input: ${execution[key].inputData.lookupValue}`
+                detailString += ` - Output:`
+                if (execution[key].outputData) {
+                  for (const output of execution[key].outputData.foundOutputs) {
+                    detailString += ` ${output.outputName} = ${output.value};`
                   }
-                  break;
+                }
 
-                case "actionCallTask":
-                  let thisTaskName = "TASK";
-                  if (execution[key].execution[0].startedTask){
-                    thisTaskName = execution[key].execution[0].startedTask.taskName || "TASK"
-                  }
-                  
-                  detailString += ` - Task Name: ${thisTaskName}`
 
-                  parseExecutionHistory(execution[key], `${flowName} - ${thisTaskName}`, flowType)
-                  break;
+                break;
 
-                case "actionCallCommonModule":
-                  let thisModName = "Common Module"
-                  detailString += ` - Common Module Name: ${thisModName}`
-                  parseExecutionHistory(execution[key], `${flowName} - ${thisModName}`, flowType)
-                  break;
+              case "actionUpdateData":
 
-                case "actionDataTableLookup":
-
-                  detailString += ` - Input: ${execution[key].inputData.lookupValue}`
-                  detailString += ` - Output:`
-                  if (execution[key].outputData){
-                    for (const output of execution[key].outputData.foundOutputs) {
-                      detailString += ` ${output.outputName} = ${output.value};`
+                //detailString += ` - Input: ${execution[key].inputData.lookupValue}`
+                //detailString += ` - Output:`
+                if (execution[key].statements) {
+                  for (const statement of execution[key].statements) {
+                    if (statement.value && typeof statement.value === 'object' && ("data" in statement.value))
+                    {
+                      detailString += ` ${statement.variableName} = ${JSON.stringify(statement.value.data)};`
                     }
+                    else if (typeof statement.value === 'object')
+                    {
+                      detailString += ` ${statement.variableName} = ${JSON.stringify(statement.value)};`
+                    }
+                    else
+                    {
+                        detailString += ` ${statement.variableName} = ${statement.value};`
+
+                    }
+                    
                   }
-                    
-
-                  break;
+                }
 
 
-                default:
-                    
-                  break;
-              }
+                break;
 
+              case "actionInitializeFlowOutcome":
 
+                if (execution[key].inputData) 
+                {
+                  detailString += ` ${execution[key].inputData.flowOutcome.name};`
+                }
+
+                break;
+
+              case "actionSetFlowOutcome":
+
+                if (execution[key].inputData) 
+                {
+                  detailString += ` outcome: ${execution[key].inputData.flowOutcome.name}; - ${execution[key].inputData.flowOutcomeValue}`
+                }
+                
+                break;
+
+              case "actionGetParticipantData":
+                
+                detailString += ` - Participant Data:`
+                if (execution[key].outputData) {
+                  for (const output of execution[key].outputData.attributes) {
+                    detailString += ` ${output.outputName} = ${output.value};`
+                  }
+                }
+                break;
+
+              case "actionSetParticipantData":
+                detailString += ` - Participant Data:`
+                if (execution[key].inputData) {
+                  for (const attribute of execution[key].inputData.attributes) {
+                    detailString += ` ${attribute.inputName} = ${JSON.stringify(attribute.value)};`
+                  }
+                }
+                break;
               
+              case "actionDecision":
+                detailString += ` result = ${execution[key].inputData.condition};`
+                break;
+
+              case "actionJumpToTask":
+                let targetTaskName = "TASK";
+                if (execution[key].inputData) {
+                  targetTaskName = execution[key].targetTask.taskName || "TASK"
+                }
+
+                detailString += ` - Task Name: ${targetTaskName}`
+                break;
+
+              case "actionSwitch":
+                detailString += ` - output path: ${execution[key].outputPathName}`
+                break;
+
+              default:
+
+                break;
+            }
+
+
+
             //}
 
             if (logFullActionDetail == false) {
-              createEvent(execution[key].dateTime, key, detailString, 'Execution History', flowName, flowType)
+              createEvent(`${execution[key].dateTime} -${currentStep.stepID.toString().padStart(5,'0')}`, key, detailString, 'Execution History', flowName, flowType)
             }
-            else
-            {
-              createEvent(execution[key].dateTime, key, JSON.stringify(execution[key]), 'Execution History', flowName, flowType)
+            else {
+              createEvent(`${execution[key].dateTime} -${currentStep.stepID.toString().padStart(5,'0')}`, key, JSON.stringify(execution[key]), 'Execution History', flowName, flowType)
             }
           }
         }
@@ -340,6 +547,62 @@
       //createEventTable(conversationEvents)
     }
 
+    function displayExecutionHistory(executionHistory, headerText){
+
+
+
+      
+
+      let executionPanel = document.getElementById("executionJsonDisplay");
+      let accordion = document.createElement("gux-accordion");
+      let accordianSection = document.createElement("gux-accordion-section");
+      let header = document.createElement("h2");
+      let contentDiv = document.createElement("div");
+      let jsonContent = document.createElement("pre");
+      //jsonContent.innerHTML = JSON.stringify(executionHistory, null, 2);
+      contentDiv.setAttribute("slot","content");
+      header.setAttribute("slot","header");
+      header.innerText = headerText;
+
+        //debug panel
+        let codeblock = document.createElement("code");
+        codeblock.setAttribute("class","language-json");
+          
+        codeblock.innerHTML = JSON.stringify(executionHistory, null, 2);
+          
+
+          if (navigator.clipboard) {
+            let button = document.createElement("gux-button");
+
+            button.innerText = copyButtonLabel;
+            jsonContent.appendChild(button);
+
+            button.addEventListener("click", async () => {
+              await copyCode(jsonContent, button);
+            });
+          }
+          jsonContent.appendChild(codeblock);
+
+         
+
+
+
+
+
+
+
+
+      
+      contentDiv.appendChild(jsonContent);
+      accordianSection.appendChild(header);
+      accordianSection.appendChild(contentDiv);
+      accordion.appendChild(accordianSection);
+      executionPanel.appendChild(accordion);
+
+      hljs.highlightAll();
+      
+
+    }
     function createEvent(eventTime, eventId, eventDetail, eventSource, eventParticipant, eventParticipantType) {
       let ourEvent =
       {
@@ -354,13 +617,27 @@
       conversationEvents.push(ourEvent);
     }
 
+    function createCallEvent(eventTime, eventId, eventDetail, eventSource, eventParticipant, eventParticipantType) {
+      let ourEvent =
+      {
+        "eventTime": eventTime,
+        "eventID": eventId,
+        "eventDetail": eventDetail,
+        "eventParticipant": eventParticipant,
+        "eventParticipantType": eventParticipantType,
+        "eventSource": eventSource
+      }
 
-    function createEventTable(eventArray) {
+      callEvents.push(ourEvent);
+    }
+
+
+    function createEventTable(eventArray,div="parse-div") {
 
 
       var table, row, guxTable;
       var update = false;
-      document.getElementById('parse-div').innerHTML = "";
+      document.getElementById(div).innerHTML = "";
 
 
 
@@ -371,7 +648,7 @@
       guxTable.setAttribute('resizable-columns', '');
       guxTable.setAttribute('compact', '');
       table.setAttribute('slot', 'data');
-      document.getElementById("parse-div").appendChild(guxTable).appendChild(table);
+      document.getElementById(div).appendChild(guxTable).appendChild(table);
 
 
       //Create a table in the view.s
@@ -647,7 +924,21 @@
 
 
 
+//helper functions
 
+async function copyCode(block, button) {
+  let code = block.querySelector("code");
+  let text = code.innerText;
+
+  await navigator.clipboard.writeText(text);
+
+  // visual feedback that task is completed
+  button.innerText = "JSON Copied";
+
+  setTimeout(() => {
+    button.innerText = copyButtonLabel;
+  }, 700);
+}
 
     function ascending(a, b) {
       if (a.textContent < b.textContent) {
@@ -720,41 +1011,104 @@
       </fieldset>
     </div>
 
-    <h2>Participants</h2>
-    <div id="participant-div" class="participantDisplay"></div>
-    <h2>Log</h2>
-    <gux-table-toolbar>
-      <div slot="search-and-filter">
-        <gux-form-field-search label-position="screenreader">
-          <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search"
-            onkeyup="filterTable()" />
-          <label slot="label">Toolbar Search</label>
-        </gux-form-field-search>
-
-      </div>
-
-      <div slot="contextual-actions">
-      </div>
-
-      <div slot="permanent-actions">
-        <!--gux-table-toolbar-action action="refresh" onclick="getMySavedViews()"></gux-table-toolbar-action-->
-      </div>
-
-      <!--div slot="menu-actions">
+    <gux-tabs class="log-Tabs">
+      <gux-tab-list slot="tab-list">
+        <gux-tab tab-id="6-1">
+          <gux-icon icon-name="agent" decorative="true"></gux-icon>
+          Participant Data
+        </gux-tab>
+        <gux-tab tab-id="6-2">
+          <gux-icon icon-name="user-directory" decorative="true"></gux-icon>
+          Call Log / Breadcrumbs
+        </gux-tab>
        
-        <gux-table-toolbar-action action="refresh" onclick="getMySavedViews()"></gux-table-toolbar-action>
-      </div-->
+        <gux-tab tab-id="6-4">
+          <gux-icon icon-name="fa/align-justify-regular" decorative="true"></gux-icon>
+          Call Events
+        </gux-tab>
+        <gux-tab tab-id="6-3">
+          <gux-icon icon-name="cobrowse" decorative="true"></gux-icon>
+          Raw Conversation JSON
+        </gux-tab>
+        <gux-tab tab-id="6-5">
+          <gux-icon icon-name="user-directory" decorative="true"></gux-icon>
+          Raw Execution Data
+        </gux-tab>
+        
+      </gux-tab-list>
 
 
-    </gux-table-toolbar>
 
-    <div id="parse-div" class="formattedDisplay"></div>
-    <div id="raw-div" class="rawDisplay">JSON
-      <pre id="jsonDisplay"></pre>
-    </div>
-    <div id="flow-div" class="rawDisplay">JSON
-      <pre id="jsonDisplay"></pre>
-    </div>
+
+      <gux-tab-panel tab-id="6-1">
+        <div class="main-container">
+          <div id="participant-div" class="participantDisplay"></div>
+        </div>
+      </gux-tab-panel>
+      <gux-tab-panel tab-id="6-2">
+        <div class="main-container">
+          <gux-table-toolbar>
+            <div slot="search-and-filter">
+              <gux-form-field-search label-position="screenreader">
+                <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search"
+                  onkeyup="filterTable()" />
+                <label slot="label">Toolbar Search</label>
+              </gux-form-field-search>
+
+            </div>
+
+            <div slot="contextual-actions"></div>
+
+            <div slot="permanent-actions"></div>
+
+
+
+
+          </gux-table-toolbar>
+          <div id="parse-div" class="formattedDisplay"></div>
+        </div>
+      </gux-tab-panel>
+
+      <gux-tab-panel tab-id="6-3">
+        <div class="debug-panel">
+
+          <div slot="content">
+            <div id="json-div" class="rawDisplay">
+              <pre id="jsonDisplay"></pre>
+            </div>
+
+
+
+          </div>
+
+        </div>
+      </gux-tab-panel>
+
+      <gux-tab-panel tab-id="6-4">
+        <div class="debug-panel">
+
+          <div id="event-div" class="participantDisplay"></div>
+
+        </div>
+      </gux-tab-panel>
+
+      <gux-tab-panel tab-id="6-5">
+        <div class="debug-panel">
+
+          <div slot="content">
+            <div id="raw-div" class="rawDisplay">
+              <pre id="executionJsonDisplay"></pre>
+            </div>
+
+
+
+          </div>
+
+        </div>
+      </gux-tab-panel>
+
+    </gux-tabs>
+
 
   </div>
 </body>
@@ -787,6 +1141,8 @@
   .main-container .rawDisplay {
     flex: 0 1 40px;
   }
+  
+
 </style>
 
 </html>
