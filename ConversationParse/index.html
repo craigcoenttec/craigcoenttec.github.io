@@ -488,6 +488,13 @@
                 }
                 
                 break;
+              case "actionAddFlowMilestone":
+              if (execution[key].inputData) 
+                {
+                  detailString += ` outcome: ${execution[key].inputData.flowOutcome.name}; - Milestone ${execution[key].inputData.flowMilestone.name}`
+                }
+              
+                break;
 
               case "actionGetParticipantData":
                 
@@ -524,6 +531,38 @@
               case "actionSwitch":
                 detailString += ` - output path: ${execution[key].outputPathName}`
                 break;
+              case "actionCollectInput":
+
+                  detailString += ` - Entered Input:`
+                if (execution[key].outputData) {
+                  
+                    detailString += ` ${execution[key].outputData.inputData};`
+                  
+                }
+                break;
+              case 	"actionEvaluateScheduleGroup":
+                detailString += ` - Schedule Group:`
+                if (execution[key].inputData) {
+                  
+                    detailString += ` ${execution[key].inputData.scheduleGroup.name} - Timezone: ${execution[key].inputData.scheduleGroup.timeZone} - Current State:  ${execution[key].outputPathId}`
+                  
+                }
+                break;
+
+              case "actionTransferToAcd":
+                detailString += ` - Queue:`
+                if (execution[key].inputData) {
+                  
+                    detailString += ` ${execution[key].inputData.targetQueue.name} `
+                    if (execution[key].inputData.acdSkills) {
+                      detailString += ` Skills:`
+                    for (const skill of execution[key].inputData.acdSkills) {
+                      detailString += ` ${skill.skill.name};`
+                  }
+                }
+
+                  
+                }
 
               default:
 
@@ -1026,6 +1065,7 @@ async function copyCode(block, button) {
           <gux-icon icon-name="fa/align-justify-regular" decorative="true"></gux-icon>
           Call Events
         </gux-tab>
+       
         <gux-tab tab-id="6-3">
           <gux-icon icon-name="cobrowse" decorative="true"></gux-icon>
           Raw Conversation JSON
@@ -1106,6 +1146,8 @@ async function copyCode(block, button) {
 
         </div>
       </gux-tab-panel>
+
+     
 
     </gux-tabs>
 
