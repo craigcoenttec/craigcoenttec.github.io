@@ -159,9 +159,13 @@
     const copyButtonLabel = "Copy JSON";
 
     async function parseConversation() {
-
+      
       //get conversation id
       let convID = document.getElementById("conversationID").value;
+
+      getConversationAnalytics(convID)
+
+
       conversationEvents = []
       logExecution = document.getElementById("execHis").checked
       logFullActionDetail = document.getElementById("execRaw").checked
@@ -286,6 +290,8 @@
           createParticipantTable(data.participants)
           createEventTable(callEvents,"event-div")
 
+          
+
           if (logExecution) {
             let executionPanel = document.getElementById("executionJsonDisplay");
             executionPanel.innerHTML = "";
@@ -301,6 +307,42 @@
           console.log("%cThere was a failure calling getConversation", 'color: red');
           console.error(err);
         });
+    }
+
+    async function getConversationAnalytics(conversationID)
+    {
+      let opts = { 
+        "id": [conversationID] // [String] | Comma-separated conversation ids
+      };
+
+// Gets multiple conversations by id
+capi.getAnalyticsConversationsDetails(opts)
+  .then((data) => {
+    console.log(`getAnalyticsConversationsDetails success! data: ${JSON.stringify(data, null, 2)}`);
+     //debug panel
+     let codeblock = document.createElement("code");
+      codeblock.setAttribute("class","language-json");
+      let jsonDisplayBlock = document.getElementById("analyticsJsonDisplay")
+          jsonDisplayBlock.innerHTML = "";
+          codeblock.innerHTML = JSON.stringify(data, null, 2);
+          if (navigator.clipboard) {
+            let button = document.createElement("gux-button");
+
+            button.innerText = copyButtonLabel;
+            jsonDisplayBlock.appendChild(button);
+
+            button.addEventListener("click", async () => {
+              await copyCode(jsonDisplayBlock, button);
+            });
+          }
+          jsonDisplayBlock.appendChild(codeblock);
+
+          hljs.highlightAll();
+  })
+  .catch((err) => {
+    console.log("There was a failure calling getAnalyticsConversationsDetails");
+    console.error(err);
+  });
     }
 
     async function getFlows() {
@@ -1070,6 +1112,10 @@ async function copyCode(block, button) {
           <gux-icon icon-name="cobrowse" decorative="true"></gux-icon>
           Raw Conversation JSON
         </gux-tab>
+        <gux-tab tab-id="6-6">
+          <gux-icon icon-name="customer-journey" decorative="true"></gux-icon>
+          Raw Conv Analytics JSON
+        </gux-tab>
         <gux-tab tab-id="6-5">
           <gux-icon icon-name="user-directory" decorative="true"></gux-icon>
           Raw Execution Data
@@ -1128,6 +1174,21 @@ async function copyCode(block, button) {
         <div class="debug-panel">
 
           <div id="event-div" class="participantDisplay"></div>
+
+        </div>
+      </gux-tab-panel>
+      
+      <gux-tab-panel tab-id="6-6">
+        <div class="debug-panel">
+
+          <div slot="content">
+            <div id="analytics-div" class="rawDisplay">
+              <pre id="analyticsJsonDisplay"></pre>
+            </div>
+
+
+
+          </div>
 
         </div>
       </gux-tab-panel>
