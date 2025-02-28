@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!-- Created as an example by https://github.com/mcphee11 Version 2.1 -->
+<html>
+  <head>
+    <meta name="robots" content="noindex" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title></title>
+    <meta name="Template" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Genesys CSS https://spark.genesys.com/ Using the client version for improved load time... change region and version as necessary. -->
+    <link href="https://app.mypurecloud.com/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css"
+    rel="stylesheet" />
+    <script type="module"
+    src="https://app.mypurecloud.com/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+    <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+  </head>
+  <body onload="start()">
+    <script>
+      'use strict' //Enables strict mode is JavaScript
+      let url = new URL(document.location.href)
+      let gc_region = url.searchParams.get('gc_region')
+      let gc_clientId = url.searchParams.get('gc_clientId')
+      let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+
+      function addParameterToView(key, value)
+      {
+        let ourDiv = document.getElementById("StringDisplay");
+        let ourCard = document.createElement("gux-card");
+        ourCard.setAttribute("accent","raised");
+
+        let ourSpan = document.createElement("h2");
+        ourSpan.setAttribute("class","keySpan");
+        ourSpan.innerHTML = key;
+        let ourValue = document.createElement("gux-copy-to-clipboard");
+        let ourSlot = document.createElement("div");
+        ourSlot.setAttribute("class","value")
+        ourSlot.setAttribute("slot","content");
+        ourSlot.innerHTML = value;
+        ourCard.appendChild(ourSpan);
+        ourValue.appendChild(ourSlot)
+        ourCard.appendChild(ourValue);
+        
+        ourDiv.appendChild(ourCard)
+      }
+
+      async function start() {
+
+        url.searchParams.keys().forEach(key => {
+            addParameterToView(key,url.searchParams.get(key))
+        });
+        
+      } //End of start() function
+    </script>
+
+    <h1>Data Display</h1>
+    <div class="container" id="StringDisplay"></div>
+  </body>
+  <style>
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 20px;
+      background-color: #f2f2f2;
+    }
+    .value {
+        font-size: large;
+    }
+    gux-card {
+      inline-size: 200px;
+    }
+  </style>
+</html>
