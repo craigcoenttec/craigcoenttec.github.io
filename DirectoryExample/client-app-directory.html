@@ -104,7 +104,7 @@
     /*
     * Creates our edit and add form.
     */
-    function createModalForm(type,name="",contacttype="",gcid="",recordid="")
+    function createModalForm(type,contactObject = null, name="",contacttype="",gcid="",recordid="")
     {
 
       let existingForm = document.getElementById(`contact-${type}-modal`);
@@ -112,6 +112,8 @@
     {
       existingForm.remove();
     }
+
+
       //let validTypes = ['USER','EXTERNAL','GROUP','QUEUE'];
       let validTypes = ['EXTERNAL'];
       //Modal
@@ -140,10 +142,10 @@
       nameInput.setAttribute('slot','input');
       nameInput.setAttribute('type','text');
       nameInput.setAttribute('id','modalNameField');
-      // if (type === 'EDIT')
-      // {
-      //   nameInput.value=name
-      // }
+       if (type === 'Edit')
+       {
+         nameInput.value=contactObject.contactName
+       }
       nameField.appendChild(nameInput);
       let nameLabel = document.createElement('label');
       nameLabel.setAttribute('slot','label');
@@ -184,6 +186,10 @@
       let phoneInput = document.createElement('gux-phone-input-beta');
       phoneInput.setAttribute('default-region','US');
       phoneInput.setAttribute('id','modalPhoneField');
+      if (type == "Edit")
+      {
+        phoneInput.value = contactObject.contactNumber
+      }
       numberField.appendChild(phoneInput);
       let phoneLabel = document.createElement('label');
       phoneLabel.setAttribute('slot','label');
@@ -203,6 +209,10 @@
       gcInput.setAttribute('type','text');
       gcInput.setAttribute('id','modalgcIDField');
       gcInput.setAttribute('disabled','true');
+      if (type == "Edit")
+      {
+        gcInput.value = contactObject.contactGCID;
+      }
       gcIDField.appendChild(gcInput);
       let gcIDLabel = document.createElement('label');
       gcIDLabel.setAttribute('slot','label');
@@ -220,6 +230,10 @@
       recordInput.setAttribute('type','text');
       recordInput.setAttribute('id','modalRecordIDField');
       recordInput.setAttribute('disabled','true');
+      if(type == "Edit")
+      {
+        recordInput.value = contactObject.recordID
+      }
       recordIDField.appendChild(recordInput);
       let recordIDLabel = document.createElement('label');
       recordIDLabel.setAttribute('slot','label');
@@ -475,17 +489,17 @@
       let contactID = parent.getAttribute("id");
       console.log(`edit button clicked ${contactID}`);
       let ourContact = currentDirectory.find(c => c.recordID == contactID);
-      createModalForm('Edit',ourContact.contactName);
-        document.getElementById('modalNameField').value = ourContact.contactName;
+      createModalForm('Edit',ourContact,ourContact.contactName);
+        //document.getElementById('modalNameField').value = ourContact.contactName;
         document.getElementById('modalTypeField').value = ourContact.contactType;
-        document.getElementById('modalPhoneField').value = ourContact.contactNumber;
+        //document.getElementById('modalPhoneField').value = ourContact.contactNumber;
         let selection = document.getElementById(`gux-option-${ourContact.contactType}`);
         selection.setAttribute('aria-selected','true');
         selection.setAttribute('class','gux-selected');
         selection.closest('gux-dropdown').setAttribute('value',ourContact.contactType);
         
-        document.getElementById('modalRecordIDField').value = ourContact.recordID;
-        document.getElementById('modalgcIDField').value = ourContact.contactGCID;
+        //document.getElementById('modalRecordIDField').value = ourContact.recordID;
+        //document.getElementById('modalgcIDField').value = ourContact.contactGCID;
         
         
     }
@@ -1159,7 +1173,7 @@
     <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
     <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
     <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
-    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.10 </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.11 </em></p>
      <div><span id="ModalPlaceHolder"></span></div>
   
   </section>
