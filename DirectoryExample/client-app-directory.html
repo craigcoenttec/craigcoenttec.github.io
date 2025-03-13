@@ -111,8 +111,10 @@
       if (existingForm)
     {
       existingForm.remove();
+      console.log(`removed existing form`)
     }
 
+    console.log(`Modal Type : ${type}  object : ${contactObject}`)
 
       //let validTypes = ['USER','EXTERNAL','GROUP','QUEUE'];
       let validTypes = ['EXTERNAL'];
@@ -145,6 +147,7 @@
        if (type === 'Edit')
        {
          nameInput.value=contactObject.contactName
+         console.log(`Editing record:  Name = ${contactObject.contactName}`)
        }
       nameField.appendChild(nameInput);
       let nameLabel = document.createElement('label');
@@ -189,6 +192,7 @@
       if (type == "Edit")
       {
         phoneInput.value = contactObject.contactNumber
+        console.log(`Editing record:  phone number ID = ${contactObject.contactNumber}`)
       }
       numberField.appendChild(phoneInput);
       let phoneLabel = document.createElement('label');
@@ -212,6 +216,7 @@
       if (type == "Edit")
       {
         gcInput.value = contactObject.contactGCID;
+        console.log(`Editing record:  GC ID = ${contactObject.contactGCID}`)
       }
       gcIDField.appendChild(gcInput);
       let gcIDLabel = document.createElement('label');
@@ -233,6 +238,7 @@
       if(type == "Edit")
       {
         recordInput.value = contactObject.recordID
+        console.log(`Editing record:  record ID = ${contactObject.recordID}`)
       }
       recordIDField.appendChild(recordInput);
       let recordIDLabel = document.createElement('label');
@@ -1173,7 +1179,7 @@
     <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
     <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
     <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
-    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.11 </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.12 </em></p>
      <div><span id="ModalPlaceHolder"></span></div>
   
   </section>
