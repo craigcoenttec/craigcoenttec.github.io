@@ -22,9 +22,9 @@
     //const clientId = '37b975bb-f2fb-4d41-b2a8-90be8ce9e010';
     //const redirectUri = 'https://craigcoenttec.github.io/DirectoryExample/client-app-directory.html';
     let url = new URL(document.location.href)
-    let gc_region = url.searchParams.get('gc_region')
-    let clientId = url.searchParams.get('gc_clientId')
-    let redirectUri = url.searchParams.get('gc_redirectURL')
+    let gc_region = url.searchParams.get('gc_region') || "usw2.pure.cloud"
+    let clientId = url.searchParams.get('gc_clientId') || '37b975bb-f2fb-4d41-b2a8-90be8ce9e010'
+    let redirectUri = url.searchParams.get('gc_redirectURL') || 'https://craigcoenttec.github.io/DirectoryExample/client-app-directory.html'
     
 
     const appName = 'client-app-directory';
@@ -34,7 +34,7 @@
     // Default values are assigned but values should 
     // be set on the function 'assignConfiguration'
     let language = 'en-us';
-    let environment = gc_region; 
+    let environment = gc_region ; 
 
     let userDetails = null;
     let dataTableResult = null;
@@ -1159,7 +1159,7 @@
     <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
     <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
     <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
-    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.9 </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.10 </em></p>
      <div><span id="ModalPlaceHolder"></span></div>
   
   </section>
