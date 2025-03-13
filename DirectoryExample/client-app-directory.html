@@ -107,11 +107,17 @@
     function createModalForm(type,contactObject = null, name="",contacttype="",gcid="",recordid="")
     {
 
-      let existingForm = document.getElementById(`contact-${type}-modal`);
+      let existingForm = document.getElementById(`contact-Add-modal`);
       if (existingForm)
     {
       existingForm.remove();
-      console.log(`removed existing form`)
+      console.log(`removed existing add form`)
+    }
+    existingForm = document.getElementById(`contact-Edit-modal`);
+      if (existingForm)
+    {
+      existingForm.remove();
+      console.log(`removed existing edit form`)
     }
 
     console.log(`Modal Type : ${type}  object : ${contactObject}`)
@@ -1179,7 +1185,7 @@
     <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
     <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
     <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
-    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.12 </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.13 </em></p>
      <div><span id="ModalPlaceHolder"></span></div>
   
   </section>
