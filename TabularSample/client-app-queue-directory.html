@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Directory Exercise</title>
+  <!--link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css" integrity="sha512-byErQdWdTqREz6DLAA9pCnLbdoGGhXfU6gm1c8bkf7F51JVmUBlayGe2A31VpXWQP+eiJ3ilTAZHCR3vmMyybA==" crossorigin="anonymous" /-->
+  <!--link rel="stylesheet" href="style/mystyle.css" -->
+
+  
+  <script src="https://sdk-cdn.mypurecloud.com/client-apps/2.0.0/purecloud-client-app-sdk.js"></script>
+   <!-- Genesys CSS https://spark.genesys.com/  In PROD set a version -->
+   <link href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css" rel="stylesheet" />
+   <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script -->
+   <script type="module" src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+   <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+   <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+
+
+
+
+  <!--script src="genesys-spark/dist/index.js"></script -->
+  <!-- adding JSONata for easier parsing -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/jsonata/jsonata.min.js"></script> -->
+  
+  <script type="text/javascript">
+    
+  
+  
+    
+    //const clientId = 'b6f9ae1b-e203-4c22-9d0f-fbf12717f3ce';
+    const redirectUri = 'https://craigcoenttec.github.io/TabularSample/client-app-queue-directory.html';
+
+    const appName = 'client-app-directory';
+    const qParamLanguage = 'language';
+    const qParamEnvironment = 'environment';
+
+    // Default values are assigned but values should 
+    // be set on the function 'assignConfiguration'
+    let url = new URL(document.location.href)
+    //let environment = url.searchParams.get('gc_region')
+    //let gc_clientId = url.searchParams.get('gc_clientId')
+    //let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+    //let gc_conversationId = url.searchParams.get('gc_conversationId')
+
+    let language = 'en-us';
+   let environment = 'usw2.pure.cloud'; 
+   // let envMap = {"USW2":"usw2.pure.cloud","USE1":"mypurecloud.com"};
+    //let environmentParam = url.searchParams.get('environment') || 'USW2'
+   // environment = envMap[environmentParam.toUpperCase()]; 
+    let clientId = url.searchParams.get('clientid') || 'b6f9ae1b-e203-4c22-9d0f-fbf12717f3ce'
+
+   //environment = envMap[environmentParam.toUpperCase()]; 
+    let initialQueueId = url.searchParams.get('queueid')
+
+    let userDetails = null;
+    let dataTableResult = null;
+    let contactConfig = null;
+
+    let client = null;
+
+    let platformClient = require('platformClient');
+    let ClientApp = window.purecloud.apps.ClientApp;
+    let myClientApp = null;
+
+    let currentDirectory = [];
+    let myUserID = null;
+    let currentDirectoryID=null;
+    let currentDatatableID = null;
+    let currentDirectoryGroup = null;
+    let myGroups = null;
+    let myPermissions = [];
+
+    let currentCalls = [];
+    //const websocketClient = new WebSocketClient();
+    
+    /**
+     * Configure both the Platform SDK and the Client App SDK
+     */
+    function setupGenesysClients(){
+      
+      const client = platformClient.ApiClient.instance;
+      const usersApi = new platformClient.UsersApi();
+      
+      // Configure Client App
+    
+      myClientApp = new ClientApp({
+          pcEnvironment: environment
+      });
+      
+      // Configure and Authenticate Platform Client
+      client.setPersistSettings(true, appName);
+      client.setEnvironment(environment);
+
+      return client.loginImplicitGrant(clientId, redirectUri)
+        .then(data =>  {
+          let opts = { 
+            "expand": ["groups"]//, // [String] | Which fields, if any, to expand.
+            };
+
+            //Getting logged in user groups for directory use later.
+          return usersApi.getUsersMe(opts);
+        })
+        .then(data => {
+          userDetails = data;
+          myUserID = userDetails.id;
+          myGroups = userDetails.groups;
+         // addDirectory(userDetails.name,myUserID,true,true);
+          //callSocketSetup(myUserID);   Temp removing to simplify for hands on.
+          
+
+          // myClientApp.alerting.showToastPopup(
+          //   `Hi ${userDetails.name}`, 
+          //   'Your local test app has loaded');
+        })
+        .catch(err => console.log(err));
+       
+    }
+    
+
+   
+  
+    /*
+    *Function to catch and make the dial
+    *
+    */
+    async function dialContact(rowObject)
+    {
+      let parent = rowObject.closest("tr"); //using the class for selection
+      let contactID = parent.getAttribute("id");
+      console.log(`dial button clicked ${contactID}`);
+
+      let contact = currentDirectory.find(c => c.recordID == contactID);
+
+      console.log(JSON.stringify(contact));
+      
+      var body;
+
+      switch (contact.contactType) {
+        case "USER":
+         body = {callUserId: contact.contactGCID, sessionType: "softphone"}
+          break;
+          
+          case "QUEUE":
+          body = {phoneNumber: contact.contactNumber, sessionType: "softphone"}
+          break;
+
+        default:
+        body = {phoneNumber: contact.contactNumber, sessionType: "softphone"}
+          break;
+      }
+            
+
+            const client = platformClient.ApiClient.instance
+            const capi = new platformClient.ConversationsApi()
+
+            let call = await capi.postConversationsCalls(body)
+             console.log('Call: ', call)
+        
+      
+    }
+
+    /*
+    *Function to catch and make the transfer
+    *
+    */
+    async function transferContact(rowObject)
+    {
+      console.log('%cTransfer Clicked', 'color: green');
+      let parent = rowObject.closest("tr"); //using the class for selection
+      let contactID = parent.getAttribute("id");
+      console.log(`Contact ID is ${contactID}`);
+
+      let contact = currentDirectory.find(c => c.recordID == contactID);
+
+      //console.log(contact);
+      
+      var body;
+
+      switch (contact.contactType) {
+        case "USER":
+         body = {
+              
+                    userId: contact.contactGCID  
+              }
+          break;
+          
+          // case "QUEUE":
+          // body = {phoneNumber: contact.contactNumber}
+          // break;
+
+        default:
+        body = {
+          
+            address: contact.contactNumber
+          
+        }
+          
+        break;
+      }
+            
+
+            const client = platformClient.ApiClient.instance
+            const capi = new platformClient.ConversationsApi()
+
+            // let call = await capi.postConversationsCalls(body)
+            // console.log('Call: ', call)
+        
+
+            //First get conversations
+            var opts = {
+                communicationType: "Call" // String | Call or Chat communication filtering
+            }
+            let conversations = await capi.getConversations(opts);
+            console.log(JSON.stringify(conversations,null,2));
+            var internalParticipant = conversations.entities[0].participants.find(p => p.purpose === "agent" || p.purpose === "user");
+            //console.log(JSON.stringify(conversations,null,2));
+            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "external");
+            var conversationId = conversations.entities[0].id;
+
+            //using internal
+            var participantId = internalParticipant.id;
+
+            console.log(`transferring participant: ${participantId}` );
+            
+            //let transferCall = await capi.postConversationsCallParticipantConsult(conversationId, participantId, body)
+            console.log(`Transfering: Conversation ID ${conversationId}, ParticipantID ${participantId}, to ${body}` );
+            let transferCall = await capi.postConversationParticipantReplace(conversationId, participantId, body);
+            
+      
+    }
+
+    /*
+    *Function to catch and set up the camp.
+    *
+    */
+
+    function campContact(rowObject)
+    {
+      let parent = rowObject.closest("tr"); //using the class for selection
+      let contactID = parent.getAttribute("id");
+      console.log(`camp button clicked ${contactID}`);
+      myClientApp.alerting.showToastPopup(
+            'campStarted','camp Started');
+
+      let contact = currentDirectory.find(c => c.recordID == contactID);
+
+      userSocketSetup(contact.contactGCID, contact.contactName, 'AVAILABLE', rowObject);
+
+      rowObject.setAttribute('accent','danger');
+      
+      //client.directory.showUser('f1804415-bca9-4eb7-ad5a-521fca8d6128')
+    }
+
+  
+
+    
+    /*
+    *Function to add directory
+    *
+    */
+
+    function addDirectory(name, value, editable, selected)
+    {
+      let parent = document.getElementById("dirlistbox"); 
+      let newDir = document.createElement("gux-option");
+      newDir.setAttribute('value',value);
+      newDir.appendChild(document.createTextNode(name));
+      newDir.setAttribute('data-allowEdit',editable);
+      parent.appendChild(newDir);
+      if (selected){
+        let dropdown = document.getElementById('dir-dropdown');
+        dropdown.setAttribute('value',value);
+      }
+      
+    }
+
+
+
+
+    /**
+     * This is our logic to query the data table and create the intial table.
+     */
+
+
+    function refresh()
+    {
+      loadGCDataTable(currentDirectoryGroup);
+    }
+
+
+    function getQueueMembers(queueId)
+    {
+       let apiInstance = new platformClient.RoutingApi();
+
+        
+        let opts = { 
+        "pageNumber": 1, // Number | 
+        "pageSize": 25, // Number | Max value is 100
+        "sortOrder": "asc", // String | Note: results are sorted by name.
+        "expand": ["presence","routingStatus"], // [String] | Which fields, if any, to expand.
+        //"name": "name_example", // String | Filter by queue member name (contains-style search)
+        //"profileSkills": ["profileSkills_example"], // [String] | Filter by profile skill (contains-style search)
+        //"skills": ["skills_example"], // [String] | Filter by skill (contains-style search)
+        //"languages": ["languages_example"], // [String] | Filter by language (contains-style search)
+        //"routingStatus": ["routingStatus_example"], // [String] | Filter by routing status
+        //"presence": ["presence_example"], // [String] | Filter by presence
+        //"memberBy": "memberBy_example", // String | Filter by member type
+        "joined": true // Boolean | Filter by joined status
+        };
+
+        // Get the members of this queue.
+        apiInstance.getRoutingQueueMembers(queueId, opts)
+        .then((data) => {
+            console.log(`getRoutingQueueMembers success! data: ${JSON.stringify(data, null, 2)}`);
+            loadGCDataTable(data);
+        })
+        .catch((err) => {
+            console.log("There was a failure calling getRoutingQueueMembers");
+            console.error(err);
+        });
+     }
+
+
+
+
+    function loadGCDataTable(listToLoad)
+    {
+    
+   
+    currentDirectoryGroup = listToLoad;
+    createTable(listToLoad);
+          
+    }
+
+
+
+    /**
+     * Function to draw our a current table
+     * 
+     */
+     function createTable(directoryJSON)
+     {
+      
+        console.log(JSON.stringify(directoryJSON,null,2));
+        var table,row,guxTable;
+        var userIds = [];
+        var update = false;
+        document.getElementById('directoryTable').innerHTML = "";
+
+        
+        
+        table = document.createElement("table");
+        table.setAttribute('id','currentDirTable');
+        guxTable = document.createElement("gux-table");
+        guxTable.setAttribute('resizable-columns','');
+        guxTable.setAttribute('compact','');
+        document.getElementById("directoryTable").appendChild(guxTable).appendChild(table);
+        table.setAttribute('slot','data');
+        
+        //Create a table in the view.s
+      
+        for (const entity of directoryJSON.entities)
+     {
+              row = table.insertRow();
+
+
+            let currentPresence = entity.user.presence.presenceDefinition.systemPresence
+
+
+              row.setAttribute('id',entity.id)
+
+            let avatarCell = row.insertCell();
+            let avatar = document.createElement("gux-avatar-beta");
+            avatar.setAttribute('size', "small");
+            avatar.setAttribute('name', entity.name);
+            avatar.setAttribute('label', entity.name);
+            if (currentPresence == 'On Queue')
+                        {
+                            currentPresence = 'on-queue';
+                        }
+            avatar.setAttribute('presence', currentPresence.toLowerCase())
+            //avatar.setAttribute('uc-integration', updateUcIntegraton.value);
+            avatar.setAttribute('badge', false);
+            avatar.setAttribute('ring', true);
+            avatar.setAttribute('notifications', false);
+            avatar.setAttribute('accent', 'auto');
+            
+            if (entity.user.images != null){
+                let image = document.createElement("img");
+
+                image.setAttribute("slot","image");
+                image.setAttribute("src",entity.user.images[0].imageUri);
+
+                avatar.appendChild(image);
+            }
+            avatarCell.appendChild(avatar);
+
+
+
+              row.insertCell().innerHTML = entity.name;
+              row.insertCell().innerHTML = entity.user.presence.presenceDefinition.systemPresence;
+              let durationCell = row.insertCell();
+              let durationElement = document.createElement("gux-time-beta");
+              durationElement.setAttribute("datetime",entity.user.presence.modifiedDate);
+              durationElement.setAttribute("format","short");
+              durationCell.appendChild(durationElement);
+              row.insertCell().innerHTML = entity.routingStatus.status;
+              
+                userIds.push(entity.id);
+
+            // //dial button
+            // let buttonCell = row.insertCell();
+
+              
+
+            // //create inline button
+            // let dialButton = document.createElement('gux-button');
+            // dialButton.innerText = 'Dial';
+            // dialButton.setAttribute('onclick', 'dialContact(this)');
+
+            // dialButton.setAttribute('accent', 'inline');
+            // buttonCell.appendChild(dialButton);
+
+            // //Transfer Button
+            // let button2Cell = row.insertCell();
+            // let transferButton = document.createElement('gux-button');
+            // transferButton.innerText = 'Transfer';
+            // transferButton.setAttribute('onclick', 'transferContact(this)');
+            // transferButton.setAttribute('name','transferButton');
+            // transferButton.setAttribute('disabled','false');
+
+            // transferButton.setAttribute('accent', 'inline');
+            // button2Cell.appendChild(transferButton);
+
+
+
+            //Add our Context Menu
+            let lastcell = row.insertCell();
+            let lastCellDiv = lastcell.appendChild(document.createElement('div'));
+
+
+            let contextMenu = document.createElement('gux-context-menu');
+            contextMenu.setAttribute('id','context-' + entity.id);
+
+            //dial Button
+            let contextDial = document.createElement('gux-list-item');
+            contextDial.setAttribute('onclick',"dialContact(this)");
+            
+            text = document.createTextNode("Dial");
+            contextDial.appendChild(text);
+
+            //transfer Button
+            let contextTransfer = document.createElement('gux-list-item');
+            contextTransfer.setAttribute('onclick',"transferContact(this)");
+            
+            text = document.createTextNode("Transfer");
+            contextTransfer.appendChild(text);
+
+            //listen Button
+            let contextListen = document.createElement('gux-list-item');
+            contextListen.setAttribute('onclick',"dialContact(this)");
+            
+            text = document.createTextNode("Listen");
+            contextListen.appendChild(text);
+
+            //Log Out Button
+            let contextLogout = document.createElement('gux-list-item');
+            contextLogout.setAttribute('onclick',"logOut(this)");
+            
+            text = document.createTextNode("Log Out");
+            contextLogout.appendChild(text);
+           
+
+            //Status Button
+            let contextStatus = document.createElement('gux-list-item');
+            contextStatus.setAttribute('onclick',"getQueueStats(this)");
+            
+            text = document.createTextNode("Status");
+            contextStatus.appendChild(text);
+
+            //Camp
+            let contextCamp = document.createElement('gux-list-item');
+            contextCamp.setAttribute('onclick',"campContact(this)");
+           
+            text = document.createTextNode("Camp User");
+            contextCamp.appendChild(text);
+
+            
+            contextMenu.appendChild(contextStatus);
+            contextMenu.appendChild(contextCamp);
+            contextMenu.appendChild(contextDial);
+            contextMenu.appendChild(contextTransfer);
+            contextMenu.appendChild(contextListen);
+            contextMenu.appendChild(contextLogout);
+            contextMenu.setAttribute('compact','');
+            lastcell.setAttribute('data-cell-action','');
+            lastcell.appendChild(lastCellDiv.appendChild(contextMenu));
+
+
+
+     }
+
+
+
+
+
+        
+
+        //Add our table header
+        if(update == false)
+        {
+        var headerRow = table.createTHead().insertRow();
+
+        let th = document.createElement("th");
+        let text = document.createTextNode("Icon");
+        th.setAttribute('data-column-name','icon');
+       
+        th.appendChild(text);
+        headerRow.appendChild(th);
+
+         th = document.createElement("th");
+         text = document.createTextNode("Name");
+        th.setAttribute('data-column-name','name');
+       
+        th.appendChild(text);
+      
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("Presence");
+        th.setAttribute('data-column-name','presence');
+        th.appendChild(text);
+        //th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("Since");
+        th.setAttribute('data-column-name','presenceDuration');
+        th.appendChild(text);
+        //th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("Status");
+        th.setAttribute('data-column-name','status');
+        th.appendChild(text);
+        //th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+         text = document.createTextNode("Action");
+         th.setAttribute('data-column-action','Action');
+         th.appendChild(text);
+         headerRow.appendChild(th);
+       
+        }
+        
+        subscribeToUsers(userIds);
+        
+        
+
+      }
+      
+
+     /**Queue Stats
+      * 
+      */ 
+
+     async function getQueueStats(rowObject, queueId = "b26dde7e-d38f-4f3f-b5bb-73c840423b02")
+    {
+
+
+            var parent = rowObject.closest("tr"); //using the class for selection
+            let contactID = parent.getAttribute("id");
+            
+            console.log(`edit button clicked ${contactID}`);
+            let filter = {"filter":{"type":"and","predicates":[{"dimension":"queueId","operator":"matches","value":queueId}]},"metrics":["oUserRoutingStatuses"]}
+            parent.style.backgroundColor = "#CBE7AA";
+            let apiInstance = new platformClient.RoutingApi();
+
+      //let body = {}; // Object | query
+
+      // Query for queue observations
+      let data = await apiInstance.postAnalyticsQueuesObservationsQuery(filter)
+        
+          console.log(`postAnalyticsQueuesObservationsQuery success! data: ${JSON.stringify(data, null, 2)}`);
+          if (data.results[0].data[0].qualifier == "OFF_QUEUE")
+          {
+            parent.style.backgroundColor = "#F0A5A6";
+          }
+        
+       
+    }
+
+    /**
+     * Filter the table
+     * 
+     * 
+     */
+
+
+  function filterTable() {
+  // Declare variables
+      var input, filter, table, tr, td, i, txtValue;
+      input = document.getElementById("myInput");
+      filter = input.value.toUpperCase();
+      table = document.getElementById("directoryTable");
+      tr = table.getElementsByTagName("tr");
+
+      // Loop through all table rows, and hide those who don't match the search query
+      for (i = 0; i < tr.length; i++) {
+        td = tr[i].getElementsByTagName("td")[1];
+        if (td) {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+          } else {
+            tr[i].style.display = "none";
+          }
+        }
+      }
+    }
+
+
+    
+    /**
+     * Assign the language and environment for the app first through
+     * the query parameters. But if non-existent, attempt to get
+     * it from localStorage. If none, use default values.
+     */
+    function assignConfiguration(){
+      let url = new URL(window.location);
+      let searchParams = new URLSearchParams(url.search);
+
+      if(searchParams.has(qParamLanguage)){
+        language = searchParams.get(qParamLanguage);
+        localStorage.setItem(`${appName}_language`, language);
+      } else {
+        let local_lang = localStorage.getItem(`${appName}_language`);
+        if(local_lang) language = local_lang;
+      }
+
+      if(searchParams.has(qParamEnvironment)){
+        environment = searchParams.get(qParamEnvironment);
+        localStorage.setItem(`${appName}_environment`, environment);
+      } else {
+        let local_env = localStorage.getItem(`${appName}_environment`);
+        if(local_env) environment = local_env;
+      }
+    }
+    
+
+    // After page loads...
+    window.addEventListener('load', (event) => {
+      //registerSparkComponents();
+      assignConfiguration();
+      console.log(`environment: ${environment}`);
+      console.log(`language: ${language}`);
+      
+      setupGenesysClients()
+      //.then(data =>  getQueueMembers("b26dde7e-d38f-4f3f-b5bb-73c840423b02"))
+      .then(data =>  getQueueMembers(initialQueueId))
+      .then(() => { 
+        
+        
+      
+          // Display values to the page
+        document.getElementById('span_environment').innerText = environment;
+        document.getElementById('span_language').innerText = language;
+        document.getElementById('span_name').innerText = userDetails.name;
+
+        console.log('Finished setup.');
+        
+        
+      })
+    });
+  
+
+//Setup for the user listener, used for camp functions
+  async function userSocketSetup(userID, contactName, status, button)
+  {
+
+    const notificationApi = new platformClient.NotificationsApi()
+
+    try 
+    {
+    //Need to store wss as only can have 15 per agent. Also bad practice to create multiply
+      if (sessionStorage.getItem("_gc_channelid") != null) {
+          console.log('channelid already exists...')
+          console.log(sessionStorage.getItem("_gc_channelid"))
+          var channelid = sessionStorage.getItem("_gc_channelid")
+
+          let userPresence = `v2.users.${userID}.presence`
+          await notificationApi.postNotificationsChannelSubscriptions(channelid, [{
+              id: userPresence
+          }])
+          console.log(`Subscribed to presence ${userPresence}`)
+
+         
+      }
+      if (sessionStorage.getItem("_gc_channelid") === null) 
+      {
+          let channel = await notificationApi.postNotificationsChannels()
+          console.log('Created Notification Channel: ', channel)
+          sessionStorage.setItem("_gc_channelid",channel.id)
+          let userPresence = `v2.users.${userID}.presence`
+          await notificationApi.postNotificationsChannelSubscriptions(channel.id, [{
+              id: userPresence
+          }])
+          console.log(`Subscribed to presence ${userPresence}`)
+
+         
+      }
+                    
+                
+
+    } 
+    catch (err) 
+    {
+        console.error('Error: ', err)
+    }
+
+            //Create websocket for events
+            try {
+                let socket = new WebSocket(`wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+
+                socket.onmessage = async function(event) {
+                    let details = JSON.parse(event.data)
+
+                    //presence change
+                    if ((details.topicName).includes("presence")) {
+                         console.log('Presence Changed: ', details)
+                        var presenceChange = details.eventBody.presenceDefinition.systemPresence
+                        var data = (details.topicName).split('.')
+                        var dataUserId = data[2]
+                        console.log('UserId: ', dataUserId)
+                        if (presenceChange == status || status == 'ANY')
+                        {
+                          myClientApp.alerting.showToastPopup(
+                          'campStarted',`${contactName} has changed their status.  They are now ${presenceChange}`);
+                          button.setAttribute('accent','tertiary');
+                        }
+                    }
+                   
+                }
+                console.log(`Waiting for events on wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+            } catch (err) {
+                console.error('Websocket error: ', err)
+            }
+  }
+
+
+  async function subscribeToUsers(userList){
+    const notificationsApi = new platformClient.NotificationsApi();
+
+    try 
+    {
+    //Need to store wss as only can have 15 per agent. Also bad practice to create multiply
+     /*  if (sessionStorage.getItem("_gc_channelid") != null) {
+          console.log('channelid already exists...')
+          console.log(sessionStorage.getItem("_gc_channelid"))
+          var channelid = sessionStorage.getItem("_gc_channelid")
+        
+          let topics = [];
+          userList.forEach(userId => {
+            topics.push({
+            id: `v2.users.${userId}?presence&routingStatus`
+            
+        })
+        
+    })
+    await notificationsApi.postNotificationsChannelSubscriptions(channelid, topics)
+     console.log(`Subscribed to presence ${userList}`)
+
+         
+      } */
+     // if (sessionStorage.getItem("_gc_channelid") === null) 
+      //{
+          let channel = await notificationsApi.postNotificationsChannels()
+          console.log('Created Notification Channel: ', channel)
+          sessionStorage.setItem("_gc_channelid",channel.id)
+          let topics = [];
+          userList.forEach(userId => {
+            topics.push({
+            id: `v2.users.${userId}?presence&routingStatus`
+            
+        })
+        
+    })
+    await notificationsApi.postNotificationsChannelSubscriptions(channel.id, topics)
+     console.log(`Subscribed to presence ${userList}`)
+
+         
+     //}
+                    
+                
+
+    } 
+    catch (err) 
+    {
+        console.error('Error: ', err)
+    }
+
+
+
+    try {
+                let socket = new WebSocket(`wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+
+                socket.onmessage = async function(event) {
+                    let details = JSON.parse(event.data)
+                    console.log(details);
+                    if ((details.topicName).includes("presence")) {
+                        let userId = details.topicName.split('.')[2];
+                        //console.log(userId);
+                        let presence = details.eventBody.presenceDefinition.systemPresence;
+                        let table = document.getElementById('currentDirTable');
+                        
+                        let row = table.rows.namedItem(userId);
+                        //console.log(row);
+                        let presenceCell = row.cells[2];
+                        presenceCell.innerHTML = presence;
+                        let presenceDurationCell = row.cells[3];
+                        presenceDurationCell.children[0].setAttribute("datetime",details.eventBody.modifiedDate);
+
+                        let avatarCell = row.cells[0];
+                        let avatar = avatarCell.children[0];
+                        if (presence == 'ON_QUEUE')
+                        {
+                            presence = 'on-queue';
+                        }
+                        avatar.setAttribute('presence',presence.toLowerCase())
+
+
+
+                    }
+                    if ((details.topicName).includes("routingStatus")) {
+                        let userId = details.topicName.split('.')[2];
+                        //console.log(userId);
+                        
+                        let table = document.getElementById('currentDirTable');
+                        
+                        let row = table.rows.namedItem(userId);
+                        console.log(row);
+                        let statusCell = row.cells[4];
+                        statusCell.innerHTML = details.eventBody.routingStatus.status;
+                    }
+                    
+                   
+                }
+                console.log(`Waiting for events on wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+            } catch (err) {
+                console.error('Websocket error: ', err)
+            }
+            
+  }
+
+
+//Setup for the call listener (determine when on phone and details about call for transfer purposes)
+  async function callSocketSetup(userID)
+  {
+
+    const notificationApi = new platformClient.NotificationsApi()
+
+    try 
+    {
+    //Need to store wss as only can have 15 per agent. Also bad practice to create multiply
+      if (sessionStorage.getItem("_gc_channelid") != null) {
+          console.log('channelid already exists...')
+          console.log(sessionStorage.getItem("_gc_channelid"))
+          var channelid = sessionStorage.getItem("_gc_channelid")
+
+          
+          let userCallsTopic = `v2.users.${userID}.conversations.calls`
+          await notificationApi.postNotificationsChannelSubscriptions(channelid, [{
+              id: userCallsTopic
+          }])
+          console.log(`Subscribed to topic ${userCallsTopic}`)
+      }
+      if (sessionStorage.getItem("_gc_channelid") === null) 
+      {
+          let channel = await notificationApi.postNotificationsChannels()
+          console.log('Created Notification Channel: ', channel)
+
+          
+          let userCallsTopic = `v2.users.${userID}.conversations.calls`
+          await notificationApi.postNotificationsChannelSubscriptions(channel.id, [{
+              id: userCallsTopic
+          }])
+          console.log(`Subscribed to topic ${userCallsTopic}`)
+          sessionStorage.setItem("_gc_channelid", channel.id)
+          console.log(sessionStorage.getItem("_gc_channelid"))
+      }
+                    
+                
+
+    } 
+    catch (err) 
+    {
+        console.error('Error: ', err)
+    }
+
+            //Create websocket for events
+            try {
+                let socket = new WebSocket(`wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+
+                socket.onmessage = async function(event) {
+                    let details = JSON.parse(event.data)
+
+                    
+                    //if Call notification
+                    if ((details.topicName).includes("call")) {
+                        console.log('Call Notification: ', details)
+                        console.log('CurrentCall index = ', details.eventBody.id.indexOf(currentCalls))
+                      
+                        let participant = details.eventBody.participants.find(p => p.purpose === "agent" || p.purpose === "user")
+                        if (participant) {
+                            console.log('Participant userId: ', participant.user.id)
+                            console.log('Participant state: ', participant.state)
+                             if (participant.state === 'contacting') {
+
+                              const buttons = document.getElementsByName("transferButton");
+                              // for (let i = 0; i < buttons.length; i++)
+                              //   {
+                              //     buttons[i].setAttribute('disabled','false');
+                              //   }
+                             
+                                
+                                
+                            }
+                            if (participant.state === 'connected'){
+                              if (currentCalls.indexOf(details.eventBody.id) < 0){
+                                currentCalls.push(details.eventBody.id);
+                                //transcriptionSocketSetup(details.eventBody.id);
+                              }
+                            }
+                             if (participant.state === 'terminated') {
+                              const buttons = document.getElementsByName("transferButton");   
+                              // for (let i = 0; i < buttons.length; i++)
+                              //   {
+                              //     buttons[i].setAttribute('disabled','true');
+                              //   }
+                             }
+                        }
+                    }
+                }
+                console.log(`Waiting for events on wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+            } catch (err) {
+                console.error('Websocket error: ', err)
+            }
+  }
+
+
+  //This is some formatting helper functions
+  function phoneFormat(input) {//returns (###) ###-####
+    input = input.replace(/\D/g,'');
+    var size = input.length;
+    if (size>0) {input="("+input}
+    if (size>3) {input=input.slice(0,4)+") "+input.slice(4,11)}
+    if (size>6) {input=input.slice(0,9)+"-" +input.slice(9)}
+    return input;
+  }   
+  
+  </script>
+</head>
+<body>
+  <section class="section">
+    <!--h1 class="title is-3s">Hi <span id="span_name"></span>!</h1-->
+   
+    <hr>
+    <p><span id="span_dataTableJSON"></span></p>
+    <!--gux-form-field-search><input type="search" slot='input' id="myInput" onkeyup="filterTable()" placeholder="Search for names.."></gux-form-field-search-->
+    <gux-table-toolbar>
+      <div slot="search-and-filter">
+        <gux-form-field-search label-position="screenreader">
+          <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search" onkeyup="filterTable()" />
+          <label slot="label">Toolbar Search</label>
+        </gux-form-field-search>
+       
+      </div>
+    
+      <div slot="contextual-actions">
+        <!--gux-table-toolbar-action action="delete"></gux-table-toolbar-action-->
+      </div>
+    
+      <div slot="permanent-actions">
+       
+      </div>
+    
+      <div slot="menu-actions">
+       
+        
+      </div>
+    
+      
+    </gux-table-toolbar>
+
+   
+
+    <hr>
+    <!-- (A) WE WILL GENERATE THE TABLE HERE -->
+    
+    <div id="directoryTable"></div>
+    
+   
+    <hr>
+    <p hidden="false"><em>Environment:&nbsp;<span id="span_environment" ></span> </em></p>
+    <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
+    <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
+    <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.8 </em></p>
+     <div><span id="ModalPlaceHolder"></span></div>
+  
+  </section>
+
+</body>
+</html>
+
+
+
+ 

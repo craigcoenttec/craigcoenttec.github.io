@@ -1,0 +1,63 @@
+
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" charset="utf-8">
+
+  //This is the deployment snippet from your messenger deployment
+  (function (g, e, n, es, ys) {
+    g['_genesysJs'] = e;
+    g[e] = g[e] || function () {
+      (g[e].q = g[e].q || []).push(arguments)
+    };
+    g[e].t = 1 * new Date();
+    g[e].c = es;
+    ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
+  })(window, 'Genesys', 'https://apps.usw2.pure.cloud/genesys-bootstrap/genesys.min.js', {
+    environment: 'prod-usw2',
+    deploymentId: 'de9be94e-2637-4149-8daa-4f15649d0d66'
+  });
+  //End Deployment Snippet
+
+
+  //Custom Function to Set the data in one place vs calling the database.set in multiple locations.  Input parameter is to illustrate passing data into database set.
+  function setGenesysData(callingSource) {
+    //Call Global Function to set some data
+    Genesys("command", "Database.set", {
+      messaging: {
+        customAttributes: {
+          SampleKey: "SampleData",  //This is an example of a static string.
+          sourcePage: window.location.href, //This is an example of using data from the session.  This is sending the current url as data.
+          sourceOfDataSet: callingSource  //This is an example of using data passed into this function
+        }
+      }
+    });
+  }
+
+ 
+//End Custom Function
+
+
+  //Call the Function when this script block is initially run
+  setGenesysData("On Load");
+
+
+  //Set a subscription to the conversationCleared event after the MessagingService reports ready.  When this event is raised, we call our custom function.
+  Genesys('subscribe', 'MessagingService.ready', () => {
+    Genesys("subscribe", "MessagingService.conversationCleared", function({})
+    {
+      setGenesysData("On Clear");  //call custom function, passing in some static data indicating who called this function.
+    });
+});
+  
+</script>
+    
+<head>
+    <title>Web Messenger Example Page</title>
+</head>
+<body>
+    <h1>Something to take up space</h1>
+    <img src="OIP.jpg" alt="Image 1">
+    
+    <button onclick = "setGenesysData('On Click')" > Update Data </button>
+</body>
+</html>

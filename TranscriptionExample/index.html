@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<!-- Created as an example by https://github.com/mcphee11 Version 2.1 -->
+<html>
+  <head>
+    <meta name="robots" content="noindex" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title></title>
+    <meta name="Template" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Genesys CSS https://spark.genesys.com/  In PROD set a version -->
+    <link href="https://unpkg.com/genesys-spark-components@latest/dist/genesys-webcomponents/genesys-webcomponents.css" rel="stylesheet" />
+    <script type="module" src="https://unpkg.com/genesys-spark-components@latest/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+    <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+  
+    <link rel="stylesheet" href="./style/pane.css">
+  
+  
+  </head>
+    <body  onload="start()" >
+    <script>
+      'use strict' //Enables strict mode is JavaScript
+      let url = new URL(document.location.href)
+      let gc_region = url.searchParams.get('gc_region')
+      let gc_clientId = url.searchParams.get('gc_clientId')
+      let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+      let gc_conversationId = url.searchParams.get('gc_conversationId')
+      let userId
+      let gc_agentCommunicationId
+      
+      let gc_agentParticipantId
+      let gc_mediaType
+      let gc_language = url.searchParams.get('gc_language')
+      let translateToken = url.searchParams.get('translateToken')
+      let version = "0.0.0.1"
+      let mySendTimer
+      let currentSourceLang = "auto"
+      let lastSourceLang = "en"
+      let currentTargetLang = "es"
+      let currentDelay = 4000
+      let messageIds = [];
+      let messageDetailList = [];
+      let showAgent =false;
+      let currentCustomerClass = "message-customer-small";
+      let currentSystemClass = "message-system";
+      let currentAgentClass = "message-agent";
+      let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","tr":"Turkish","it":"Italian","fr":"French"}
+      let myImage ="";
+      let myName = "";
+      let translationURL = 'https://qx4fkw52e1.execute-api.us-west-2.amazonaws.com/Prod/ttec_sc_translate';
+      let workflowImage = "https://craigcoenttec.github.io/TranscriptionExample/LG_Umbrella.png";
+      //let workflowImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg";
+      let customerImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg";
+
+
+      //Getting and setting the GC details from dynamic URL and session storage
+      gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
+      gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
+      gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
+      gc_conversationId ? sessionStorage.setItem('gc_conversationId', gc_conversationId) : gc_conversationId = sessionStorage.getItem('gc_conversationId')
+      gc_language ? sessionStorage.setItem('gc_language', gc_language) : gc_language = sessionStorage.getItem('gc_language')
+      translateToken ? sessionStorage.setItem('translateToken', translateToken) : translateToken = sessionStorage.getItem('translateToken')
+      let platformClient = require('platformClient')
+      const client = platformClient.ApiClient.instance
+      const uapi = new platformClient.UsersApi()
+      const napi = new platformClient.NotificationsApi()
+      const capi = new platformClient.ConversationsApi()
+
+      let statementToTranslate = "";
+
+      async function start() {
+        try {
+          client.setEnvironment(gc_region)
+          client.setPersistSettings(true, '_mm_')
+          console.log(`%cOriginal URL is ${url}`, 'color: yellow')
+          console.log('%cLogging in to Genesys Cloud', 'color: green')
+          console.log(`%cclientId is ${gc_clientId} and redirect is ${gc_redirectUrl}`, 'color: yellow')
+          await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
+
+          //GET Current UserId
+          let user = await uapi.getUsersMe({})
+          console.log(user)
+          userId = user.id
+          myName = user.name;
+          myImage = user.images[0].imageUri; 
+          updateDebug(gc_region, gc_language, version, user.name, gc_clientId, translateToken, gc_redirectUrl, gc_conversationId )
+
+          
+        } catch (err) {
+          console.log('Error: ', err)
+        }
+        
+
+        subscribeLiveTranscripton(gc_conversationId);
+        subscribeMessageEvents();
+        getCurrentConversationDetails() ;
+        document.getElementById("typedMessage").addEventListener('keyup',function(e) {
+          if(e.key === 'Enter') {sendTranslatedMessage()}
+        })
+
+      } //End of start() function
+
+
+      //debug info function
+      function updateDebug(environment, language, version, name, clientId, translateToken, redirectURL,conversationId)
+      {
+        document.getElementById('span_environment').innerText = environment;
+        document.getElementById('span_language').innerText = language;
+        document.getElementById('span_name').innerText = name;
+        document.getElementById('span_version').innerText = version;
+        document.getElementById('span_clientid').innerText = clientId;
+        document.getElementById('span_translateToken').innerText = translateToken;
+        document.getElementById('span_redirectURL').innerText = redirectURL;
+        document.getElementById('span_conversation').innerText = conversationId;
+        
+
+      }
+
+
+      //Transcription Subscription
+      async function subscribeLiveTranscripton(conversationId)
+      {
+
+        let transcriptionTopic = `v2.conversations.${conversationId}.transcription`
+
+        try {
+            //Need to store wss as only can have 15 per agent. Also bad practice to create multiple
+            if (sessionStorage.getItem('gc_channelid')) {
+              console.log('channelid already exists...')
+              var channelid = sessionStorage.getItem('gc_channelid')
+
+              
+              // prettier-ignore
+              await napi.postNotificationsChannelSubscriptions(channelid, [{id: transcriptionTopic}])
+              console.log(`%cSubscribed to topic ${transcriptionTopic}`, 'color: green')
+            } else {
+              let channel = await napi.postNotificationsChannels()
+              console.log('Created Notification Channel: ', channel)
+
+             
+              // prettier-ignore
+              await napi.postNotificationsChannelSubscriptions(channel.id, [{id: transcriptionTopic}])
+              console.log(`Subscribed to topic ${transcriptionTopic}`)
+              sessionStorage.setItem('gc_channelid', channel.id)
+            }
+          } catch (err) {
+            console.error('Notification Error: ', err)
+          }
+
+            //Create websocket for events
+            try {
+                let socket = new WebSocket(`wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
+
+                
+                socket.onmessage = async function (event) 
+                {
+                    let details = JSON.parse(event.data)
+
+                    gc_conversationId ? console.log('wss conversationId: ', gc_conversationId) : null
+                    details?.eventBody?.message === 'WebSocket Heartbeat' ? console.log('%c%s Heartbeat', 'color: red', '❤️') : console.log(details)
+                    //if Message notification
+                    if (details.topicName.includes('transcription')) {
+                        console.log('Transcription Notification: ', details)
+                        let transcriptionEvent = details.eventBody.transcripts;
+                        // prettier-ignore
+                        if (typeof transcriptionEvent !== 'undefined')
+                        {
+                            console.log(transcriptionEvent)
+
+                            //Customer Calls Only
+                            if (transcriptionEvent[0].channel == "EXTERNAL") {
+                                console.log('Customer Speaking')
+                                let utterance = transcriptionEvent[0].alternatives[0].transcript
+                                console.log(utterance);
+                                document.getElementById('span_lastUtterance').innerText = utterance;
+                                //getTranslation(utterance)
+                                currentDelay = document.getElementById("delay").value
+                                document.getElementById("workingRadial").style.visibility = "visible"
+                                statementToTranslate += " " + utterance;
+                                window.clearTimeout(mySendTimer);
+                                mySendTimer = window.setTimeout(SendForResult,currentDelay);
+                            }                        
+                        }
+                }
+              }
+              console.log(`Waiting for events on wss://streaming.${gc_region}/channels/${sessionStorage.getItem("gc_channelid")}`)
+            } catch (err) {
+                console.error('Websocket error: ', err)
+            }
+
+            
+    }
+
+    function timer(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+
+async function TranslateExistingConversation(customerMessages, agentMessages, workflowMessages)
+{
+      console.log(customerMessages);
+      let workingList = [];
+                 
+
+                  for (const message of customerMessages){
+                    messageIds.push(message.messageId);
+                        message.messageSender = "Customer";
+                        workingList.push(message);
+                        
+
+                }
+
+                for (const message of agentMessages){
+                    
+                  messageIds.push(message.messageId);
+                        message.messageSender = "Agent";
+                        workingList.push(message);
+                        
+                  
+
+                }
+
+                for (const message of workflowMessages){
+                    
+                  messageIds.push(message.messageId);
+                    message.messageSender = "Workflow";
+                    workingList.push(message);
+                    
+                  
+            }
+                
+              //sort and translate
+                for (const message of workingList.sort((m1,m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0))
+                {
+                  //if(!messageIds.includes(message.messageId))
+                      //{
+                        //messageIds.push(message.messageId);
+                        messageDetailList.push(message);
+                        console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+                        await timer(750);
+                        await translateMessage(message.messageId);
+                      //}
+                }
+                
+}
+
+async function subscribeMessageEvents()
+{
+
+  try {
+            //Need to store wss as only can have 15 per agent. Also bad practice to create multiple
+            let messagesTopic = `v2.users.${userId}.conversations.messages`
+            if (sessionStorage.getItem('gc_channelid')) {
+              console.log('channelid already exists...')
+              var channelid = sessionStorage.getItem('gc_channelid')
+
+              // prettier-ignore
+              await napi.postNotificationsChannelSubscriptions(channelid, [{id: messagesTopic}])
+              console.log(`%cSubscribed to topic ${messagesTopic}`, 'color: green')
+            } else {
+              let channel = await napi.postNotificationsChannels()
+              console.log('Created Notification Channel: ', channel)
+
+              // prettier-ignore
+              await napi.postNotificationsChannelSubscriptions(channel.id, [{id: messagesTopic}])
+              console.log(`Subscribed to topic ${messagesTopic}`)
+              sessionStorage.setItem('gc_channelid', channel.id)
+            }
+          } catch (err) {
+            console.error('Notification Error: ', err)
+          }
+
+          //Create websocket for events
+          try {
+            let socket = new WebSocket(`wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
+
+            socket.onmessage = async function (event) {
+              let details = JSON.parse(event.data)
+
+              gc_conversationId ? console.log('wss conversationId: ', gc_conversationId) : null
+              details?.eventBody?.message === 'WebSocket Heartbeat' ? console.log('%c%s Heartbeat', 'color: red', '❤️') : console.log(details)
+              //if Message notification
+              if (details.topicName.includes('messages')) {
+                console.log('Messaging Notification: ', details)
+                // prettier-ignore
+                
+                //get customer participant data
+                let customerParticipant = details.eventBody.participants.slice().reverse().find(p => p.purpose === 'customer');
+                if (customerParticipant) {
+                  console.log('***Customer Participant: ', customerParticipant)
+                  customerParticipant.messages.reverse().forEach(message => {
+                    //message.messages.forEach(msg => {
+                      console.log(messageIds);
+                      console.log(message.message.id)
+                      if(!messageIds.includes(message.message.id))
+                      {
+                        messageIds.push(message.message.id);
+                         messageDetailList.push({"messageId":message.message.id,"messageTime":message.messageTime,"messageSender":"Customer"})
+                       
+                        console.log(`%cNew Message: ${message.message.id}`, 'color: green');
+                        translateMessage(message.message.id);
+                        //translateLatestMessage();
+                        
+                      }
+                    //});
+
+                  });
+                }
+              }
+            }
+            console.log(`Waiting for events on wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
+          } catch (err) {
+            console.error('Websocket error: ', err)
+          }
+            
+}
+    
+    async function translateLatestMessage()
+    {
+
+        let conversation = await capi.getConversationsMessage(gc_conversationId);
+        console.log(conversation);
+        let messageId = conversation.participants[0].messages[0].messageId
+        console.log(`messageId = ${messageId}`)
+        translateMessage(messageId);
+        addStatementCard("Original Text","Translated Text","en","de","NONE","message-agent")
+      
+      
+    }
+    async function translateMessage(messageId)
+    {
+
+        
+        
+        let message = await capi.getConversationsMessageMessage(gc_conversationId, messageId)
+        console.log(message.normalizedMessage.text);
+        getTranslation(message.normalizedMessage.text, messageId);
+      
+      
+    }
+    
+
+    
+    function testTimer(utterance){
+        statementToTranslate += " " + utterance;
+        window.clearTimeout(mySendTimer);
+        mySendTimer = window.setTimeout(SendForResult,currentDelay);
+        document.getElementById("workingRadial").style.visibility = "visible";
+    }
+
+    function setSourceLanguage(language)
+    {
+      currentSourceLang = language;
+      document.getElementById("SourceLanguageDropdown").value = language;
+      console.log("The Source language is now: " + language);
+    }
+
+
+    function sendTranslatedMessage()
+    {
+      let messageText = document.getElementById("typedMessage").value;
+
+      document.getElementById("typedMessage").value = "";
+
+      postTranslationAPI(messageText, "auto", lastSourceLang, "NONE", sendMessage);
+
+    }
+
+    async function sendMessage(text)
+    {
+      console.log(text)
+      let textToSend = text
+      if (typeof text == 'object') {textToSend = text.translatedText}
+
+      let body = {"textBody": textToSend }
+      let opts = { 
+        "useNormalizedMessage": false // Boolean | If true, response removes deprecated fields (textBody, media, stickers)
+      };
+      
+     
+      // Send message
+      let data = await capi.postConversationsMessageCommunicationMessages(gc_conversationId, gc_agentCommunicationId, body, opts);
+      console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
+            
+      messageDetailList.push({"messageId":data.id,"messageTime":data.timestamp,"messageSender":"Agent"})
+      addStatementCard(text.originalText,text.translatedText,text.sourceLanguage,text.targetLanguage,data.id,currentAgentClass);
+
+      
+      
+      // .then((data) => {
+      //     console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
+          
+      //     messageDetailList({"messageId":data.id,"messageTime":data.timestamp,"messageSender":"agent"})
+      //     addStatementCard(text.originalText,text.translatedText,text.sourceLanguage,text.targetLanguage,data.id,currentAgentClass);
+      
+      //   })
+      //   .catch((err) => {
+      //     console.log("There was a failure calling postConversationsMessageCommunicationMessages");
+      //     console.error(err);
+      //   });
+  }
+
+function getCurrentConversationDetails() 
+{
+  
+
+    // Get conversation
+    capi.getConversation(gc_conversationId)
+      .then((data) => {
+        console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`,'color: green');
+
+        //get some agent data we will need
+        let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
+        gc_agentParticipantId = agentParticipant.id
+
+        let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
+       
+        if (customerAttributes.speaker_language)
+        {
+          setSourceLanguage(customerAttributes.speaker_language);
+        }
+        
+        
+        if ( agentParticipant.messages.length > 0)
+        {
+          gc_agentCommunicationId = agentParticipant.messages[0].id;
+          gc_mediaType = "MESSAGE";
+          document.getElementById("footer").style.visibility = "visible";
+          document.getElementById("delayDiv").style.visibility = "hidden";
+
+          let customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
+          let agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
+          let workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
+          console.log(customerMessages[0].messages);
+          TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages,workflowMessages[0].messages);
+
+        }
+        else if (agentParticipant.calls.length > 0)
+        {
+          gc_agentCommunicationId = agentParticipant.calls[0].id;
+          gc_mediaType = "VOICE"
+          document.getElementById("footer").style.visibility = "hidden";
+        }
+        else {
+          gc_mediaType = "OTHER"
+          document.getElementById("footer").style.visibility = "hidden";
+        }
+
+        
+        console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}`,'color: green')
+        document.getElementById('span_communication').innerText = gc_agentCommunicationId;
+            document.getElementById('span_participant').innerText = gc_agentParticipantId;
+            document.getElementById('span_media').innerText = gc_mediaType;
+
+        //let customerParticipant = data.participants.slice().reverse().find(p => p.purpose === 'customer');
+
+
+                  
+      })
+      .catch((err) => {
+        console.log("%cThere was a failure calling getConversation",'color: red');
+        console.error(err);
+      });
+}
+
+
+    
+     function getTranslation(text,messageId="")
+    {
+        if (text && text.length > 0) //Change this back to > 0 when ready to translate again.
+        {
+
+          
+
+            currentSourceLang = document.getElementById("SourceLanguageDropdown").value
+            currentTargetLang = document.getElementById("TargetLanguageDropdown").value
+
+            
+
+             let translation =  postTranslationAPI(text,currentSourceLang, currentTargetLang,messageId,postTranslationProcesing)//.then((translation) => {
+            //   if (translation.source_language != "NONE" && translation.source_language != "ERROR")
+            //     {
+            //     document.getElementById('span_lastTranslation').innerText = translation.translatedText;   
+            //     addStatementCard(text,translation.translatedText,translation.source_language,currentTargetLang);
+                 //lastSourceLang = translation.source_language;
+            //     }
+            // });   
+
+           
+                
+          }     
+           
+            
+        
+        
+        
+    }
+
+    function postTranslationProcesing(translation)
+    {
+      console.log(translation)
+      if (translation.error == false && translation.translatedText.length > 0 )
+      {
+        document.getElementById('span_lastTranslation').innerText = translation.translatedText;   
+        addStatementCard(translation.originalText,translation.translatedText,translation.sourceLanguage,translation.targetLanguage,translation.messageId,currentCustomerClass);
+        
+        }
+      
+    }
+
+    function postTranslationAPI(text,sourceLanguage, targetLanguage, messageId, postTranslationProcessor)
+    {
+        
+        let resultObject = {
+          "originalText":text,
+          "translatedText":"",
+          "sourceLanguage":sourceLanguage,
+          "targetLanguage":targetLanguage,
+          "error":false,
+          "messageId":messageId
+        }
+      
+        if (text.length > 0) //Change this back to > 0 when ready to translate again.
+        {
+            if(targetLanguage == "debug")
+            {
+              resultObject.sourceLanguage = "en";
+              resultObject.translatedText = `Debug Translation ${sourceLanguage} - ${text}`;
+                
+              postTranslationProcessor(resultObject)
+              return
+            }
+    
+            const myHeaders = new Headers();
+            myHeaders.append("access-token", translateToken);
+            myHeaders.append("Content-Type", "application/json");
+
+            currentSourceLang = sourceLanguage;
+            currentTargetLang = targetLanguage;
+
+            const raw = JSON.stringify({
+            "Text": text,
+            "SourceLanguageCode": currentSourceLang,
+            "TargetLanguageCode": currentTargetLang
+            });
+
+            const requestOptions = {
+            method: "POST",
+            headers: myHeaders,
+            body: raw,
+            redirect: "follow"
+            };
+
+            //fetch("https://axdok64nnc.execute-api.us-west-2.amazonaws.com/default/myTranslateTest", requestOptions)
+            fetch(translationURL, requestOptions)
+            .then((response) => response.text())
+            .then((result) => {
+                console.log(result);
+                let translation = JSON.parse(result);
+                resultObject.sourceLanguage = translation.source_language;
+                resultObject.translatedText = translation.translatedText;
+                //postTranslationProcessor(resultObject);
+                postTranslationProcessor(resultObject);
+                return
+                
+            })
+            .catch((error) => {
+              console.error(error);
+              resultObject.error = true;
+              postTranslationProcessor( resultObject);
+              return
+            });
+        }
+        else
+        {
+          postTranslationProcessor(resultObject);
+           return
+        }
+
+
+        
+
+    }
+
+
+    function SendForResult()
+    {
+        console.log("Timer expired");
+        
+        getTranslation(statementToTranslate);
+        statementToTranslate = "";
+        document.getElementById("workingRadial").style.visibility = "hidden";    
+    }
+
+function toggleAgentDiv() {
+  console.log("toggled")
+  showAgent = !showAgent
+   let agentToggle = document.getElementById("agentToggle");
+   if (showAgent == true)
+   {
+    let agentDivs = document.getElementsByClassName(currentAgentClass);
+    let customerDivs = document.getElementsByClassName(currentCustomerClass);
+    
+    
+    currentAgentClass = "message-agent";
+    currentCustomerClass = "message-customer-small"
+
+    while (agentDivs.length)
+    {
+      agentDivs[0].className = currentAgentClass;
+    }
+    while (customerDivs.length) {
+      customerDivs[0].className = currentCustomerClass;
+    }
+   }
+   else {
+    let agentDivs = document.getElementsByClassName(currentAgentClass);
+    let customerDivs = document.getElementsByClassName(currentCustomerClass);
+    currentAgentClass = "message-agent-hidden";
+    currentCustomerClass = "message-customer"
+    
+    while (agentDivs.length) {
+      agentDivs[0].className = currentAgentClass;
+    }
+    while (customerDivs.length) {
+      customerDivs[0].className = currentCustomerClass;
+    }
+   }
+
+
+
+
+}
+
+    function addStatementCard(originalText, translatedText, sourceLanguage, destinationLanguage, messageId, className = "message-customer"){
+    
+
+
+    //let card = document.createElement("gux-card");
+    let card = document.createElement("div");
+    card.id = messageId;
+    
+    //card.style.width = "100%"
+    card.setAttribute('accent','raised');
+    //card.style.color = "#761c1c";
+    //let cardHeader = document.createElement("h6");
+
+    let cardHeader = document.createElement("div");
+    
+    let cardTimestamp = document.createElement("gux-tag");
+    cardTimestamp.setAttribute("size","small");
+    cardTimestamp.className = "message-details-time";
+    cardTimestamp.setAttribute("disabled","true")
+    let cardUser = document.createElement("gux-tag");
+    cardUser.setAttribute("size","small");
+    cardUser.className = "message-details-user";
+    let cardAvatar = document.createElement("gux-avatar-beta");
+    cardAvatar.setAttribute("size","small")
+    let cardAvatarImage = document.createElement("img");
+    
+
+
+    console.log(messageDetailList);
+    //let index = messageDetailList.findIndex(m => m.messageId == messageId)
+    if (true)
+    {
+      console.log("true")
+      let currentMessage = messageDetailList.find(m => m.messageId == messageId);
+      if (typeof currentMessage != "undefined"){
+        cardTimestamp.innerHTML = currentMessage.messageTime;
+        
+        if (currentMessage.messageSender && currentMessage.messageSender === "Agent" ) {
+          cardUser.className = "message-details-user";
+          cardHeader.className = "message-details-userdiv";
+          cardUser.innerHTML = currentMessage.messageSender;
+          cardUser.setAttribute("accent","10");
+          cardAvatarImage.setAttribute("slot","image");
+          cardAvatarImage.setAttribute("src",myImage);
+          cardAvatarImage.setAttribute("alt",myName);
+          cardAvatar.setAttribute("name",myName);
+          cardHeader.appendChild(cardTimestamp);
+          cardHeader.appendChild(cardUser);
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
+          
+          //card.className = currentAgentClass;
+          card.className = currentAgentClass + " talk-bubble tri-right round btm-right-in"
+   
+        }
+        else if (currentMessage.messageSender && currentMessage.messageSender != "Customer") {
+          cardUser.className = "message-details-user";
+          cardHeader.className = "message-details-userdiv";
+          cardUser.innerHTML = currentMessage.messageSender;
+          cardUser.setAttribute("accent","2");
+          cardAvatarImage.setAttribute("slot","image");
+          cardAvatarImage.setAttribute("src",workflowImage);
+          cardAvatarImage.setAttribute("alt","Workflow");
+          cardAvatar.setAttribute("name","Workflow");
+          
+          cardHeader.appendChild(cardTimestamp);
+          cardHeader.appendChild(cardUser);
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
+          //card.className = currentSystemClass;
+          card.className = currentSystemClass + " talk-bubble tri-right round btm-right-in"
+          
+        }
+        else{
+          cardUser.className = "message-details-customer";
+          cardHeader.className = "message-details-customerdiv";
+          cardUser.innerHTML = "Customer"
+          cardUser.setAttribute("accent","3");
+          cardAvatarImage.setAttribute("slot","image");
+          cardAvatarImage.setAttribute("src",customerImage);
+          cardAvatarImage.setAttribute("alt","Customer");
+          cardAvatar.setAttribute("name","Customer");
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
+          cardHeader.appendChild(cardUser);
+          cardHeader.appendChild(cardTimestamp);
+          //card.className = currentCustomerClass;
+          card.className = currentCustomerClass + " talk-bubble-left tri-right round btm-left-in"
+          
+          
+
+          document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage]; 
+          document.getElementById("sendLanguage").innerText = "Auto";
+          lastSourceLang = sourceLanguage;
+          
+    
+        }
+        
+
+      }
+      //voice
+      else
+      {
+        cardUser.className = "message-details-customer";
+          cardHeader.className = "message-details-customerdiv";
+          cardUser.innerHTML = "Customer"
+          cardUser.setAttribute("accent","3");
+          cardAvatarImage.setAttribute("slot","image");
+          cardAvatarImage.setAttribute("src",customerImage);
+          cardAvatarImage.setAttribute("alt","Customer");
+          cardAvatar.setAttribute("name","Customer");
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
+          cardHeader.appendChild(cardUser);
+          cardHeader.appendChild(cardTimestamp);
+          //card.className = currentCustomerClass;
+          card.className = currentCustomerClass + " talk-bubble-left tri-right round btm-left-in"
+          
+          
+
+          document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage]; 
+          document.getElementById("sendLanguage").innerText = "Auto";
+          lastSourceLang = sourceLanguage;
+      }
+      
+    }
+    
+    if (sourceLanguage === "en")
+    {
+        sourceLanguage = "gb";
+    }
+    if (destinationLanguage === "en")
+    {
+       destinationLanguage = "gb";
+    }
+
+
+   
+     
+
+
+
+    let cardOriginal = document.createElement("div");
+    //let cardOriginal = document.createElement("gux-card");
+    
+    cardOriginal.setAttribute('accent','bordered');
+    cardOriginal.className = "original-message-text"
+    //cardOriginal.style.width = "100%";
+    //cardOriginal.style.color = "#767c8d";
+    let sourceFlag = document.createElement("gux-flag-icon-beta");
+    sourceFlag.setAttribute('flag',sourceLanguage);
+    let cardOriginalTextBlock = document.createElement("span");
+    cardOriginalTextBlock.setAttribute('class','gux-body-lg-semibold');
+    let cardOriginalText = document.createElement("span");
+    cardOriginalTextBlock.innerHTML = originalText;
+    //cardOriginalTextBlock.appendChild(cardOriginalText)
+    cardOriginal.appendChild(sourceFlag);
+    cardOriginal.appendChild(cardOriginalTextBlock);
+
+    let borderDiv = document.createElement("div");
+    borderDiv.className = "border-divider"
+
+    let cardNew = document.createElement("div");
+    //let cardNew = document.createElement("gux-card");
+    cardNew.className = "translated-message-text"
+    cardNew.setAttribute('accent','bordered');
+    //cardNew.style.width = "100%";
+    //cardNew.style.color = "#1b2c48";
+    let newFlag = document.createElement("gux-flag-icon-beta");
+    newFlag.setAttribute('flag',destinationLanguage);
+    let cardNewTextBlock = document.createElement("span");
+    cardNewTextBlock.setAttribute('class','gux-body-lg-semibold');
+    let cardNewText = document.createElement("span");
+    //cardNewTextBlock.appendChild(cardNewText)
+    cardNewTextBlock.innerHTML = translatedText;
+    cardNew.appendChild(newFlag);
+    cardNew.appendChild(cardNewTextBlock);
+    
+    card.appendChild(cardOriginal);
+    card.appendChild(borderDiv);
+    card.appendChild(cardNew);
+    //card.appendChild(cardHeader);
+
+    
+    
+    
+    
+    document.getElementById("conversation").appendChild(card)
+    document.getElementById("conversation").appendChild(cardHeader)
+    //card.scrollIntoView();
+    setTimeout(() => {
+      document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;
+}, 500); 
+     //document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;
+    //window.scrollTo(0, document.body.scrollHeight);
+    //return cardHeaderIntent;
+}
+
+    </script>
+
+    
+
+      
+
+   
+
+  
+    <div class="content">
+    <div role="tabpanel" class="transcript-container">
+      
+    <div class="control-pane">
+
+<div class="control-div" style="display:flex;">
+
+        <div style="width:40%;height:20px;padding:5px;  ">
+        
+          <gux-form-field-dropdown>
+            <gux-dropdown id='SourceLanguageDropdown' value="auto"  >
+              <gux-listbox aria-label="Languages" >
+                <gux-option value="auto" >Auto</gux-option>
+                <gux-option value="en">English</gux-option>
+                <gux-option value="fr">French</gux-option>
+                <gux-option value="de">German</gux-option>
+                <gux-option value="it">Italian</gux-option>
+                <gux-option value="es">Spanish</gux-option>
+                <gux-option value="tr">Turkish</gux-option>
+                
+              
+              </gux-listbox>
+            </gux-dropdown>
+            <label slot="label">Customer Language</label>
+          </gux-form-field-dropdown>
+        </div>
+        
+  
+        <div style="width:40%;padding:5px">
+          
+          <gux-form-field-dropdown>
+            <gux-dropdown id='TargetLanguageDropdown' value="en">
+              <gux-listbox aria-label="Languages">
+                <gux-option value="auto">Auto</gux-option>
+                <gux-option value="en">English</gux-option>
+                <gux-option value="fr">French</gux-option>
+                <gux-option value="de">German</gux-option>
+                <gux-option value="it">Italian</gux-option>
+                <gux-option value="es">Spanish</gux-option>
+                <gux-option value="tr">Turkish</gux-option>
+                <gux-option value="debug">debug</gux-option>
+                
+              </gux-listbox>
+            </gux-dropdown>
+            <label slot="label">Agent Language</label>
+          </gux-form-field-dropdown>
+          
+        </div>
+  
+        <div id = "delayDiv" style="width:20%;padding:5px">
+          
+          <gux-form-field-number >
+            <input slot="input" id="delay" type="number" name="delay" value="5000" aria-label="delay" />
+            <label slot="label">Delay</label>
+          </gux-form-field-number>
+        </div>
+  
+        <div style="width:10%;padding:5px; float:right" >
+          <gux-radial-loading id="workingRadial" context="input" screenreader-text="Loading..." style="padding-left: 3%;padding-top: 8%;visibility: hidden;"></gux-radial-loading>
+  
+        </div>
+  
+        <!--gux-toggle id = "agentToggle" checked-label="Translate Agent On" unchecked-label="Translate Agent Off" onclick="toggleAgentDiv()"></gux-toggle-->
+  
+      </div>
+
+    </div>
+    
+     <!-- Conversation Div is where we fill with messages -->
+    <div id="conversation-panel" class="conversation-pane" >
+      <div id="conversation" class="conversation-customer"></div>
+      <!--div id="conversation-agent" class="conversation-agent-hidden"></div-->
+
+    </div>
+      
+    <!-- footer div is our messages submission -->
+    <div class="textarea-pane" id="footer" >
+      <div class="top-information"></div>
+      <div class="input-group">
+        <textarea id="typedMessage" dir="auto" placeholder="Enter message..." aria-label="Enter message..." class="text-area-2" style="height: 60px;"></textarea>
+
+      <!-- <gux-form-field-textarea class="message-input">
+        <textarea  id="typedMessage" slot="input" name="textarea" aria-label="textarea"></textarea>
+       commented out<label slot="label">Default</label> 
+      </gux-form-field-textarea> -->
+      <div class="textarea-buttons">
+        <!-- <gux-button class="translate-button" accent="primary" onclick="sendTranslatedMessage()">
+          <gux-icon icon-name="custom/arrows-retweet-regular" screenreader-text="This will be read by a screen reader"></gux-icon> 
+        </gux-button> -->
+
+        <button type="button" aria-label="Translate" class="translate-button2" onclick="sendTranslatedMessage()" id="target-for-tooltip-or-popover-1"  tabindex="0">
+          <gux-icon icon-name="custom/arrows-retweet-regular" decorative="true" hydrated=""></gux-icon>
+        </button>
+      
+
+      </div>
+    </div>
+      
+    <div class="sms-footer"><span id="sendLanguage">German</span> to <span id="sendTranslateLanguage">English</span></div>
+  </div>
+  </div>
+</div>
+
+    <!--
+    style="position:fixed;width:100%;bottom:0;display:flex"
+    style="padding:3px;width:95%"
+    <gux-button style="padding:15px;"accent="primary" onclick="sendTranslatedMessage()">
+        <gux-icon icon-name="custom/arrows-retweet-regular" screenreader-text="This will be read by a screen reader"></gux-icon> 
+      </gux-button>
+    
+      <div class="control-div" style="display:flex;">
+
+        <div style="width:30%;height:20px;padding:5px ">
+        
+          <gux-form-field-dropdown>
+            <gux-dropdown id='SourceLanguageDropdown' value="auto" >
+              <gux-listbox aria-label="Languages">
+                <gux-option value="auto">Auto</gux-option>
+                <gux-option value="en">English</gux-option>
+                <gux-option value="es">Spanish</gux-option>
+                <gux-option value="de">German</gux-option>
+              
+              </gux-listbox>
+            </gux-dropdown>
+            <label slot="label">Source</label>
+          </gux-form-field-dropdown>
+        </div>
+        
+  
+        <div style="width:30%;padding:5px">
+          
+          <gux-form-field-dropdown>
+            <gux-dropdown id='TargetLanguageDropdown' value="de">
+              <gux-listbox aria-label="Languages">
+                <gux-option value="auto">Auto</gux-option>
+                <gux-option value="en">English</gux-option>
+                <gux-option value="es">Spanish</gux-option>
+                <gux-option value="de">German</gux-option>
+                
+                <gux-option value="debug">debug</gux-option>
+                
+              </gux-listbox>
+            </gux-dropdown>
+            <label slot="label">Target</label>
+          </gux-form-field-dropdown>
+          
+        </div>
+  
+        <div style="width:30%;padding:5px">
+          
+          <gux-form-field-number >
+            <input slot="input" id="delay" type="number" name="delay" value="5000" aria-label="delay" />
+            <label slot="label">Delay</label>
+          </gux-form-field-number>
+        </div>
+  
+        <div style="width:10%;padding:5px; float:right" >
+          <gux-radial-loading id="workingRadial" context="input" screenreader-text="Loading..." style="padding-left: 3%;padding-top: 8%;visibility: hidden;"></gux-radial-loading>
+  
+        </div>
+  
+        <gux-toggle checked-label="Translate Agent On" unchecked-label="Translate Agent Off"></gux-toggle>
+  
+      </div>
+
+
+      
+    
+    -->
+ 
+  <!-- This is our debug section -->
+  <div style="visibility: hidden;">
+    <gux-accordion>
+      <gux-accordion-section>
+        <h2 slot="header">Debug Info</h2>
+        <div slot="content">
+          <p><em>Environment:&nbsp;<span id="span_environment"></span> </em></p>
+          <p><em>Language:&nbsp;<span id="span_language"></span> </em></p>
+          <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
+          <p><em>Version:&nbsp;<span id="span_version"></span> </em></p>
+          <p><em>ClientID:&nbsp;<span id="span_clientid"></span> </em></p>
+          <p><em>TranslateToken:&nbsp;<span id="span_translateToken"></span> </em></p>
+          <p><em>redirectURL:&nbsp;<span id="span_redirectURL"></span> </em></p>
+          <p><em>ConversationId:&nbsp;<span id="span_conversation"></span> </em></p>
+          <p><em>AgentParticipantId:&nbsp;<span id="span_participant"></span> </em></p>
+          <p><em>AgentCommunicationId:&nbsp;<span id="span_communication"></span> </em></p>
+          <p><em>PassedInSpeakerLanguage:&nbsp;<span id="span_speakerLanguage"></span> </em></p>
+          <p><em>MediaType:&nbsp;<span id="span_media"></span> </em></p>
+          <p><em>Last English Utterance:&nbsp;<span id="span_lastUtterance"></span> </em></p>
+          <p><em>Last Translated Utterance:&nbsp;<span id="span_lastTranslation"></span> </em></p>
+
+          <button type="button" onclick="translateLatestMessage()">Test</button>
+        
+        </div>
+      </gux-accordion-section>
+    </gux-accordion>
+  </div>
+
+  
+  
+
+
+      
+  
+  </body>
+  
+</html>

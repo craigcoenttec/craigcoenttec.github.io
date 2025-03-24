@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Directory Exercise</title>
+  <!--link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css" integrity="sha512-byErQdWdTqREz6DLAA9pCnLbdoGGhXfU6gm1c8bkf7F51JVmUBlayGe2A31VpXWQP+eiJ3ilTAZHCR3vmMyybA==" crossorigin="anonymous" /-->
+  <!--link rel="stylesheet" href="style/mystyle.css" -->
+
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/client-apps/2.0.0/purecloud-client-app-sdk.js"></script>
+  <script src="genesys-spark/dist/index.js"></script>
+  <!-- adding JSONata for easier parsing -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/jsonata/jsonata.min.js"></script> -->
+  
+  <script type="text/javascript">
+    
+  
+  
+    
+    //const clientId = '37b975bb-f2fb-4d41-b2a8-90be8ce9e010';
+    //const redirectUri = 'https://craigcoenttec.github.io/DirectoryExample/client-app-directory.html';
+    let url = new URL(document.location.href)
+    let gc_region = url.searchParams.get('gc_region') || "usw2.pure.cloud"
+    let clientId = url.searchParams.get('gc_clientId') || '37b975bb-f2fb-4d41-b2a8-90be8ce9e010'
+    let redirectUri = url.searchParams.get('gc_redirectURL') || 'https://craigcoenttec.github.io/DirectoryExample/client-app-directory.html'
+    
+
+    const appName = 'client-app-directory';
+    const qParamLanguage = 'language';
+    const qParamEnvironment = 'environment';
+
+    // Default values are assigned but values should 
+    // be set on the function 'assignConfiguration'
+    let language = 'en-us';
+    let environment = gc_region ; 
+
+    let userDetails = null;
+    let dataTableResult = null;
+    let contactConfig = null;
+
+    let client = null;
+
+    let platformClient = require('platformClient');
+    let ClientApp = window.purecloud.apps.ClientApp;
+    let myClientApp = null;
+
+    let currentDirectory = [];
+    let myUserID = null;
+    let currentDirectoryID=null;
+    let currentDatatableID = null;
+    let currentDirectoryGroup = null;
+    let myGroups = null;
+    let myPermissions = [];
+
+    let currentCalls = [];
+    //const websocketClient = new WebSocketClient();
+    
+    /**
+     * Configure both the Platform SDK and the Client App SDK
+     */
+    function setupGenesysClients(){
+      
+      const client = platformClient.ApiClient.instance;
+      const usersApi = new platformClient.UsersApi();
+      
+      // Configure Client App
+    
+      myClientApp = new ClientApp({
+          pcEnvironment: environment
+      });
+      
+      // Configure and Authenticate Platform Client
+      client.setPersistSettings(true, appName);
+      client.setEnvironment(environment);
+
+      return client.loginImplicitGrant(clientId, redirectUri)
+        .then(data =>  {
+          let opts = { 
+            "expand": ["groups"]//, // [String] | Which fields, if any, to expand.
+            };
+
+            //Getting logged in user groups for directory use later.
+          return usersApi.getUsersMe(opts);
+        })
+        .then(data => {
+          userDetails = data;
+          myUserID = userDetails.id;
+          myGroups = userDetails.groups;
+          addDirectory(userDetails.name,myUserID,true,true);
+          //callSocketSetup(myUserID);   Temp removing to simplify for hands on.
+          
+
+          // myClientApp.alerting.showToastPopup(
+          //   `Hi ${userDetails.name}`, 
+          //   'Your local test app has loaded');
+        })
+        .catch(err => console.log(err));
+       
+    }
+
+
+    /*
+    * Creates our edit and add form.
+    */
+    function createModalForm(type,contactObject = null, name="",contacttype="",gcid="",recordid="")
+    {
+
+      let existingForm = document.getElementById(`contact-Add-modal`);
+      if (existingForm)
+    {
+      existingForm.remove();
+      console.log(`removed existing add form`)
+    }
+    existingForm = document.getElementById(`contact-Edit-modal`);
+      if (existingForm)
+    {
+      existingForm.remove();
+      console.log(`removed existing edit form`)
+    }
+
+    console.log(`Modal Type : ${type}  object : ${contactObject}`)
+
+      //let validTypes = ['USER','EXTERNAL','GROUP','QUEUE'];
+      let validTypes = ['EXTERNAL'];
+      //Modal
+      let Modal = document.createElement('gux-modal');
+      Modal.setAttribute('id',`contact-${type}-modal`);
+      Modal.setAttribute('size','small');
+
+      //Title
+      let titleDiv = document.createElement('div');
+      titleDiv.setAttribute('slot','title');
+      titleDiv.appendChild(document.createTextNode(`${type} Contact`));
+      Modal.appendChild(titleDiv);
+
+      //Form Content
+      let contentDiv = document.createElement('div');
+      contentDiv.setAttribute('slot','content');
+      //contentDiv.appendChild();
+
+      let form = document.createElement('form');
+
+      //Name Field
+      let nameField = document.createElement('gux-form-field-text-like');
+      nameField.setAttribute('label-position','above');
+      let nameInput = document.createElement('input');
+      nameInput.setAttribute('name','contactName');
+      nameInput.setAttribute('slot','input');
+      nameInput.setAttribute('type','text');
+      nameInput.setAttribute('id','modalNameField');
+       if (type === 'Edit')
+       {
+         nameInput.value=contactObject.contactName
+         console.log(`Editing record:  Name = ${contactObject.contactName}`)
+       }
+      nameField.appendChild(nameInput);
+      let nameLabel = document.createElement('label');
+      nameLabel.setAttribute('slot','label');
+      nameLabel.appendChild(document.createTextNode('Name'));
+      nameField.appendChild(nameLabel);
+      form.appendChild(nameField);
+
+      //type Field
+      let typeField = document.createElement('gux-form-field-dropdown');
+      typeField.setAttribute('label-position','above');
+      let typeDropdown = document.createElement('gux-dropdown');
+      typeDropdown.setAttribute('value',"EXTERNAL");
+      let typeListBox = document.createElement('gux-listbox');
+      typeListBox.setAttribute('id','modalTypeField');
+      for (let i = 0; i < validTypes.length; i++) 
+      {
+        let option = document.createElement('gux-option');
+        option.setAttribute('value', validTypes[i]);
+        option.setAttribute('id',`gux-option-${validTypes[i]}`);
+        option.appendChild(document.createTextNode(validTypes[i]));
+        typeListBox.appendChild(option);
+      }
+      
+      typeDropdown.appendChild(typeListBox);
+      typeField.appendChild(typeDropdown);
+
+      let typeLabel = document.createElement('label');
+      typeLabel.setAttribute('slot','label');
+      typeLabel.appendChild(document.createTextNode('Type'));
+      typeField.appendChild(typeLabel);
+      form.appendChild(typeField);
+
+      
+
+      //Phone Field
+      let numberField = document.createElement('gux-form-field-phone');
+      numberField.setAttribute('label-position','above');
+      let phoneInput = document.createElement('gux-phone-input-beta');
+      phoneInput.setAttribute('default-region','US');
+      phoneInput.setAttribute('id','modalPhoneField');
+      if (type == "Edit")
+      {
+        phoneInput.value = contactObject.contactNumber
+        console.log(`Editing record:  phone number ID = ${contactObject.contactNumber}`)
+      }
+      numberField.appendChild(phoneInput);
+      let phoneLabel = document.createElement('label');
+      phoneLabel.setAttribute('slot','label');
+      phoneLabel.appendChild(document.createTextNode('Phone Number'));
+      numberField.appendChild(phoneLabel);
+      form.appendChild(numberField);
+
+      contentDiv.appendChild(form);
+      Modal.appendChild(contentDiv);
+
+      //GC ID Field
+      let gcIDField = document.createElement('gux-form-field-text-like');
+      gcIDField.setAttribute('label-position','above');
+      let gcInput = document.createElement('input');
+      gcInput.setAttribute('name','contactName');
+      gcInput.setAttribute('slot','input');
+      gcInput.setAttribute('type','text');
+      gcInput.setAttribute('id','modalgcIDField');
+      gcInput.setAttribute('disabled','true');
+      if (type == "Edit")
+      {
+        gcInput.value = contactObject.contactGCID;
+        console.log(`Editing record:  GC ID = ${contactObject.contactGCID}`)
+      }
+      gcIDField.appendChild(gcInput);
+      let gcIDLabel = document.createElement('label');
+      gcIDLabel.setAttribute('slot','label');
+      gcIDLabel.appendChild(document.createTextNode('Genesys Cloud ID'));
+      gcIDField.appendChild(gcIDLabel);
+      form.appendChild(gcIDField);
+
+
+      //recordIDField
+      let recordIDField = document.createElement('gux-form-field-text-like');
+      recordIDField.setAttribute('label-position','above');
+      let recordInput = document.createElement('input');
+      recordInput.setAttribute('name','contactName');
+      recordInput.setAttribute('slot','input');
+      recordInput.setAttribute('type','text');
+      recordInput.setAttribute('id','modalRecordIDField');
+      recordInput.setAttribute('disabled','true');
+      if(type == "Edit")
+      {
+        recordInput.value = contactObject.recordID
+        console.log(`Editing record:  record ID = ${contactObject.recordID}`)
+      }
+      recordIDField.appendChild(recordInput);
+      let recordIDLabel = document.createElement('label');
+      recordIDLabel.setAttribute('slot','label');
+      recordIDLabel.appendChild(document.createTextNode('Record ID'));
+      recordIDField.appendChild(recordIDLabel);
+      
+      form.appendChild(recordIDField);
+
+      //Accept Button
+      let acceptButtonDiv = document.createElement('div');
+      acceptButtonDiv.setAttribute('slot','start-align-buttons');
+      let acceptButtonSlot = document.createElement('gux-button-slot');
+      acceptButtonSlot.setAttribute('accent','primary');
+      let acceptButton = document.createElement('button');
+      acceptButton.setAttribute('autofocus','');
+      acceptButton.setAttribute('type','button');
+      acceptButton.appendChild(document.createTextNode('Save'));
+      acceptButton.setAttribute('onclick',`saveChange('${type}')`);
+      acceptButtonSlot.appendChild(acceptButton);
+      acceptButtonDiv.appendChild(acceptButtonSlot);
+      Modal.appendChild(acceptButtonDiv);
+
+      //Cancel Button
+      let cancelButtonDiv = document.createElement('div');
+      cancelButtonDiv.setAttribute('slot','end-align-buttons');
+      let cancelButtonSlot = document.createElement('gux-button-slot');
+     //cancelButtonSlot.setAttribute('accent','primary');
+      let cancelButton = document.createElement('button');
+      cancelButton.setAttribute('onclick',`document.getElementById('contact-${type}-modal').close()`);
+      cancelButton.setAttribute('type','button');
+      cancelButton.appendChild(document.createTextNode('Cancel'));
+      cancelButtonSlot.appendChild(cancelButton);
+      cancelButtonDiv.appendChild(cancelButtonSlot);
+      Modal.appendChild(cancelButtonDiv);
+
+      document.getElementById('ModalPlaceHolder').appendChild(Modal);
+      document.getElementById(`contact-${type}-modal`).showModal();
+
+      
+
+    }
+  
+    /*
+    *  save the change from the modal
+    */
+    function saveChange(type)
+    {
+        console.log('Saving Change');
+        if (type == 'Add')
+        {
+            let ourChange = {};
+            ourChange.recordID = Date.now().toString(36) + Math.random().toString(36).substring(2, 12).padStart(12, 0);
+            ourChange.contactName = document.getElementById('modalNameField').value;
+            ourChange.contactType = document.getElementById('modalTypeField').value;
+            ourChange.contactNumber = document.getElementById('modalPhoneField').value;
+            ourChange.contactGCID = document.getElementById('modalgcIDField').value;
+            
+            
+            currentDirectory.push(ourChange);
+            console.log(JSON.stringify(currentDirectory));
+
+
+        }
+        else if (type == 'Edit')
+        {
+            let ourChange = {};
+            ourChange.recordID = document.getElementById('modalRecordIDField').value;
+            ourChange.contactName = document.getElementById('modalNameField').value;
+            ourChange.contactType = document.getElementById('modalTypeField').value;
+            ourChange.contactNumber = document.getElementById('modalPhoneField').value;
+            ourChange.contactGCID = document.getElementById('modalgcIDField').value;
+
+            let ourIndex = currentDirectory.findIndex(c => c.recordID == ourChange.recordID)
+            if (ourIndex >= 0){
+              currentDirectory[ourIndex] = ourChange;
+              console.log(JSON.stringify(currentDirectory));
+            }
+            else
+            {
+              console.warn(`Record ID ${ourChange.RecordID} not found in current directory.  No update made.`)
+            }
+
+            
+            
+          
+        
+        }
+        
+
+        commitTableRow();
+        document.getElementById(`contact-${type}-modal`).close();
+
+        
+    }
+    /*
+    *Function to catch and make the dial
+    *
+    */
+    async function dialContact(rowObject)
+    {
+      let parent = rowObject.closest("tr"); //using the class for selection
+      let contactID = parent.getAttribute("id");
+      console.log(`dial button clicked ${contactID}`);
+
+      let contact = currentDirectory.find(c => c.recordID == contactID);
+
+      console.log(JSON.stringify(contact));
+      
+      var body;
+
+      switch (contact.contactType) {
+        case "USER":
+         body = {callUserId: contact.contactGCID, sessionType: "softphone"}
+          break;
+          
+          case "QUEUE":
+          body = {phoneNumber: contact.contactNumber, sessionType: "softphone"}
+          break;
+
+        default:
+        body = {phoneNumber: contact.contactNumber, sessionType: "softphone"}
+          break;
+      }
+            
+
+            const client = platformClient.ApiClient.instance
+            const capi = new platformClient.ConversationsApi()
+
+            let call = await capi.postConversationsCalls(body)
+             console.log('Call: ', call)
+        
+      
+    }
+
+    /*
+    *Function to catch and make the transfer
+    *
+    */
+    async function transferContact(rowObject)
+    {
+      console.log('%cTransfer Clicked', 'color: green');
+      let parent = rowObject.closest("tr"); //using the class for selection
+      let contactID = parent.getAttribute("id");
+      console.log(`Contact ID is ${contactID}`);
+
+      let contact = currentDirectory.find(c => c.recordID == contactID);
+
+      //console.log(contact);
+      
+      var body;
+
+      switch (contact.contactType) {
+        case "USER":
+         body = {
+              
+                    userId: contact.contactGCID  
+              }
+          break;
+          
+          // case "QUEUE":
+          // body = {phoneNumber: contact.contactNumber}
+          // break;
+
+        default:
+        body = {
+          
+            address: contact.contactNumber
+          
+        }
+          
+        break;
+      }
+            
+
+            const client = platformClient.ApiClient.instance
+            const capi = new platformClient.ConversationsApi()
+
+            // let call = await capi.postConversationsCalls(body)
+            // console.log('Call: ', call)
+        
+
+            //First get conversations
+            var opts = {
+                communicationType: "Call" // String | Call or Chat communication filtering
+            }
+            let conversations = await capi.getConversations(opts);
+            console.log(JSON.stringify(conversations,null,2));
+            var internalParticipant = conversations.entities[0].participants.find(p => p.purpose === "agent" || p.purpose === "user");
+            //console.log(JSON.stringify(conversations,null,2));
+            var externalParticipant = conversations.entities[0].participants.find(p => p.purpose === "external");
+            var conversationId = conversations.entities[0].id;
+
+            //using internal
+            var participantId = internalParticipant.id;
+
+            console.log(`transferring participant: ${participantId}` );
+            
+            //let transferCall = await capi.postConversationsCallParticipantConsult(conversationId, participantId, body)
+            console.log(`Transfering: Conversation ID ${conversationId}, ParticipantID ${participantId}, to ${body}` );
+            let transferCall = await capi.postConversationParticipantReplace(conversationId, participantId, body);
+            
+      
+    }
+
+    /*
+    *Function to catch and set up the camp.
+    *
+    */
+
+    function campContact(rowObject)
+    {
+      let parent = rowObject.closest("tr"); //using the class for selection
+      let contactID = parent.getAttribute("id");
+      console.log(`camp button clicked ${contactID}`);
+      myClientApp.alerting.showToastPopup(
+            'campStarted','camp Started');
+
+      let contact = currentDirectory.find(c => c.recordID == contactID);
+
+      userSocketSetup(contact.contactGCID, contact.contactName, 'AVAILABLE', rowObject);
+
+      rowObject.setAttribute('accent','danger');
+      
+      //client.directory.showUser('f1804415-bca9-4eb7-ad5a-521fca8d6128')
+    }
+
+    /*
+    *Function to catch delete
+    *
+    */
+    function deleteContact(rowObject)
+    {
+      let parent = rowObject.closest("tr"); //using the class for selection
+      let contactID = parent.getAttribute("id");
+      console.log(`delete button clicked ${contactID}`);
+
+      currentDirectory = currentDirectory.filter(c => c.recordID != contactID);
+
+      
+      console.log(JSON.stringify(currentDirectory));
+
+      commitTableRow();
+
+    }
+
+    /*
+    *Function to catch edit.
+    *
+    */
+    function editContact(rowObject)
+    {
+      let parent = rowObject.closest("tr"); //using the class for selection
+      let contactID = parent.getAttribute("id");
+      console.log(`edit button clicked ${contactID}`);
+      let ourContact = currentDirectory.find(c => c.recordID == contactID);
+      createModalForm('Edit',ourContact,ourContact.contactName);
+        //document.getElementById('modalNameField').value = ourContact.contactName;
+        document.getElementById('modalTypeField').value = ourContact.contactType;
+        //document.getElementById('modalPhoneField').value = ourContact.contactNumber;
+        let selection = document.getElementById(`gux-option-${ourContact.contactType}`);
+        selection.setAttribute('aria-selected','true');
+        selection.setAttribute('class','gux-selected');
+        selection.closest('gux-dropdown').setAttribute('value',ourContact.contactType);
+        
+        //document.getElementById('modalRecordIDField').value = ourContact.recordID;
+        //document.getElementById('modalgcIDField').value = ourContact.contactGCID;
+        
+        
+    }
+
+    /*
+    *Function to catch add.
+    *
+    */
+    function addContact(rowObject)
+    {
+      //let parent = rowObject.closest("tr"); //using the class for selection
+      //let contactID = parent.getAttribute("id");
+      console.log(`add button clicked`);
+      if (createModalForm('Add'));
+
+
+      
+    }
+    
+    /*
+    *Function to add directory
+    *
+    */
+
+    function addDirectory(name, value, editable, selected)
+    {
+      let parent = document.getElementById("dirlistbox"); 
+      let newDir = document.createElement("gux-option");
+      newDir.setAttribute('value',value);
+      newDir.appendChild(document.createTextNode(name));
+      newDir.setAttribute('data-allowEdit',editable);
+      parent.appendChild(newDir);
+      if (selected){
+        let dropdown = document.getElementById('dir-dropdown');
+        dropdown.setAttribute('value',value);
+      }
+      
+    }
+
+
+
+    //Get group details and add.
+    async function getGroupPermissions()
+    {
+      const client = platformClient.ApiClient.instance;
+      const groupsAPI = new platformClient.GroupsApi();
+      
+        for (let group of myGroups)
+        {
+          
+          groupResponse = groupsAPI.getGroup(group.id)
+
+          .then((groupResponse) => {
+            group.Name = groupResponse.name;
+            let owners = groupResponse.owners;
+            group.isOwner = false;
+            if(groupResponse.owners.findIndex(e => e.id == myUserID) >= 0)
+             {
+              group.isOwner = true;
+             }
+             
+             myPermissions.push(group);
+             if(group.Name == "San Antonio Contacts") 
+             {
+              addDirectory(group.Name, group.Name, group.isOwner,false);
+             }
+             
+          })
+          .catch((err) => {
+            console.log("There was a failure calling getGroup");
+            console.error(err);
+          });
+
+        }
+      
+    }
+
+    /**
+     * This is our logic to query the data table and create the intial table.
+     */
+
+
+     function refresh(){
+      loadGCDataTable(currentDirectoryGroup);
+     }
+    function loadGCDataTable(listToLoad)
+    {
+      
+      const platformClient = require('platformClient');
+      const client = platformClient.ApiClient.instance;
+      const architectAPI = new platformClient.ArchitectApi();
+      let datatableId = "";
+      currentDirectoryGroup = listToLoad;
+      let enableButton = document.getElementById("enableButton");
+      if (currentDirectoryGroup == "San Antonio Contacts")
+      {
+        
+        enableButton.setAttribute("disabled","true");
+        
+
+      }
+      else
+      {
+        enableButton.setAttribute("disabled","false");
+      }
+      let opts = { 
+        //"expand": "expand_example", // String | Expand instructions for the result
+        "pageNumber": 1, // Number | Page number
+        "pageSize": 25, // Number | Page size
+        "sortBy": "id", // String | Sort by
+        "sortOrder": "ascending", // String | Sort order
+        //"divisionId": ["divisionId_example"], // [String] | division ID(s)
+        "name": "Contacts Table" // String | Filter by Name. exactMatch, beginsWith*, *endsWith, *contains* The wildcard character * is supported within the filter. Matches are case-insensitive.
+      };
+
+      // Retrieve a list of datatables for the org filtered by name
+      return architectAPI.getFlowsDatatables(opts)
+        .then((data) => {
+          dataTableResult = data;
+          
+          console.log(`getFlowsDatatables success! data: ${JSON.stringify(data, null, 2)}`);
+          datatableId = data.entities[0].id;
+          currentDatatableID = data.entities[0].id;
+          document.getElementById('span_datatableID').innerText = dataTableResult.entities[0].id;
+          
+        })
+        //Use ID from previous call to get rows of table
+        .then((data) => {
+              let opts = { 
+              "pageNumber": 1, // Number | Page number
+              "pageSize": 25, // Number | Page size
+              "showbrief": false, // Boolean | If true returns just the key value of the row
+              "sortOrder": "ascending" // String | Sort order
+            };
+
+            
+
+            architectAPI.getFlowsDatatableRow(datatableId, listToLoad ,opts).then((data) =>
+            {
+              contactConfig = data;
+           
+              let filtered = [];
+              filtered.push(contactConfig);
+            
+              currentDirectoryID = listToLoad;
+              console.warn(`Directory is currently ${currentDirectoryID}`)
+
+              createTable(filtered);
+
+          
+          }
+          )
+          .catch((err) => {
+            console.log("There was a failure calling getFlowsDatatableRow");
+            console.error(err);
+            currentDirectoryID = listToLoad;
+            console.warn(`Directory is currently ${currentDirectoryID}`)
+            
+            let emptyTable = [];
+            createTable(emptyTable);
+          });
+          
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getFlowsDatatables");
+          console.error(err);
+        });
+    }
+
+
+    
+
+    /**
+     * Function to draw our a current table
+     * 
+     */
+     function createTable(directoryJSON)
+     {
+      
+        console.log(JSON.stringify(directoryJSON,null,2));
+        var table,row,guxTable;
+        var update = false;
+        document.getElementById('directoryTable').innerHTML = "";
+
+        
+        
+        table = document.createElement("table");
+        table.setAttribute('id','currentDirTable');
+        guxTable = document.createElement("gux-table");
+        guxTable.setAttribute('resizable-columns','');
+        guxTable.setAttribute('compact','');
+        document.getElementById("directoryTable").appendChild(guxTable).appendChild(table);
+        table.setAttribute('slot','data');
+        
+        //Create a table in the view.s
+      
+        for (const contactList of directoryJSON.map(e => e.ContactJSON))
+        {
+            console.log(contactList);
+            let decodedContactList = decodeURIComponent(contactList);
+            console.log(decodedContactList);
+            let contactObjectList = JSON.parse(decodedContactList);
+            
+            //store list for use later on
+            currentDirectory = contactObjectList;
+            console.log(contactObjectList);
+            for(const contactObject of contactObjectList)
+            {
+              
+              row = table.insertRow();
+              row.setAttribute('id',contactObject.recordID)
+              row.insertCell().innerHTML = contactObject.contactName;
+              
+              row.insertCell().innerHTML = contactObject.contactNumber;
+              
+             
+
+              //dial button
+              let buttonCell = row.insertCell();
+
+              
+
+              //create inline button
+              let dialButton = document.createElement('gux-button');
+              dialButton.innerText = 'Dial';
+              dialButton.setAttribute('onclick', 'dialContact(this)');
+             
+              dialButton.setAttribute('accent', 'inline');
+              buttonCell.appendChild(dialButton);
+
+              //Transfer Button
+              let button2Cell = row.insertCell();
+              let transferButton = document.createElement('gux-button');
+              transferButton.innerText = 'Transfer';
+              transferButton.setAttribute('onclick', 'transferContact(this)');
+              transferButton.setAttribute('name','transferButton');
+              transferButton.setAttribute('disabled','false');
+             
+              transferButton.setAttribute('accent', 'inline');
+              button2Cell.appendChild(transferButton);
+
+              
+
+                 //Add our Context Menu
+              let lastcell = row.insertCell();
+              let lastCellDiv = lastcell.appendChild(document.createElement('div'));
+              
+             
+              let contextMenu = document.createElement('gux-context-menu');
+              contextMenu.setAttribute('id','context-' + contactObject.recordID);
+             
+              //edit button
+              let contextEditItem = document.createElement('gux-list-item');
+              contextEditItem.setAttribute('onclick',"editContact(this)");
+              let text = document.createTextNode("Edit");
+              
+              contextEditItem.appendChild(text);
+              //contextEditItem.setAttribute('disabled','false');
+            
+              contextMenu.appendChild(contextEditItem);
+              //delete button
+              let contextDeleteItem = document.createElement('gux-list-item');
+              contextDeleteItem.setAttribute('onclick',"deleteContact(this)");
+              text = document.createTextNode("Delete");
+              contextDeleteItem.appendChild(text);
+              
+              contextMenu.appendChild(contextDeleteItem);
+              contextMenu.setAttribute('compact','');
+              lastcell.setAttribute('data-cell-action','');
+              lastcell.appendChild(lastCellDiv.appendChild(contextMenu));
+            
+            }
+
+            
+            
+        
+            
+        }
+
+        //Add our table header
+        if(update == false)
+        {
+        var headerRow = table.createTHead().insertRow();
+
+        let th = document.createElement("th");
+        let text = document.createTextNode("Name");
+        th.setAttribute('data-column-name','name');
+       
+        th.appendChild(text);
+      
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("Number");
+        th.setAttribute('data-column-name','number');
+        th.appendChild(text);
+        //th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+         text = document.createTextNode("Action");
+         th.setAttribute('data-column-action','Action');
+         th.appendChild(text);
+         headerRow.appendChild(th);
+       
+        }
+        
+
+        
+        console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
+
+      }
+      
+
+    /**
+     * Filter the table
+     * 
+     * 
+     */
+  function filterTable() {
+  // Declare variables
+      var input, filter, table, tr, td, i, txtValue;
+      input = document.getElementById("myInput");
+      filter = input.value.toUpperCase();
+      table = document.getElementById("directoryTable");
+      tr = table.getElementsByTagName("tr");
+
+      // Loop through all table rows, and hide those who don't match the search query
+      for (i = 0; i < tr.length; i++) {
+        td = tr[i].getElementsByTagName("td")[0];
+        if (td) {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+          } else {
+            tr[i].style.display = "none";
+          }
+        }
+      }
+    }
+
+
+    //push changes to table
+    function commitTableRow() 
+    {
+        console.log(`Updating table ${currentDatatableID}, row with key ${currentDirectoryID}`);
+
+        let apiInstance = new platformClient.ArchitectApi();
+
+        let datatableId = currentDatatableID; // String | id of datatable
+        let rowId = currentDirectoryID; // String | the key for the row
+
+        let rowBody = {};
+        rowBody.Group = currentDirectoryGroup;
+        rowBody.ContactJSON = encodeURIComponent(JSON.stringify(currentDirectory));
+        rowBody.key = currentDirectoryID;
+
+
+        let workflowRequest = {};
+        workflowRequest["Flow.user"] = myUserID;
+        workflowRequest["Flow.datatable"] = datatableId;
+        workflowRequest["Flow.rowId"] = currentDirectoryID;
+        workflowRequest["Flow.rowdatastring"] = JSON.stringify(rowBody);
+
+        let body = {};
+        body.flowId = "3d5e2966-2fc5-47f7-9346-291966c3953a";
+        body.name = `DirectoryUpdate-${myUserID}`;
+        body.inputData = workflowRequest;
+
+        console.log(body)
+
+          //call our workflow
+          apiInstance.postFlowsExecutions(body)
+  .then((data) => {
+    console.log(`postFlowsExecutions success! data: ${JSON.stringify(data, null, 2)}`);
+    setTimeout(()=>{refresh();},2000);
+  })
+  .catch((err) => {
+    console.log("There was a failure calling postFlowsExecutions");
+    console.error(err);
+  });
+
+
+
+    }
+    
+    /**
+     * Assign the language and environment for the app first through
+     * the query parameters. But if non-existent, attempt to get
+     * it from localStorage. If none, use default values.
+     */
+    function assignConfiguration(){
+      let url = new URL(window.location);
+      let searchParams = new URLSearchParams(url.search);
+
+      if(searchParams.has(qParamLanguage)){
+        language = searchParams.get(qParamLanguage);
+        localStorage.setItem(`${appName}_language`, language);
+      } else {
+        let local_lang = localStorage.getItem(`${appName}_language`);
+        if(local_lang) language = local_lang;
+      }
+
+      if(searchParams.has(qParamEnvironment)){
+        environment = searchParams.get(qParamEnvironment);
+        localStorage.setItem(`${appName}_environment`, environment);
+      } else {
+        let local_env = localStorage.getItem(`${appName}_environment`);
+        if(local_env) environment = local_env;
+      }
+    }
+    
+
+    // After page loads...
+    window.addEventListener('load', (event) => {
+      registerSparkComponents();
+      assignConfiguration();
+      console.log(`environment: ${environment}`);
+      console.log(`language: ${language}`);
+      
+      setupGenesysClients()
+      .then(data =>  loadGCDataTable(myUserID))
+      .then(() => { 
+        
+        getGroupPermissions().then(() =>
+        {
+      
+          // Display values to the page
+        document.getElementById('span_environment').innerText = environment;
+        document.getElementById('span_language').innerText = language;
+        document.getElementById('span_name').innerText = userDetails.name;
+
+        console.log('Finished setup.');
+        });
+        
+      })
+    });
+  
+
+//Setup for the user listener, used for camp functions
+  async function userSocketSetup(userID, contactName, status, button)
+  {
+
+    const notificationApi = new platformClient.NotificationsApi()
+
+    try 
+    {
+    //Need to store wss as only can have 15 per agent. Also bad practice to create multiply
+      if (sessionStorage.getItem("_gc_channelid") != null) {
+          console.log('channelid already exists...')
+          console.log(sessionStorage.getItem("_gc_channelid"))
+          var channelid = sessionStorage.getItem("_gc_channelid")
+
+          let userPresence = `v2.users.${userID}.presence`
+          await notificationApi.postNotificationsChannelSubscriptions(channelid, [{
+              id: userPresence
+          }])
+          console.log(`Subscribed to presence ${userPresence}`)
+
+         
+      }
+      if (sessionStorage.getItem("_gc_channelid") === null) 
+      {
+          let channel = await notificationApi.postNotificationsChannels()
+          console.log('Created Notification Channel: ', channel)
+          sessionStorage.setItem("_gc_channelid",channel.id)
+          let userPresence = `v2.users.${userID}.presence`
+          await notificationApi.postNotificationsChannelSubscriptions(channel.id, [{
+              id: userPresence
+          }])
+          console.log(`Subscribed to presence ${userPresence}`)
+
+         
+      }
+                    
+                
+
+    } 
+    catch (err) 
+    {
+        console.error('Error: ', err)
+    }
+
+            //Create websocket for events
+            try {
+                let socket = new WebSocket(`wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+
+                socket.onmessage = async function(event) {
+                    let details = JSON.parse(event.data)
+
+                    //presence change
+                    if ((details.topicName).includes("presence")) {
+                         console.log('Presence Changed: ', details)
+                        var presenceChange = details.eventBody.presenceDefinition.systemPresence
+                        var data = (details.topicName).split('.')
+                        var dataUserId = data[2]
+                        console.log('UserId: ', dataUserId)
+                        if (presenceChange == status || status == 'ANY')
+                        {
+                          myClientApp.alerting.showToastPopup(
+                          'campStarted',`${contactName} has changed their status.  They are now ${presenceChange}`);
+                          button.setAttribute('accent','tertiary');
+                        }
+                    }
+                   
+                }
+                console.log(`Waiting for events on wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+            } catch (err) {
+                console.error('Websocket error: ', err)
+            }
+  }
+
+//Setup for the call listener (determine when on phone and details about call for transfer purposes)
+  async function callSocketSetup(userID)
+  {
+
+    const notificationApi = new platformClient.NotificationsApi()
+
+    try 
+    {
+    //Need to store wss as only can have 15 per agent. Also bad practice to create multiply
+      if (sessionStorage.getItem("_gc_channelid") != null) {
+          console.log('channelid already exists...')
+          console.log(sessionStorage.getItem("_gc_channelid"))
+          var channelid = sessionStorage.getItem("_gc_channelid")
+
+          
+          let userCallsTopic = `v2.users.${userID}.conversations.calls`
+          await notificationApi.postNotificationsChannelSubscriptions(channelid, [{
+              id: userCallsTopic
+          }])
+          console.log(`Subscribed to topic ${userCallsTopic}`)
+      }
+      if (sessionStorage.getItem("_gc_channelid") === null) 
+      {
+          let channel = await notificationApi.postNotificationsChannels()
+          console.log('Created Notification Channel: ', channel)
+
+          
+          let userCallsTopic = `v2.users.${userID}.conversations.calls`
+          await notificationApi.postNotificationsChannelSubscriptions(channel.id, [{
+              id: userCallsTopic
+          }])
+          console.log(`Subscribed to topic ${userCallsTopic}`)
+          sessionStorage.setItem("_gc_channelid", channel.id)
+          console.log(sessionStorage.getItem("_gc_channelid"))
+      }
+                    
+                
+
+    } 
+    catch (err) 
+    {
+        console.error('Error: ', err)
+    }
+
+            //Create websocket for events
+            try {
+                let socket = new WebSocket(`wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+
+                socket.onmessage = async function(event) {
+                    let details = JSON.parse(event.data)
+
+                    
+                    //if Call notification
+                    if ((details.topicName).includes("call")) {
+                        console.log('Call Notification: ', details)
+                        console.log('CurrentCall index = ', details.eventBody.id.indexOf(currentCalls))
+                      
+                        let participant = details.eventBody.participants.find(p => p.purpose === "agent" || p.purpose === "user")
+                        if (participant) {
+                            console.log('Participant userId: ', participant.user.id)
+                            console.log('Participant state: ', participant.state)
+                             if (participant.state === 'contacting') {
+
+                              const buttons = document.getElementsByName("transferButton");
+                              // for (let i = 0; i < buttons.length; i++)
+                              //   {
+                              //     buttons[i].setAttribute('disabled','false');
+                              //   }
+                             
+                                
+                                
+                            }
+                            if (participant.state === 'connected'){
+                              if (currentCalls.indexOf(details.eventBody.id) < 0){
+                                currentCalls.push(details.eventBody.id);
+                                //transcriptionSocketSetup(details.eventBody.id);
+                              }
+                            }
+                             if (participant.state === 'terminated') {
+                              const buttons = document.getElementsByName("transferButton");   
+                              // for (let i = 0; i < buttons.length; i++)
+                              //   {
+                              //     buttons[i].setAttribute('disabled','true');
+                              //   }
+                             }
+                        }
+                    }
+                }
+                console.log(`Waiting for events on wss://streaming.${environment}/channels/${sessionStorage.getItem("_gc_channelid")}`)
+            } catch (err) {
+                console.error('Websocket error: ', err)
+            }
+  }
+
+
+  //This is some formatting helper functions
+  function phoneFormat(input) {//returns (###) ###-####
+    input = input.replace(/\D/g,'');
+    var size = input.length;
+    if (size>0) {input="("+input}
+    if (size>3) {input=input.slice(0,4)+") "+input.slice(4,11)}
+    if (size>6) {input=input.slice(0,9)+"-" +input.slice(9)}
+    return input;
+  }   
+  
+  </script>
+</head>
+<body>
+  <section class="section">
+    <!--h1 class="title is-3s">Hi <span id="span_name"></span>!</h1-->
+    <gux-dropdown id="dir-dropdown" onChange="loadGCDataTable(this.value)">
+      <gux-listbox id="dirlistbox" aria-label="ContactLists">
+        
+        <!--gux-option value="PERSONAL">PERSONAL</gux-option-->
+        
+      </gux-listbox>
+    </gux-dropdown>
+    <hr>
+    <p><span id="span_dataTableJSON"></span></p>
+    <!--gux-form-field-search><input type="search" slot='input' id="myInput" onkeyup="filterTable()" placeholder="Search for names.."></gux-form-field-search-->
+    <gux-table-toolbar>
+      <div slot="search-and-filter">
+        <gux-form-field-search label-position="screenreader">
+          <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search" onkeyup="filterTable()" />
+          <label slot="label">Toolbar Search</label>
+        </gux-form-field-search>
+       
+      </div>
+    
+      <div slot="contextual-actions">
+        <!--gux-table-toolbar-action action="delete"></gux-table-toolbar-action-->
+      </div>
+    
+      <div slot="permanent-actions">
+       
+      </div>
+    
+      <div slot="menu-actions">
+       
+        <gux-table-toolbar-action action="refresh" onclick="refresh()"></gux-table-toolbar-action>
+      </div>
+    
+      <gux-table-toolbar-custom-action slot="primary-action" accent="primary" id="enableButton">
+        <span slot="text" onclick="addContact()">Add</span>
+        <gux-icon slot="icon" icon-name="add" decorative onclick="addContact()"></gux-icon>
+      </gux-table-toolbar-custom-action>
+    </gux-table-toolbar>
+
+   
+
+    <hr>
+    <!-- (A) WE WILL GENERATE THE TABLE HERE -->
+    
+    <div id="directoryTable"></div>
+    
+   
+    <hr>
+    <p hidden="false"><em>Environment:&nbsp;<span id="span_environment" ></span> </em></p>
+    <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
+    <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
+    <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.13 </em></p>
+     <div><span id="ModalPlaceHolder"></span></div>
+  
+  </section>
+
+</body>
+</html>
+
+
+
+ 

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<!-- Created as an example by https://github.com/mcphee11 Version 2.1 -->
+<html>
+  <head>
+    <meta name="robots" content="noindex" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title></title>
+    <meta name="Template" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Genesys CSS https://spark.genesys.com/  In PROD set a version -->
+    <link href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css" rel="stylesheet" />
+    <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script -->
+    <script type="module" src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+    <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+  </head>
+    <body onload="start()">
+    <script>
+      'use strict' //Enables strict mode is JavaScript
+      let url = new URL(document.location.href)
+      let gc_region = url.searchParams.get('gc_region')
+      let gc_clientId = url.searchParams.get('gc_clientId')
+      let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+      let gc_conversationId = url.searchParams.get('gc_conversationId')
+      let userId
+
+      //Getting and setting the GC details from dynamic URL and session storage
+      gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
+      gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
+      gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
+      gc_conversationId ? sessionStorage.setItem('gc_conversationId', gc_conversationId) : gc_conversationId = sessionStorage.getItem('gc_conversationId')
+
+      let platformClient = require('platformClient')
+      const client = platformClient.ApiClient.instance
+      const uapi = new platformClient.UsersApi()
+      
+      var currentUploadedReportData;
+      
+      
+      
+
+
+
+      // async function createNewTab()
+      // {
+
+      //   console.log("making request new tab")
+        
+      //   const myHeaders = new Headers();
+      //   myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+      //   myHeaders.append("Content-Type", "application/json");
+
+      //   let raw = JSON.stringify({
+      //   "tabOrder": 0,
+      //   "period": "NONE",
+      //   "interval": "2024-10-22T05:00:00.000Z/2024-10-23T05:00:00.000Z",
+      //   "showEmptyRows": true,
+      //   "sortColumnPickerAlphabetically": true,
+      //   "showColumnChart": true,
+      //   "expandSummaryRow": true,
+      //   "sortOrder": "ascending",
+      //   "viewType": "LANDING_PAGE",
+      //   "name": "API Created Tab"
+      //   });
+
+
+      //   raw = JSON.stringify(reportExampleBody);
+
+      //   const requestOptions = {
+      //   method: "POST",
+      //   headers: myHeaders,
+      //   body: raw,
+      //   redirect: "follow"
+      //   };
+
+      //   fetch("https://api.usw2.pure.cloud/api/v2/analytics/reporting/settings/tabconfigurations", requestOptions)
+      //   .then((response) => response.text())
+      //   .then((result) => console.log(result))
+      //   .catch((error) => console.error(error));
+      // }
+
+
+
+      async function start() {
+        try {
+          client.setEnvironment(gc_region)
+          client.setPersistSettings(true, '_mm_')
+
+          console.log('%cLogging in to Genesys Cloud', 'color: green')
+          await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
+
+          //GET Current UserId
+          let user = await uapi.getUsersMe({})
+          console.log(user)
+          userId = user.id
+
+          const inputElement = document.getElementById("reportFile");
+          inputElement.addEventListener("change", handleFiles, false);
+
+          //initial load of views
+          getMySavedViews();
+
+
+
+        } catch (err) {
+          console.log('Error: ', err)
+        }
+      } //End of start() function
+
+      function importButtonAction()
+      {
+        
+        let name = document.getElementById("nameField").value
+
+        
+        saveUploadedReport(name, currentUploadedReportData)
+        currentUploadedReportData = null;
+        enableDisableUpload(false);
+      }
+      
+      async function saveUploadedReport(name, report)
+      {
+
+        let ourUpload = JSON.parse(report)
+        delete ourUpload['id'];
+        delete ourUpload['selfUri']
+        ourUpload.name = name;
+        console.log(JSON.stringify(ourUpload))
+
+
+      const myHeaders = new Headers();
+      myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+      myHeaders.append("Content-Type", "application/json");
+
+      const raw = JSON.stringify(ourUpload)
+
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+      };
+
+      fetch(`https://api.${gc_region}/api/v2/analytics/reporting/settings/viewconfigurations`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => console.log(result))
+        .catch((error) => console.error(error));
+
+    }
+
+    
+
+      
+    //   async function saveReport()
+    //   {
+    //   const myHeaders = new Headers();
+    //   myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+    //   myHeaders.append("Content-Type", "application/json");
+
+    //   const raw = JSON.stringify({
+    //     //"id": "49555e0d-8ab6-4014-b23f-69121ae3eca2",
+    //     "name": "test save",
+    //     "viewType": "CAMPAIGN_PERFORMANCE_SUMMARY_VIEW",
+    //     "period": "NONE",
+    //     "filter": {
+    //       "mediaTypes": [
+    //         "voice"
+    //       ]
+    //     },
+    //     "dataColumns": [
+    //       "campaignName",
+    //       "campaignDials",
+    //       "campaignContacts",
+    //       "campaignDialAbandonRate",
+    //       "campaignComplianceAbandonRate",
+    //       "campaignConnectRate"
+    //     ],
+    //     "sortOrder": "ascending",
+    //     "tableConfigurations": [
+    //       {
+    //         "name": "views.SHARED_CAMPAIGN_FILTERS",
+    //         "filter": {},
+    //         "showEmptyRows": false,
+    //         "showColumnChart": false,
+    //         "expandSummaryRow": false,
+    //         "sortColumnPickerAlphabetically": false
+    //       },
+    //       {
+    //         "name": "MEDIA_TYPE_FILTER",
+    //         "filter": {
+    //           "mediaTypes": [
+    //             "voice"
+    //           ]
+    //         },
+    //         "showEmptyRows": false,
+    //         "showColumnChart": false,
+    //         "expandSummaryRow": false,
+    //         "sortColumnPickerAlphabetically": false
+    //       },
+    //       {
+    //         "name": "views.CAMPAIGN_PERFORMANCE",
+    //         "filter": {},
+    //         "showEmptyRows": false,
+    //         "showColumnChart": false,
+    //         "expandSummaryRow": false,
+    //         "sortColumnPickerAlphabetically": false
+    //       },
+    //       {
+    //         "name": "views.CAMPAIGN_PERFORMANCE_SUMMARY",
+    //         "filter": {},
+    //         "dataColumns": [
+    //           "campaignName",
+    //           "campaignDials",
+    //           "campaignContacts",
+    //           "campaignDialAbandonRate",
+    //           "campaignComplianceAbandonRate",
+    //           "campaignConnectRate"
+    //         ],
+    //         "sortOrder": "ascending",
+    //         "showEmptyRows": false,
+    //         "showColumnChart": true,
+    //         "expandSummaryRow": false,
+    //         "sortColumnPickerAlphabetically": true
+    //       }
+    //     ],
+    //     "showSecondaryStatus": false,
+    //     "sortColumnPickerAlphabetically": true,
+    //     "expandSummaryRow": true,
+    //     "showColumnChart": true,
+    //     "showEmptyRows": true,
+    //     "columnPickerSortOrder": "ascending",
+    //     "showColumnPickerCategories": true
+    //   });
+
+    //   const requestOptions = {
+    //     method: "POST",
+    //     headers: myHeaders,
+    //     body: raw,
+    //     redirect: "follow"
+    //   };
+
+    //   fetch(`https://api.${gc_region}/api/v2/analytics/reporting/settings/viewconfigurations`, requestOptions)
+    //     .then((response) => response.text())
+    //     .then((result) => console.log(result))
+    //     .catch((error) => console.error(error));
+
+    // }
+
+    //Handles the upload of the file and parsing when complete.
+    function handleFiles() {
+      console.log("handling files");
+      
+      
+      const fileList = this.files; 
+      console.log(this.files);
+      const reader = new FileReader();
+      console.log("reading file");
+      let content = reader.readAsText(fileList[0],"UTF8")
+      reader.onload = function(evt) {
+        
+        console.log(evt.target.result)
+
+        try{
+          let name = JSON.parse(evt.target.result).name;
+          let viewType = JSON.parse(evt.target.result).viewType
+          
+          currentUploadedReportData = evt.target.result;
+          document.getElementById("nameField").value = name;
+          document.getElementById("reportTypeField").value = viewType;
+          enableDisableUpload(true)
+        }
+        catch{
+          console.log("Invalid File")
+          enableDisableUpload(false)
+        }
+        
+          //saveUploadedReport(`UPLOADED EXAMPLE - ${name}` ,evt.target.result)
+
+        }
+    }
+
+    //helper function to enable and disable the import objects.
+    function enableDisableUpload(enabled)
+    {
+      if (enabled)
+    {
+      document.getElementById("nameField").removeAttribute("disabled")
+      document.getElementById("importButton").removeAttribute("disabled")
+    }
+    else
+    {
+      document.getElementById("nameField").setAttribute("disabled","")
+      document.getElementById("nameField").value = "";
+      document.getElementById("reportTypeField").value = "";
+      document.getElementById("importButton").setAttribute("disabled","")
+      
+    }
+    }
+
+    //API call to get the current user's saved views.
+    function getMySavedViews() 
+    {
+      const myHeaders = new Headers();
+      myHeaders.append("Authorization", `Bearer ${client.authData.accessToken}`);
+
+      const raw = "";
+
+      const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+        //body: raw,
+        redirect: "follow"
+      };
+
+      fetch(`https://api.${gc_region}/api/v2/analytics/reporting/settings/viewconfigurations`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          console.log(result)
+          createSavedViewTable(JSON.parse(result));
+        
+        })
+        .catch((error) => console.error(error));
+    }
+
+    //handles the client side download of the file.
+    function download(filename, text) {
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
+    //UI helper to create the table with the saved views.
+    function createSavedViewTable(myViewsJSON)
+    
+     {
+      
+        console.log(JSON.stringify(myViewsJSON,null,2));
+        var table,row,guxTable;
+        var update = false;
+        document.getElementById('viewsTable').innerHTML = "";
+
+        
+        
+        table = document.createElement("table");
+        table.setAttribute('id','viewsTable');
+        guxTable = document.createElement("gux-table");
+        guxTable.setAttribute('resizable-columns','');
+        guxTable.setAttribute('compact','');
+        document.getElementById("viewsTable").appendChild(guxTable).appendChild(table);
+        table.setAttribute('slot','data');
+        
+        //Create a table in the view.s
+        
+        
+            for(const contactObject of myViewsJSON.entities)
+            {
+              console.log()
+              row = table.insertRow();
+              row.setAttribute('id',contactObject.id)
+              row.insertCell().innerHTML = contactObject.name;
+              
+              row.insertCell().innerHTML = contactObject.viewType;
+              
+             
+
+              //dial button
+              let buttonCell = row.insertCell();
+
+              
+
+              //create inline button
+              let dialButton = document.createElement('gux-button');
+              dialButton.innerText = 'Export';
+              //dialbutton.setAttribute("data-json",JSON.stringify(contactObject))
+              dialButton.setAttribute('onclick', `download('${contactObject.name}','${JSON.stringify(contactObject)}')`);
+             
+              dialButton.setAttribute('accent', 'inline');
+              buttonCell.appendChild(dialButton);
+
+             
+            
+            }
+
+            
+            
+        
+            
+        
+
+        //Add our table header
+        if(update == false)
+        {
+        var headerRow = table.createTHead().insertRow();
+
+        let th = document.createElement("th");
+        let text = document.createTextNode("Name");
+        th.setAttribute('data-column-name','name');
+       
+        th.appendChild(text);
+      
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("Type");
+        th.setAttribute('data-column-name','type');
+        th.appendChild(text);
+        //th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        th = document.createElement("th");
+         text = document.createTextNode("Action");
+         th.setAttribute('data-column-action','Action');
+         th.appendChild(text);
+         headerRow.appendChild(th);
+       
+        }
+        
+
+        
+        //console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
+
+      }
+    </script>
+
+    
+  
+    <fieldset>
+      <legend>Import Performance View</legend>
+      <gux-form-field-file id="fileUploadField">
+        <label slot="label">Upload an export</label>
+        <input
+          type="file"
+          id="reportFile"
+          name="reportFile"
+          accept="plain/txt, data/JSON"
+          slot="input"
+          required
+          
+        />
+
+      </gux-form-field-file>
+      
+ <br>
+      <gux-form-field-text-like label-position="above">
+        <input slot="input" type="text" name="t-1" id="nameField" disabled value="" />
+        <label slot="label">Name</label>
+      </gux-form-field-text-like>
+<br>
+      <gux-form-field-text-like label-position="above">
+        <input slot="input" type="text" name="t-1" id="reportTypeField" disabled value="" />
+        <label slot="label">Report Type</label>
+      </gux-form-field-text-like>
+
+<br>
+      <gux-button accent="primary" id="importButton" onclick="importButtonAction()" disabled>Import</gux-button>
+    </fieldset>
+
+<hr>
+    <!--Export Table Area-->
+
+    <fieldset>
+      <legend>My Saved Performance Views</legend>
+
+    <gux-table-toolbar>
+      <div slot="search-and-filter">
+        <gux-form-field-search label-position="screenreader">
+          <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search" onkeyup="filterTable()" />
+          <label slot="label">Toolbar Search</label>
+        </gux-form-field-search>
+       
+      </div>
+    
+      <div slot="contextual-actions">
+      </div>
+    
+      <div slot="permanent-actions">
+        <!--gux-table-toolbar-action action="refresh" onclick="getMySavedViews()"></gux-table-toolbar-action-->
+      </div>
+    
+      <!--div slot="menu-actions">
+       
+        <gux-table-toolbar-action action="refresh" onclick="getMySavedViews()"></gux-table-toolbar-action>
+      </div-->
+    
+      <gux-table-toolbar-custom-action slot="primary-action" accent="primary" id="enableButton">
+        <span slot="text" onclick="getMySavedViews()">Refresh</span>
+        <gux-icon slot="icon" icon-name="refresh" decorative onclick="getMySavedViews()"></gux-icon>
+      </gux-table-toolbar-custom-action>
+    </gux-table-toolbar>
+
+    <div id="viewsTable"></div>
+
+  </fieldset>
+  </body>
+</html>

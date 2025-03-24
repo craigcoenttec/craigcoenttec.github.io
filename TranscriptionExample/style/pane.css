@@ -1,0 +1,653 @@
+.control-div {
+    background-color: #f4f4f4;
+    font-family: Roboto, sans-serif;
+    
+    position: fixed;
+    width: 100%;
+    top: 0;
+    height: 8%;
+    z-index: 1000;
+}
+.scrollable-div {
+    margin-top: 8%; /* Height of the control div */
+    padding: 1%;
+    height: 90%; /* Full height minus the height of the control div */
+    overflow-y: auto;
+}
+
+.textarea-pane {
+position: relative;
+width:95%;
+background-color: #f4f4f4;
+padding: 0 20px 10px;
+border-top: 1px solid #e1e1e1;
+/* display: -webkit-box;
+display: -ms-flexbox; */
+display: flex;
+-webkit-box-orient: vertical;
+-webkit-box-direction: normal;
+-ms-flex-direction: column;
+flex-direction: column;
+visibility: hidden;
+
+}
+
+.control-pane {
+    position: relative;
+    width:95%;
+    background-color: #f4f4f4;
+   
+    border-top: 1px solid #e1e1e1;
+    /* display: -webkit-box;
+    display: -ms-flexbox; 
+    padding: 0 20px 10px;*/
+    width:100%;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    height:60px;
+    
+    }
+
+body, html {width: 100%; height: 100%; margin: 0; padding: 0; overflow:hidden;}
+
+.conversation-pane {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-flex: 1;
+    -ms-flex: 1 0 0px;
+    flex: 1 0 0;
+    overflow-y: auto;
+    height:100%;
+}
+
+.conversation-agent {
+    flex:1;
+    
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+}
+
+.conversation-agent-hidden {
+    
+    visibility: hidden;
+    display: block;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+}
+
+
+
+
+.conversation-customer {
+    flex:1;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    background-color: #fcfcfc;
+}
+
+.message-customer {
+    width:100%;
+    background-color: #767c8d;
+
+}
+.message-customer-small {
+    width:fit-content;
+    background-color: #767c8d;
+    max-width: 60%;
+    min-width: 20%;
+    padding-right: 10px;
+    padding-left: 10px;
+
+}
+.message-system {
+    /*width:49%;*/
+    background-color: #69c083;
+    margin-left: auto;
+    max-width: 60%;
+    min-width: 20%;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.message-system > .gux-card.gux-card-raised {
+    width:49%;
+    background-color: #69c083;
+    margin-left: auto;
+}
+
+.message-agent {
+    /*width:49%;*/
+    margin-left: auto;
+    background-color: #e77d1a;
+    max-width: 60%;
+    min-width: 20%;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+.message-agent-hidden {
+    width:50%;
+    display:none;
+    margin-left: auto;
+}
+.message-details-userdiv {
+    padding:5px;
+    /*flex:1;*/
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.message-details-customerdiv {
+    padding:5px;
+    /*flex:1*/;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.message-details-user {
+margin:4px;
+
+}
+
+.message-details-customer {
+    margin:4px;
+    
+    }
+
+.message-details-time{
+margin:4px;
+
+}
+
+.conversation-container {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-flex: 1;
+    -ms-flex: 1 1 100%;
+    flex: 1 1 100%;
+    
+}
+
+.transcript-container {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-flex: 1;
+    -ms-flex: 1 1 100%;
+    flex: 1 1 100%;
+   
+}
+
+.content {
+    -webkit-box-flex: 1;
+    -ms-flex: 1 1 100%;
+    flex: 1 1 100%;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    overflow-y: auto;
+    overflow-x:hidden;
+    width: 100%;
+    min-height: 100%;
+    min-width: 0;
+    margin:0;
+}
+
+.input-group 
+    {
+        width: 100%;
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        min-width: 100px;
+        position:relative;
+    }
+
+    .message-input {
+        width: 100%;
+        padding: 5px 30px 5px 5px;
+        overflow: auto;
+        max-height: 150px;
+        min-height: 60px;
+        resize: none;
+        border-radius: 4px;
+    }
+
+    .translate-button {
+        border-radius: 0 4px 4px 0;
+        font-size: 20px;
+        color: #999;
+        height: 100%;
+        -webkit-box-flex: 1;
+        -ms-flex: 1 1 auto;
+        flex: 1 1 auto;
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
+        
+    }
+    .translate-button.button.gux-primary {
+        
+        height: 100%;
+        
+    }
+     .sms-footer {
+        padding-top: 10px;
+        color: #b8b8b8;
+    }
+    .textarea-buttons {
+        position: absolute;
+        right: 0;
+        z-index: 3;
+        color: #bbb;
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        height:100%;
+        
+       
+    }
+
+    .translate-button2 {
+        border-radius: 0 4px 4px 0;
+        font-size: 20px;
+        
+        height: 100%;
+        -webkit-box-flex: 1;
+        -ms-flex: 1 1 auto;
+        flex: 1 1 auto;
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
+        color: #fdfdfd;
+        background-color: #2a60c8;
+        background-image: none;
+        border: 1px solid #2455a3;
+    }
+    
+    .text-area-2 {
+        width: 100%;
+        padding: 5px 30px 5px 5px;
+        overflow: auto;
+        max-height: 150px;
+        min-height: 60px;
+        resize: none;
+        border-radius: 4px;
+        margin-bottom: 0;
+        z-index: 2;
+        float: left;
+        font-family: Roboto, sans-serif;
+        font-size:14px;
+        color:rgb(85, 85, 85);
+        border: 1px solid #ccc;
+        font-weight: 400;
+        box-shadow: rgba(0, 0, 0, 0.075) 0px 1px 1px 0px inset;
+    }
+    .top-information {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-pack: justify;
+        -ms-flex-pack: justify;
+        justify-content: space-between;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
+        height: 20px;
+        min-height: 20px;
+        max-height: 20px;
+        padding-top: 2px;
+    }
+
+
+.border-divider {
+    border:none;
+    border-top:1px solid;
+    margin:1em 15%;
+    border-color: #9b9d9e;
+}
+.translated-message-text 
+{
+    /*width:100%;*/
+    color:#1b2c48;
+    /*text-align:center;*/
+    /* padding: 1em; */
+    padding:0px 10px 10px 10px;
+    /*padding-bottom:5px*/;
+    line-height: 1.5em;
+}
+
+.original-message-text
+{
+    /*width:100%;*/
+    color:#767c8d;
+    /*text-align:center;*/
+    /* padding: 1em; */
+    padding:10px 10px 0px 10px;
+    line-height: 1.5em;
+}
+
+
+    /* General CSS Setup */
+body{
+    background-color: lightblue;
+    font-family: "Ubuntu-Italic", "Lucida Sans", helvetica, sans;
+  }
+  
+  /* container */
+  .container {
+    padding: 5% 5%;
+  }
+  
+  /* CSS talk bubble */
+  .talk-bubble {
+      margin: 40px;
+    display: inline-block;
+    margin-left: auto;
+    position: relative;
+       /*width: 60%;*/
+      height: auto;
+      background-color: #deeaff;
+  }
+  .talk-bubble-left {
+    margin: 40px;
+  display: inline-block;
+  
+  position: relative;
+    /*width: 60%;*/
+    height: auto;
+    background-color: #faebd7;
+}
+  .border{
+    border: 8px solid #666;
+  }
+  .round{
+    border-radius: 30px;
+      -webkit-border-radius: 30px;
+      -moz-border-radius: 30px;
+  
+  }
+  
+  /* Right triangle placed top left flush. */
+  .tri-right.border.left-top:before {
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: -40px;
+      right: auto;
+    top: -8px;
+      bottom: auto;
+      border: 32px solid;
+      border-color: #666 transparent transparent transparent;
+  }
+  .tri-right.left-top:after{
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: -20px;
+      right: auto;
+    top: 0px;
+      bottom: auto;
+      border: 22px solid;
+      border-color: lightyellow transparent transparent transparent;
+  }
+  
+  /* Right triangle, left side slightly down */
+  .tri-right.border.left-in:before {
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: -40px;
+      right: auto;
+    top: 30px;
+      bottom: auto;
+      border: 20px solid;
+      border-color: #666 #666 transparent transparent;
+  }
+  .tri-right.left-in:after{
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: -20px;
+      right: auto;
+    top: 38px;
+      bottom: auto;
+      border: 12px solid;
+      border-color: #faebd7 #faebd7 transparent transparent;
+  }
+  
+  /*Right triangle, placed bottom left side slightly in*/
+  .tri-right.border.btm-left:before {
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+      left: -8px;
+    right: auto;
+    top: auto;
+      bottom: -40px;
+      border: 32px solid;
+      border-color: transparent transparent transparent #666;
+  }
+  .tri-right.btm-left:after{
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+      left: 0px;
+    right: auto;
+    top: auto;
+      bottom: -20px;
+      border: 22px solid;
+      border-color: transparent transparent transparent #faebd7;
+  }
+  
+  /*Right triangle, placed bottom left side slightly in*/
+  .tri-right.border.btm-left-in:before {
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+      left: 30px;
+    right: auto;
+    top: auto;
+      bottom: -40px;
+      border: 20px solid;
+      border-color: #666 transparent transparent #666;
+  }
+  .tri-right.btm-left-in:after{
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+      left: 38px;
+    right: auto;
+    top: auto;
+      bottom: -20px;
+      border: 12px solid;
+      border-color: #faebd7 transparent transparent #faebd7;
+  }
+  
+  /*Right triangle, placed bottom right side slightly in*/
+  .tri-right.border.btm-right-in:before {
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: auto;
+      right: 30px;
+      bottom: -40px;
+      border: 20px solid;
+      border-color: #666 #666 transparent transparent;
+  }
+  .tri-right.btm-right-in:after{
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: auto;
+      right: 38px;
+      bottom: -20px;
+      border: 12px solid;
+      border-color: #deeaff #deeaff transparent transparent;
+  }
+  /*
+      left: -8px;
+    right: auto;
+    top: auto;
+      bottom: -40px;
+      border: 32px solid;
+      border-color: transparent transparent transparent #666;
+      left: 0px;
+    right: auto;
+    top: auto;
+      bottom: -20px;
+      border: 22px solid;
+      border-color: transparent transparent transparent lightyellow;
+  
+  /*Right triangle, placed bottom right side slightly in*/
+  .tri-right.border.btm-right:before {
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: auto;
+      right: -8px;
+      bottom: -40px;
+      border: 20px solid;
+      border-color: #666 #666 transparent transparent;
+  }
+  .tri-right.btm-right:after{
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: auto;
+      right: 0px;
+      bottom: -20px;
+      border: 12px solid;
+      border-color: lightyellow lightyellow transparent transparent;
+  }
+  
+  /* Right triangle, right side slightly down*/
+  .tri-right.border.right-in:before {
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: auto;
+      right: -40px;
+    top: 30px;
+      bottom: auto;
+      border: 20px solid;
+      border-color: #666 transparent transparent #666;
+  }
+  .tri-right.right-in:after{
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: auto;
+      right: -20px;
+    top: 38px;
+      bottom: auto;
+      border: 12px solid;
+      border-color: lightyellow transparent transparent lightyellow;
+  }
+  
+  /* Right triangle placed top right flush. */
+  .tri-right.border.right-top:before {
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: auto;
+      right: -40px;
+    top: -8px;
+      bottom: auto;
+      border: 32px solid;
+      border-color: #666 transparent transparent transparent;
+  }
+  .tri-right.right-top:after{
+      content: ' ';
+      position: absolute;
+      width: 0;
+      height: 0;
+    left: auto;
+      right: -20px;
+    top: 0px;
+      bottom: auto;
+      border: 20px solid;
+      border-color: lightyellow transparent transparent transparent;
+  }
+  
+  /* talk bubble contents */
+  .talktext{
+    padding: 1em;
+      text-align: left;
+    line-height: 1.5em;
+  }
+  .talktext p{
+    /* remove webkit p margins */
+    -webkit-margin-before: 0em;
+    -webkit-margin-after: 0em;
+  }
+
+  :root {
+    --gse-ui-formControl-input-contentText-fontFamily: roboto;
+    --gse-ui-formControl-label-textBold-fontFamily: roboto;
+    --gse-ui-tag-text-fontFamily: roboto;
+    --gse-core-typography-body-lg-fontFamily: Roboto;
+    --gse-ui-menu-option-label-active-text-fontFamily: Roboto;
+    --gse-ui-menu-option-label-default-text-fontFamily: Roboto;
+  }

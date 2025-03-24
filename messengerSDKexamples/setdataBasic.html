@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" charset="utf-8">
+
+    //This is the deployment snippet from your messenger deployment
+  (function (g, e, n, es, ys) {
+    g['_genesysJs'] = e;
+    g[e] = g[e] || function () {
+      (g[e].q = g[e].q || []).push(arguments)
+    };
+    g[e].t = 1 * new Date();
+    g[e].c = es;
+    ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
+  })(window, 'Genesys', 'https://apps.usw2.pure.cloud/genesys-bootstrap/genesys.min.js', {
+    environment: 'prod-usw2',
+    deploymentId: 'de9be94e-2637-4149-8daa-4f15649d0d66'
+  });
+  //End deployment snippet.
+
+  //Set the data on the current or next conversation.  This only runs at page load so data is set once in this example.
+  Genesys("command", "Database.set", {
+  messaging: {
+    customAttributes: {
+      SampleKey: "SampleData",  //this is an example of just setting a string
+      sourcePage: window.location.href  //this is an example of using data from the session.  This is sending the current url as data.
+    }
+  }
+});
+//end Setting Data
+</script>
+    
+<head>
+    <title>Web Messenger Example Page</title>
+</head>
+<body>
+    <h1>Something to take up space</h1>
+    <img src="OIP.jpg" alt="Image 1">
+    
+</body>
+</html>

@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta name="robots" content="noindex" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title></title>
+    <meta name="Template" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Genesys CSS https://spark.genesys.com/  In PROD set a version -->
+     <link href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css" rel="stylesheet" />
+    <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script --> 
+    <script type="module" src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+    <!--script src="genesys-spark/dist/index.js"></script-->
+    <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+
+  
+    <link rel="stylesheet" href="./style/pane.css">
+  
+  
+  </head>
+    <body  onload="start()" >
+    <script>
+      'use strict' //Enables strict mode is JavaScript
+      let url = new URL(document.location.href)
+      let gc_region = url.searchParams.get('gc_region')
+      let gc_clientId = url.searchParams.get('gc_clientId')
+      let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+      let gc_conversationId = url.searchParams.get('gc_conversationId')
+      let userId
+      let gc_agentCommunicationId
+      let currentEvent = 0;
+      let gc_agentParticipantId
+      let gc_mediaType
+      let gc_language = url.searchParams.get('gc_language')
+      
+      let translateToken = "" //url.searchParams.get('translateToken')
+      let version = "0.0.0.2"
+      let mySendTimer
+      let currentSourceLang = "auto"
+      let lastSourceLang = "en"
+      let currentTargetLang = "es"
+      let currentDelay = 4000
+      let messageIds = [];
+      let messageDetailList = [];
+      let showAgent =false;
+      let currentCustomerClass = "message-customer-small";
+      let currentSystemClass = "message-system";
+      let currentAgentClass = "message-agent";
+      // let activeLanguages = ["auto","en","fi","fr","de","ko","zh","pt","es"]
+      // let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","fr":"French","pt":"Portuguese","ko":"Korean","fi":"Finnish","zh":"Mandarin","zhc":"Cantonese"}
+      // let dialectlanguageMap = {"en":"english","de":"german","es":"spanish","auto":"auto","fr":"french","pt":"portuguese","ko":"korean","fi":"finnish","zh":"mandarin","zhc":"cantonese"}
+      // let spokenLanguageMap = {"en-US":"English","de-DE":"German","es-ES":"Spanish","auto":"Auto","fr-FR":"French","pt-BR":"Portuguese","ko-KR":"Korean","fi-FI":"Finnish","zh-CN":"Mandarin","zh":"Cantonese"}
+      let activeLanguages = ["auto","english","finnish","french","german","korean","mandarin","polish","portuguese","spanish","brit"]
+      let languageMap = {"english":"English","german":"German","spanish":"Spanish","auto":"Auto","french":"French","portuguese":"Portuguese","korean":"Korean","finnish":"Finnish","mandarin":"Mandarin","cantonese":"Cantonese","polish":"Polish","brit":"Brit"}
+      let flagMap = {"english":"us","german":"de","spanish":"es","auto":"auto","french":"fr","portuguese":"br","korean":"ko","finnish":"fi","mandarin":"ch","cantonese":"ch","polish":"pl","brit":"gb"}
+      let spokenLanguageMap = {"en-US":"English","de-DE":"German","es-ES":"Spanish","auto":"Auto","fr-FR":"French","pt-BR":"Portuguese","ko-KR":"Korean","fi-FI":"Finnish","zh-CN":"Mandarin","zh":"Cantonese","pl-PL":"Polish","en-GB":"Brit"}
+      
+      
+      
+      
+      let myImage ="";
+      let myName = "";
+      let translationURL = 'https://qx4fkw52e1.execute-api.us-west-2.amazonaws.com/Prod/ttec_sc_translate';
+      let workflowImage = "https://craigcoenttec.github.io/TranscriptionExample/LG_Umbrella.png";
+      //let workflowImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg";
+      let customerImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg";
+      let ADDIURLHOST = "https://addi.smldev.com"
+      let ADDIWEBSOCKETHOST = "wss://addi.smldev.com"
+      let currentTransaction ="";
+      let transcriptionWebSocket = null;
+      let pingInterval = null;
+      let sampleMessages = [{
+"participant": "caller",
+"timestamp": "2024-10-23T12:46:21.991367361Z",
+"text": "cómo está",
+"translated": "how are you"
+},
+{
+"participant": "caller",
+"timestamp": "2024-10-23T12:46:32.059910671Z",
+"text": "Alright.",
+"translated": "Está bien."
+},
+{
+"participant": "caller",
+"timestamp": "2024-10-23T12:46:33.867261812Z",
+"text": " hola señor call cómo está",
+"translated": "Hello Mr. Call, how are you?"
+}];
+
+
+      //Getting and setting the GC details from dynamic URL and session storage
+      gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
+      gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
+      gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
+      gc_conversationId ? sessionStorage.setItem('gc_conversationId', gc_conversationId) : gc_conversationId = sessionStorage.getItem('gc_conversationId')
+      gc_language ? sessionStorage.setItem('gc_language', gc_language) : gc_language = sessionStorage.getItem('gc_language')
+      translateToken ? sessionStorage.setItem('translateToken', translateToken) : translateToken = sessionStorage.getItem('translateToken')
+      let platformClient = require('platformClient')
+      const client = platformClient.ApiClient.instance
+      const uapi = new platformClient.UsersApi()
+      const napi = new platformClient.NotificationsApi()
+      const capi = new platformClient.ConversationsApi()
+
+      let statementToTranslate = "";
+
+      async function start() {
+        try {
+          populateLanguages();
+          client.setEnvironment(gc_region)
+          client.setPersistSettings(true, '_mm_')
+          console.log(`%cOriginal URL is ${url}`, 'color: yellow')
+          console.log('%cLogging in to Genesys Cloud', 'color: green')
+          console.log(`%cclientId is ${gc_clientId} and redirect is ${gc_redirectUrl}`, 'color: yellow')
+          await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
+
+          //GET Current UserId
+          let user = await uapi.getUsersMe({})
+          console.log(user)
+          userId = user.id
+          myName = user.name;
+          myImage = user.images[0].imageUri; 
+          updateDebug(gc_region, gc_language, version, user.name, gc_clientId, translateToken, gc_redirectUrl, gc_conversationId )
+
+          
+        } catch (err) {
+          console.log('Error: ', err)
+        }
+        
+        getCurrentConversationDetails() ;
+        document.getElementById("typedMessage").addEventListener('keyup',function(e) {
+          if(e.key === 'Enter') {sendTranslatedMessage()}
+        })
+
+      } //End of start() function
+
+
+
+
+//---------------- 
+//Subscription Code
+async function subscribeMessageEvents()
+{
+
+  try {
+            //Need to store wss as only can have 15 per agent. Also bad practice to create multiple
+            let messagesTopic = `v2.users.${userId}.conversations.messages`
+            if (sessionStorage.getItem('gc_channelid')) {
+              console.log('channelid already exists...')
+              var channelid = sessionStorage.getItem('gc_channelid')
+
+              // prettier-ignore
+              await napi.postNotificationsChannelSubscriptions(channelid, [{id: messagesTopic}])
+              console.log(`%cSubscribed to topic ${messagesTopic}`, 'color: green')
+            } else {
+              let channel = await napi.postNotificationsChannels()
+              console.log('Created Notification Channel: ', channel)
+
+              // prettier-ignore
+              await napi.postNotificationsChannelSubscriptions(channel.id, [{id: messagesTopic}])
+              console.log(`Subscribed to topic ${messagesTopic}`)
+              sessionStorage.setItem('gc_channelid', channel.id)
+            }
+          } catch (err) {
+            console.error('Notification Error: ', err)
+          }
+
+          //Create websocket for events
+          try {
+            let socket = new WebSocket(`wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
+
+            socket.onmessage = async function (event) {
+              let details = JSON.parse(event.data)
+
+              gc_conversationId ? console.log('wss conversationId: ', gc_conversationId) : null
+              details?.eventBody?.message === 'WebSocket Heartbeat' ? console.log('%c%s Heartbeat', 'color: red', '❤️') : console.log(details)
+              //if Message notification
+              if (details.topicName.includes('messages')) {
+                console.log('Messaging Notification: ', details)
+                // prettier-ignore
+                
+                //get customer participant data
+                let customerParticipant = details.eventBody.participants.slice().reverse().find(p => p.purpose === 'customer');
+                if (customerParticipant) {
+                  console.log('***Customer Participant: ', customerParticipant)
+                  customerParticipant.messages.reverse().forEach(message => {
+                    //message.messages.forEach(msg => {
+                      console.log(messageIds);
+                      console.log(message.message.id)
+                      if(!messageIds.includes(message.message.id))
+                      {
+                        messageIds.push(message.message.id);
+                         messageDetailList.push({"messageId":message.message.id,"messageTime":message.messageTime,"messageSender":"Customer"})
+                       
+                        console.log(`%cNew Message: ${message.message.id}`, 'color: green');
+                        translateMessage(message.message.id);
+                        //translateLatestMessage();
+                        
+                      }
+                    //});
+
+                  });
+                }
+              }
+            }
+            console.log(`Waiting for events on wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
+          } catch (err) {
+            console.error('Websocket error: ', err)
+          }
+            
+}
+
+//Transcription Subscription
+async function subscribeLiveTranscripton(conversationId)
+{
+
+    let transcriptionTopic = `v2.conversations.${conversationId}.transcription`
+
+    try {
+        //Need to store wss as only can have 15 per agent. Also bad practice to create multiple
+        if (sessionStorage.getItem('gc_channelid')) {
+          console.log('channelid already exists...')
+          var channelid = sessionStorage.getItem('gc_channelid')
+
+          
+          // prettier-ignore
+          await napi.postNotificationsChannelSubscriptions(channelid, [{id: transcriptionTopic}])
+          console.log(`%cSubscribed to topic ${transcriptionTopic}`, 'color: green')
+        } else {
+          let channel = await napi.postNotificationsChannels()
+          console.log('Created Notification Channel: ', channel)
+
+          
+          // prettier-ignore
+          await napi.postNotificationsChannelSubscriptions(channel.id, [{id: transcriptionTopic}])
+          console.log(`Subscribed to topic ${transcriptionTopic}`)
+          sessionStorage.setItem('gc_channelid', channel.id)
+        }
+      } catch (err) {
+        console.error('Notification Error: ', err)
+      }
+
+        //Create websocket for events
+        try {
+            let socket = new WebSocket(`wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
+
+            
+            socket.onmessage = async function (event) 
+            {
+                let details = JSON.parse(event.data)
+
+                gc_conversationId ? console.log('wss conversationId: ', gc_conversationId) : null
+                details?.eventBody?.message === 'WebSocket Heartbeat' ? console.log('%c%s Heartbeat', 'color: red', '❤️') : console.log(details)
+                //if Message notification
+                if (details.topicName.includes('transcription')) {
+                    console.log('Transcription Notification: ', details)
+                    let transcriptionEvent = details.eventBody.transcripts;
+                    // prettier-ignore
+                    if (typeof transcriptionEvent !== 'undefined')
+                    {
+                        console.log(transcriptionEvent)
+
+                        //Customer Calls Only
+                        if (transcriptionEvent[0].channel == "EXTERNAL") {
+                            console.log('Customer Speaking')
+                            let utterance = transcriptionEvent[0].alternatives[0].transcript
+                            console.log(utterance);
+                            document.getElementById('span_lastUtterance').innerText = utterance;
+                            //getTranslation(utterance)
+                            currentDelay = document.getElementById("delay").value
+                            document.getElementById("workingRadial").style.visibility = "visible"
+                            statementToTranslate += " " + utterance;
+                            window.clearTimeout(mySendTimer);
+                            mySendTimer = window.setTimeout(SendForResult,currentDelay);
+                        }                        
+                    }
+            }
+          }
+          console.log(`Waiting for events on wss://streaming.${gc_region}/channels/${sessionStorage.getItem("gc_channelid")}`)
+        } catch (err) {
+            console.error('Websocket error: ', err)
+        }
+
+        
+}
+
+async function subscribeADDITranscription()
+{
+
+          //Create websocket for events
+          try {
+            console.log(`starting web socket connection to ${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`)
+            transcriptionWebSocket = new WebSocket(`${ADDIWEBSOCKETHOST}/live/${currentTransaction}/ws`);
+
+            transcriptionWebSocket.onmessage = async function (event) {
+              
+              console.log("%cTRANSCRIPTION EVENT", 'color: red');
+              console.log(JSON.stringify(event));
+              parseAndDisplayEvent(JSON.parse(event.data))
+              
+              
+              //if Message notification
+              
+            }
+            transcriptionWebSocket.onclose = async function (event) {
+              
+              console.log(event);
+              clearInterval(pingInterval);
+              subscribeADDITranscription();
+            }
+            transcriptionWebSocket.onerror = async function (event) {
+              
+              console.log(event);
+             
+            }
+            transcriptionWebSocket.onopen = async function (event) 
+            {
+               //pingInterval = setInterval(sendPing(), 5000);
+            }
+           
+          } 
+          catch (err) {
+            console.error('Websocket error: ', err)
+          }
+            
+}
+
+async function subscribeEchoTest()
+{
+  //Create websocket for events
+  try {
+            console.log(`starting web socket connection to wss://echo.websocket.org/`)
+            let socket = new WebSocket(`wss://echo.websocket.org/`);
+
+            socket.onmessage = async function (event) {
+              
+              console.log("%cTRANSCRIPTION EVENT", 'color: red');
+              console.log(event);
+              addStatementCard("echoTest",JSON.stringify(event),"en","en","123")
+              
+              //if Message notification
+              
+            }
+            socket.onclose = async function (event) {
+              
+              console.log(event);
+             
+            }
+            socket.onerror = async function (event) {
+              
+              console.log(event);
+             
+            }
+           
+          } 
+          catch (err) {
+            console.error('Websocket error: ', err)
+          }
+}
+
+
+
+//---------------- 
+//UI Functions
+//debug info function
+function updateDebug(environment, language, version, name, clientId, translateToken, redirectURL,conversationId)
+      {
+        document.getElementById('span_environment').innerText = environment;
+        document.getElementById('span_language').innerText = language;
+        document.getElementById('span_name').innerText = name;
+        document.getElementById('span_version').innerText = version;
+        document.getElementById('span_clientid').innerText = clientId;
+        document.getElementById('span_translateToken').innerText = translateToken;
+        document.getElementById('span_redirectURL').innerText = redirectURL;
+        document.getElementById('span_conversation').innerText = conversationId;
+        
+        
+
+      }
+
+function setSourceLanguage(language)
+{
+  currentSourceLang = language;
+  document.getElementById("SourceLanguageDropdown").value = language;
+  console.log("The Source language is now: " + language);
+}
+
+function testTimer(utterance)
+{
+    statementToTranslate += " " + utterance;
+    window.clearTimeout(mySendTimer);
+    mySendTimer = window.setTimeout(SendForResult,currentDelay);
+    document.getElementById("workingRadial").style.visibility = "visible";
+}
+
+function populateLanguages()
+{
+
+  let sourceDropdownElement = document.getElementById("SourceListBox");
+  let targetDropdownElement = document.getElementById("TargetListBox")
+
+  
+
+  for (const key in activeLanguages) {
+    let lang = activeLanguages[key]
+      let currentOption = document.createElement("gux-option");
+      currentOption.setAttribute("value",lang);
+      currentOption.innerText = languageMap[lang];
+      sourceDropdownElement.appendChild(currentOption)
+      let currentOption2 = currentOption.cloneNode(true);
+      targetDropdownElement.appendChild(currentOption2);
+    }
+  
+
+  let autoOption = document.createElement("gux-option");
+  autoOption.setAttribute("value","debug");
+  autoOption.innerText = "debug";
+  targetDropdownElement.appendChild(autoOption)
+
+  
+}
+
+//function to add a new card to the conversation pane
+function addStatementCard(originalText, translatedText, sourceLanguage, destinationLanguage, messageId, className = "message-customer")
+{
+
+  let card = document.createElement("div");
+  card.id = messageId;
+  
+  card.setAttribute('accent','raised');
+
+  let cardHeader = document.createElement("div");
+  
+  let cardTimestamp = document.createElement("gux-tag");
+  cardTimestamp.setAttribute("size","small");
+  cardTimestamp.className = "message-details-time";
+  cardTimestamp.setAttribute("disabled","true")
+  let cardUser = document.createElement("gux-tag");
+  cardUser.setAttribute("size","small");
+  cardUser.className = "message-details-user";
+  let cardAvatar = document.createElement("gux-avatar-beta");
+  cardAvatar.setAttribute("size","small")
+  let cardAvatarImage = document.createElement("img");
+
+
+
+  console.log(messageDetailList);
+  //let index = messageDetailList.findIndex(m => m.messageId == messageId)
+  if (true)
+  {
+    console.log("true")
+    let currentMessage = messageDetailList.find(m => m.messageId == messageId);
+    if (typeof currentMessage != "undefined"){
+      cardTimestamp.innerHTML = currentMessage.messageTime;
+      
+      if (currentMessage.messageSender && currentMessage.messageSender === "Agent" ) {
+        cardUser.className = "message-details-user";
+        cardHeader.className = "message-details-userdiv";
+        cardUser.innerHTML = currentMessage.messageSender;
+        cardUser.setAttribute("accent","10");
+        cardAvatarImage.setAttribute("slot","image");
+        cardAvatarImage.setAttribute("src",myImage);
+        cardAvatarImage.setAttribute("alt",myName);
+        cardAvatar.setAttribute("name",myName);
+        cardHeader.appendChild(cardTimestamp);
+        cardHeader.appendChild(cardUser);
+        cardAvatar.appendChild(cardAvatarImage);
+        cardHeader.appendChild(cardAvatar);
+        
+        //card.className = currentAgentClass;
+        card.className = currentAgentClass + " talk-bubble tri-right round btm-right-in"
+
+      }
+      else if (currentMessage.messageSender && currentMessage.messageSender != "Customer") {
+        cardUser.className = "message-details-user";
+        cardHeader.className = "message-details-userdiv";
+        cardUser.innerHTML = currentMessage.messageSender;
+        cardUser.setAttribute("accent","2");
+        cardAvatarImage.setAttribute("slot","image");
+        cardAvatarImage.setAttribute("src",workflowImage);
+        cardAvatarImage.setAttribute("alt","Workflow");
+        cardAvatar.setAttribute("name","Workflow");
+        
+        cardHeader.appendChild(cardTimestamp);
+        cardHeader.appendChild(cardUser);
+        cardAvatar.appendChild(cardAvatarImage);
+        cardHeader.appendChild(cardAvatar);
+        //card.className = currentSystemClass;
+        card.className = currentSystemClass + " talk-bubble tri-right round btm-right-in"
+        
+      }
+      else{
+        cardUser.className = "message-details-customer";
+        cardHeader.className = "message-details-customerdiv";
+        cardUser.innerHTML = "Customer"
+        cardUser.setAttribute("accent","3");
+        cardAvatarImage.setAttribute("slot","image");
+        cardAvatarImage.setAttribute("src",customerImage);
+        cardAvatarImage.setAttribute("alt","Customer");
+        cardAvatar.setAttribute("name","Customer");
+        cardAvatar.appendChild(cardAvatarImage);
+        cardHeader.appendChild(cardAvatar);
+        cardHeader.appendChild(cardUser);
+        cardHeader.appendChild(cardTimestamp);
+        //card.className = currentCustomerClass;
+        card.className = currentCustomerClass + " talk-bubble-left tri-right round btm-left-in"
+        
+        
+
+        document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage]; 
+        document.getElementById("sendLanguage").innerText = "Auto";
+        lastSourceLang = sourceLanguage;
+        
+  
+      }
+      
+
+    }
+    //voice
+    else
+    {
+      cardUser.className = "message-details-customer";
+        cardHeader.className = "message-details-customerdiv";
+        cardUser.innerHTML = "Customer"
+        cardUser.setAttribute("accent","3");
+        cardAvatarImage.setAttribute("slot","image");
+        cardAvatarImage.setAttribute("src",customerImage);
+        cardAvatarImage.setAttribute("alt","Customer");
+        cardAvatar.setAttribute("name","Customer");
+        cardAvatar.appendChild(cardAvatarImage);
+        cardHeader.appendChild(cardAvatar);
+        cardHeader.appendChild(cardUser);
+        cardHeader.appendChild(cardTimestamp);
+        //card.className = currentCustomerClass;
+        card.className = currentCustomerClass + " talk-bubble-left tri-right round btm-left-in"
+        
+        
+
+        document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage]; 
+        document.getElementById("sendLanguage").innerText = "Auto";
+        lastSourceLang = sourceLanguage;
+    }
+    
+  }
+  
+  if (sourceLanguage === "en")
+  {
+      sourceLanguage = "gb";
+  }
+  if (destinationLanguage === "en")
+  {
+    destinationLanguage = "gb";
+  }
+
+
+  let cardOriginal = document.createElement("div");
+  //let cardOriginal = document.createElement("gux-card");
+  
+  cardOriginal.setAttribute('accent','bordered');
+  cardOriginal.className = "original-message-text"
+  //cardOriginal.style.width = "100%";
+  //cardOriginal.style.color = "#767c8d";
+  let sourceFlag = document.createElement("gux-flag-icon-beta");
+  sourceFlag.setAttribute('flag',flagMap[sourceLanguage]);
+  let cardOriginalTextBlock = document.createElement("span");
+  cardOriginalTextBlock.setAttribute('class','gux-body-lg-semibold');
+  let cardOriginalText = document.createElement("span");
+  cardOriginalTextBlock.innerHTML = originalText;
+  //cardOriginalTextBlock.appendChild(cardOriginalText)
+  cardOriginal.appendChild(sourceFlag);
+  cardOriginal.appendChild(cardOriginalTextBlock);
+
+  let borderDiv = document.createElement("div");
+  borderDiv.className = "border-divider"
+
+  let cardNew = document.createElement("div");
+  //let cardNew = document.createElement("gux-card");
+  cardNew.className = "translated-message-text"
+  cardNew.setAttribute('accent','bordered');
+  //cardNew.style.width = "100%";
+  //cardNew.style.color = "#1b2c48";
+  let newFlag = document.createElement("gux-flag-icon-beta");
+  newFlag.setAttribute('flag',flagMap[destinationLanguage]);
+  let cardNewTextBlock = document.createElement("span");
+  cardNewTextBlock.setAttribute('class','gux-body-lg-semibold');
+  let cardNewText = document.createElement("span");
+  //cardNewTextBlock.appendChild(cardNewText)
+  cardNewTextBlock.innerHTML = translatedText;
+  cardNew.appendChild(newFlag);
+  cardNew.appendChild(cardNewTextBlock);
+  
+  card.appendChild(cardOriginal);
+  card.appendChild(borderDiv);
+  card.appendChild(cardNew);
+  //card.appendChild(cardHeader);
+
+  
+  
+  
+  
+  document.getElementById("conversation").appendChild(card)
+  document.getElementById("conversation").appendChild(cardHeader)
+  //card.scrollIntoView();
+  setTimeout(() => {document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight;}, 500); 
+  
+}
+
+//generic "sleep" timer
+function timer(ms) 
+{ 
+  return new Promise(res => setTimeout(res, ms));
+}
+
+
+//UI handling to hide or show agent side of conversation (needs work)
+function toggleAgentDiv() 
+{
+  console.log("toggled")
+  showAgent = !showAgent
+   let agentToggle = document.getElementById("agentToggle");
+   if (showAgent == true)
+   {
+    let agentDivs = document.getElementsByClassName(currentAgentClass);
+    let customerDivs = document.getElementsByClassName(currentCustomerClass);
+    
+    
+    currentAgentClass = "message-agent";
+    currentCustomerClass = "message-customer-small"
+
+    while (agentDivs.length)
+    {
+      agentDivs[0].className = currentAgentClass;
+    }
+    while (customerDivs.length) {
+      customerDivs[0].className = currentCustomerClass;
+    }
+   }
+   else {
+    let agentDivs = document.getElementsByClassName(currentAgentClass);
+    let customerDivs = document.getElementsByClassName(currentCustomerClass);
+    currentAgentClass = "message-agent-hidden";
+    currentCustomerClass = "message-customer"
+    
+    while (agentDivs.length) {
+      agentDivs[0].className = currentAgentClass;
+    }
+    while (customerDivs.length) {
+      customerDivs[0].className = currentCustomerClass;
+    }
+   }
+
+
+}
+
+//Updates language selections
+async function updateLanguageSelections(TransactionObject) 
+{
+  console.log("udpating interface")
+
+  let agentLanguage = TransactionObject.agent
+  let callerLanguage = TransactionObject.caller
+
+  console.log(agentLanguage + " " + callerLanguage)
+  document.getElementById("SourceLanguageDropdown").value = callerLanguage
+  document.getElementById("TargetLanguageDropdown").value = agentLanguage
+}
+
+//parse and display the live transcription events
+async function parseAndDisplayEvent(jsonEvent) {
+ 
+ let ourEventid = currentEvent.toString();
+ console.log(ourEventid)
+ currentEvent++;
+ let sourceLang = document.getElementById("SourceLanguageDropdown").value
+ let targetLang = document.getElementById("TargetLanguageDropdown").value
+ let ourParticipant = "Customer";
+ let ourClass = currentCustomerClass;
+ if (jsonEvent.participant != "caller")
+   {
+     ourParticipant = "Agent"
+     ourClass = currentAgentClass;
+     targetLang = document.getElementById("SourceLanguageDropdown").value
+     sourceLang = document.getElementById("TargetLanguageDropdown").value
+   }
+   
+ 
+ messageDetailList.push({"messageId":ourEventid,"messageTime":jsonEvent.timestamp,"messageSender":ourParticipant})
+ addStatementCard(jsonEvent.text,jsonEvent.translated,sourceLang,targetLang,ourEventid,ourClass);
+}
+
+//---------------- 
+//Translation Code
+async function translateLatestMessage()
+{
+
+    let conversation = await capi.getConversationsMessage(gc_conversationId);
+    console.log(conversation);
+    let messageId = conversation.participants[0].messages[0].messageId
+    console.log(`messageId = ${messageId}`)
+    translateMessage(messageId);
+    addStatementCard("Original Text","Translated Text","en","de","NONE","message-agent")
+  
+  
+}
+
+async function translateMessage(messageId)
+{
+
+    
+    
+    let message = await capi.getConversationsMessageMessage(gc_conversationId, messageId)
+    console.log(message.normalizedMessage.text);
+    getTranslation(message.normalizedMessage.text, messageId);
+  
+  
+}
+    
+function getTranslation(text,messageId="")
+{
+    if (text && text.length > 0) //Change this back to > 0 when ready to translate again.
+    {
+
+        currentSourceLang = document.getElementById("SourceLanguageDropdown").value
+        currentTargetLang = document.getElementById("TargetLanguageDropdown").value
+
+          let translation =  postTranslationAPI(text,currentSourceLang, currentTargetLang,messageId,postTranslationProcesing)//.then((translation) => {
+            
+      }     
+      
+}
+
+//Translation call to translation API
+function postTranslationAPI(text,sourceLanguage, targetLanguage, messageId, postTranslationProcessor)
+{
+    
+    let resultObject = {
+      "originalText":text,
+      "translatedText":"",
+      "sourceLanguage":sourceLanguage,
+      "targetLanguage":targetLanguage,
+      "error":false,
+      "messageId":messageId
+    }
+  
+    if (text.length > 0) //Change this back to > 0 when ready to translate again.
+    {
+        if(targetLanguage == "debug")
+        {
+          resultObject.sourceLanguage = "en";
+          resultObject.translatedText = `Debug Translation ${sourceLanguage} - ${text}`;
+            
+          postTranslationProcessor(resultObject)
+          return
+        }
+
+        const myHeaders = new Headers();
+        myHeaders.append("access-token", translateToken);
+        myHeaders.append("Content-Type", "application/json");
+
+        currentSourceLang = sourceLanguage;
+        currentTargetLang = targetLanguage;
+
+        const raw = JSON.stringify({
+        "Text": text,
+        "SourceLanguageCode": currentSourceLang,
+        "TargetLanguageCode": currentTargetLang
+        });
+
+        const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+        };
+
+        //fetch("https://axdok64nnc.execute-api.us-west-2.amazonaws.com/default/myTranslateTest", requestOptions)
+        fetch(translationURL, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+            console.log(result);
+            let translation = JSON.parse(result);
+            resultObject.sourceLanguage = translation.source_language;
+            resultObject.translatedText = translation.translatedText;
+            //postTranslationProcessor(resultObject);
+            postTranslationProcessor(resultObject);
+            return
+            
+        })
+        .catch((error) => {
+          console.error(error);
+          resultObject.error = true;
+          postTranslationProcessor( resultObject);
+          return
+        });
+    }
+    else
+    {
+      postTranslationProcessor(resultObject);
+        return
+    }
+
+}
+
+//translation handler from customer
+function postTranslationProcesing(translation)
+{
+  console.log(translation)
+  if (translation.error == false && translation.translatedText.length > 0 )
+  {
+    document.getElementById('span_lastTranslation').innerText = translation.translatedText;   
+    addStatementCard(translation.originalText,translation.translatedText,translation.sourceLanguage,translation.targetLanguage,translation.messageId,currentCustomerClass);
+    
+    }
+  
+}
+
+//handler to translate after ui timer expires
+function SendForResult()
+{
+    console.log("Timer expired");
+    
+    getTranslation(statementToTranslate);
+    statementToTranslate = "";
+    document.getElementById("workingRadial").style.visibility = "hidden";    
+}
+
+//Translate existing thread of a digital conversation
+async function TranslateExistingConversation(customerMessages, agentMessages, workflowMessages)
+{
+      console.log(customerMessages);
+      let workingList = [];
+                 
+
+                  for (const message of customerMessages){
+                    messageIds.push(message.messageId);
+                        message.messageSender = "Customer";
+                        workingList.push(message);
+                        
+
+                }
+
+                for (const message of agentMessages){
+                    
+                  messageIds.push(message.messageId);
+                        message.messageSender = "Agent";
+                        workingList.push(message);
+                        
+                  
+
+                }
+
+                for (const message of workflowMessages){
+                    
+                  messageIds.push(message.messageId);
+                    message.messageSender = "Workflow";
+                    workingList.push(message);
+                    
+                  
+            }
+                
+              //sort and translate
+                for (const message of workingList.sort((m1,m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0))
+                {
+                  //if(!messageIds.includes(message.messageId))
+                      //{
+                        //messageIds.push(message.messageId);
+                        messageDetailList.push(message);
+                        console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+                        await timer(750);
+                        await translateMessage(message.messageId);
+                      //}
+                }
+                
+}
+
+
+
+//----------------    
+//Messaging Send Code
+ 
+function sendTranslatedMessage()
+{
+  let messageText = document.getElementById("typedMessage").value;
+
+  document.getElementById("typedMessage").value = "";
+
+  //postTranslationAPI(messageText, "auto", lastSourceLang, "NONE", sendMessage);
+  ADDI_sendTTSMessage(currentTransaction,"caller",messageText);
+}
+
+async function sendMessage(text)
+{
+  console.log(text)
+  let textToSend = text
+  if (typeof text == 'object') {textToSend = text.translatedText}
+
+  let body = {"textBody": textToSend }
+  let opts = { 
+    "useNormalizedMessage": false // Boolean | If true, response removes deprecated fields (textBody, media, stickers)
+  };
+  
+  
+  // Send message
+  let data = await capi.postConversationsMessageCommunicationMessages(gc_conversationId, gc_agentCommunicationId, body, opts);
+  console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
+        
+  messageDetailList.push({"messageId":data.id,"messageTime":data.timestamp,"messageSender":"Agent"})
+  addStatementCard(text.originalText,text.translatedText,text.sourceLanguage,text.targetLanguage,data.id,currentAgentClass);
+
+}
+
+
+
+//---------------- 
+//Genesys Specific Setup
+function getCurrentConversationDetails() 
+{
+  
+
+    // Get conversation
+    capi.getConversation(gc_conversationId)
+      .then((data) => {
+        console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`,'color: green');
+
+        //get some agent data we will need
+        let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
+        gc_agentParticipantId = agentParticipant.id
+
+        let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
+       
+        if (customerAttributes.speaker_language)
+        {
+          setSourceLanguage(customerAttributes.speaker_language);
+        }
+        if (customerAttributes.ADDI_TransactionId)
+        {
+          currentTransaction = customerAttributes.ADDI_TransactionId;
+          document.getElementById("span_transactionId").innerText=currentTransaction;
+          subscribeADDITranscription();
+          ADDI_getActiveTransactionLanguage();
+        }
+        
+        
+        if ( agentParticipant.messages.length > 0)
+        {
+          gc_agentCommunicationId = agentParticipant.messages[0].id;
+          gc_mediaType = "MESSAGE";
+          document.getElementById("footer").style.visibility = "visible";
+          document.getElementById("delayDiv").style.visibility = "hidden";
+
+          let customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
+          let agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
+          let workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
+          console.log(customerMessages[0].messages);
+          TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages,workflowMessages[0].messages);
+
+        }
+        else if (agentParticipant.calls.length > 0)
+        {
+          gc_agentCommunicationId = agentParticipant.calls[0].id;
+          gc_mediaType = "VOICE"
+          document.getElementById("footer").style.visibility = "visible";
+          //document.getElementById("delayDiv").style.visibility = "hidden";
+          //document.getElementById("footer").style.visibility = "hidden";
+        }
+        else {
+          gc_mediaType = "OTHER"
+          document.getElementById("footer").style.visibility = "visible";
+          //document.getElementById("delayDiv").style.visibility = "hidden";
+          //document.getElementById("footer").style.visibility = "hidden";
+        }
+
+        
+        console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}`,'color: green')
+        document.getElementById('span_communication').innerText = gc_agentCommunicationId;
+            document.getElementById('span_participant').innerText = gc_agentParticipantId;
+            document.getElementById('span_media').innerText = gc_mediaType;
+
+        //let customerParticipant = data.participants.slice().reverse().find(p => p.purpose === 'customer');
+
+
+                  
+      })
+      .catch((err) => {
+        console.log("%cThere was a failure calling getConversation",'color: red');
+        console.error(err);
+      });
+}
+
+//---------------
+//Test functions
+function runTestEvents()
+{
+  for(const event in sampleMessages)
+{
+  parseAndDisplayEvent(sampleMessages[event])
+}
+}
+
+function sendPing() {
+  if (transcriptionWebSocket.readyState === WebSocket.OPEN) {
+    console.log('sending pong...')
+    transcriptionWebSocket.send("pong");
+  }
+  else
+  {
+    console.log('not sending ping, socket is closed.')
+  }
+}
+
+
+
+//-----------------
+//ADDI APIs
+//Get all active Transactions
+async function ADDI_getActiveTransactions(setTopToCurrent=false) {
+
+  const requestOptions = {
+    method: "GET",
+    redirect: "follow"
+  };
+
+  fetch(`${ADDIURLHOST}/addi/v1/transactions`, requestOptions)
+    .then((response) => response.text())
+    .then((result) => {
+      console.log(result);
+      addStatementCard(`Active Transactions`,result,"en","123");
+      
+    })
+    .catch((error) => console.error(error));
+
+}
+
+//Get Supported languages
+async function ADDI_getAllowedLanguages()
+{
+  const requestOptions = {
+  method: "GET",
+  redirect: "follow"
+};
+
+fetch("https://addi.smldev.com/addi/v1/languages", requestOptions)
+  .then((response) => response.text())
+  .then((result) => {
+    console.log(result)
+  })
+  .catch((error) => console.error(error));
+}
+//Get a specific Transaction
+async function ADDI_getActiveTransaction(transactionId = currentTransaction) {
+  const requestOptions = {
+  method: "GET",
+  redirect: "follow"
+};
+
+fetch(`${ADDIURLHOST}/addi/v1/transaction/${transactionId}`, requestOptions)
+  .then((response) => response.text())
+  .then((result) => {
+    console.log(result);
+    console.log("AND")
+    
+    addStatementCard("Specific Response Response",result,"en","123")
+  })
+  .catch((error) => console.error(error));
+}
+
+//Get a specific Transaction
+async function ADDI_getActiveTransactionLanguage(transactionId = currentTransaction) {
+  const requestOptions = {
+  method: "GET",
+  redirect: "follow"
+};
+
+fetch(`${ADDIURLHOST}/addi/v1/language/${transactionId}`, requestOptions)
+  .then((response) => response.text())
+  .then((result) => {
+    console.log(result)
+    updateLanguageSelections(JSON.parse(result));
+    //addStatementCard("Active Languages",result,"en","123");
+})
+  .catch((error) => console.error(error));
+}
+
+async function ADDI_updateActiveTransactionLanguage(agentLanguage,callerLanguage,transactionId = currentTransaction) {
+  const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
+
+const languageUpdate = JSON.stringify({
+  "transaction_id": transactionId,
+  "agent": agentLanguage,
+  "caller": callerLanguage
+});
+
+const requestOptions = {
+  method: "PUT",
+  headers: myHeaders,
+  body: languageUpdate,
+  redirect: "follow"
+};
+
+fetch(`${ADDIURLHOST}/addi/v1/language`, requestOptions)
+  .then((response) => response.status)
+  .then((result) => {
+    console.log(result)
+    
+    if(result == 200)
+  {
+    addStatementCard(`Languages Updated - caller is ${callerLanguage}`,`Agent is ${agentLanguage}`,"en","123");
+  }
+  })
+  .catch((error) => console.error(error));
+
+}
+
+async function ADDI_sendTTSMessage(transactionId,party,text, translate = true, cancel_playing = false) {
+  const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
+
+const raw = JSON.stringify({
+  "transaction_id": transactionId,
+  "party": party,
+  "text": text,
+  "translate": translate,
+  "cancel_playing": cancel_playing
+});
+
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch(`${ADDIURLHOST}/addi/v1/speak`, requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
+}
+
+async function updateLanguages()
+{
+
+  let currentSourceLang = document.getElementById("SourceLanguageDropdown").value
+  let currentTargetLang = document.getElementById("TargetLanguageDropdown").value
+
+  ADDI_updateActiveTransactionLanguage(currentTargetLang,currentSourceLang)
+}
+
+
+</script>
+
+
+
+  
+
+
+
+
+<div class="content">
+<div role="tabpanel" class="transcript-container">
+  
+<div class="control-pane">
+
+<div class="control-div" style="display:flex;">
+
+        <div style="width:40%;height:20px;padding:5px;  ">
+        
+          <gux-form-field-dropdown>
+            <gux-dropdown id='SourceLanguageDropdown' value="auto"  >
+              <gux-listbox id='SourceListBox' aria-label="Languages" >
+                
+                
+                
+              
+              </gux-listbox>
+            </gux-dropdown>
+            <label slot="label">Customer Language</label>
+          </gux-form-field-dropdown>
+        </div>
+        
+  
+        <div style="width:40%;padding:5px">
+          
+          <gux-form-field-dropdown>
+            <gux-dropdown id='TargetLanguageDropdown' value="english" >
+              <gux-listbox id='TargetListBox' aria-label="Languages">
+                
+               
+                
+              </gux-listbox>
+            </gux-dropdown>
+            <label slot="label">Agent Language</label>
+          </gux-form-field-dropdown>
+          
+        </div>
+
+        <div id = "updateDiv" class="control-button-div" >
+          <gux-button accent="primary" onclick="updateLanguages()">Update</gux-button>
+
+        </div>
+  
+       <!--  <div id = "delayDiv" style="width:20%;padding:5px">
+          
+          <gux-form-field-number >
+            <input slot="input" id="delay" type="number" name="delay" value="5000" aria-label="delay" />
+            <label slot="label">Delay</label>
+          </gux-form-field-number>
+        </div> -->
+  
+        <div style="width:10%;padding:5px; float:right" >
+          <gux-radial-loading id="workingRadial" context="input" screenreader-text="Loading..." style="padding-left: 3%;padding-top: 8%;visibility: hidden;"></gux-radial-loading>
+  
+        </div>
+        <div id= "testButtons">
+          <!--button type="button" onclick="ADDI_getActiveTransactions(true)">Get Active Transactions</button>
+          <button type="button" onclick="ADDI_getActiveTransaction()">Get Specific Transactions</button>
+          <button type="button" onclick="ADDI_getActiveTransactionLanguage()">Get Transaction Language</button>
+          < <button type="button" onclick="updateLanguages()">Update Transactions</button>
+          <button type="button" onclick="runTestEvents()">Run test events</button>
+          <button type="button" onclick="sendPing()">ping</button> -->
+        </div>
+        
+        <!--gux-toggle id = "agentToggle" checked-label="Translate Agent On" unchecked-label="Translate Agent Off" onclick="toggleAgentDiv()"></gux-toggle-->
+        <div class="infoPanel" style="visibility: hidden;">
+          <p><em>ADDI Transaction ID:&nbsp;<span id="span_transactionId"></span> </em></p>
+        </div>
+      </div>
+
+    </div>
+    
+     <!-- Conversation Div is where we fill with messages -->
+    <div id="conversation-panel" class="conversation-pane" >
+      <div id="conversation" class="conversation-customer"></div>
+      <!--div id="conversation-agent" class="conversation-agent-hidden"></div-->
+
+    </div>
+      
+    <!-- footer div is our messages submission -->
+    <div class="textarea-pane" id="footer" >
+      <div class="top-information"></div>
+      <div class="input-group">
+        <textarea id="typedMessage" dir="auto" placeholder="Enter message..." aria-label="Enter message..." class="text-area-2" style="height: 60px;"></textarea>
+
+      
+      <div class="textarea-buttons">
+        
+
+        <button type="button" aria-label="Translate" class="translate-button2" onclick="sendTranslatedMessage()" id="target-for-tooltip-or-popover-1"  tabindex="0">
+          <gux-icon icon-name="custom/arrows-retweet-regular" decorative="true" hydrated=""></gux-icon>
+        </button>
+      
+
+      </div>
+    </div>
+      
+    <div class="sms-footer"><span id="sendLanguage">German</span> to <span id="sendTranslateLanguage">English</span></div>
+  </div>
+  </div>
+</div>
+
+    
+ 
+  <!-- This is our debug section -->
+  <!--div  style="visibility: hidden;"-->
+    <div>
+    <gux-accordion>
+      <gux-accordion-section>
+        <h2 slot="header">Debug Info</h2>
+        <div slot="content">
+          <p><em>Environment:&nbsp;<span id="span_environment"></span> </em></p>
+          <p><em>Language:&nbsp;<span id="span_language"></span> </em></p>
+          <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
+          <p><em>Version:&nbsp;<span id="span_version"></span> </em></p>
+          <p><em>ClientID:&nbsp;<span id="span_clientid"></span> </em></p>
+          <p><em>TranslateToken:&nbsp;<span id="span_translateToken"></span> </em></p>
+          <p><em>redirectURL:&nbsp;<span id="span_redirectURL"></span> </em></p>
+          <p><em>ConversationId:&nbsp;<span id="span_conversation"></span> </em></p>
+          <p><em>AgentParticipantId:&nbsp;<span id="span_participant"></span> </em></p>
+          <p><em>AgentCommunicationId:&nbsp;<span id="span_communication"></span> </em></p>
+          <p><em>PassedInSpeakerLanguage:&nbsp;<span id="span_speakerLanguage"></span> </em></p>
+          <p><em>MediaType:&nbsp;<span id="span_media"></span> </em></p>
+          <p><em>Last English Utterance:&nbsp;<span id="span_lastUtterance"></span> </em></p>
+          <p><em>Last Translated Utterance:&nbsp;<span id="span_lastTranslation"></span> </em></p>
+
+          
+        
+        </div>
+      </gux-accordion-section>
+    </gux-accordion>
+  </div>
+
+  
+  
+
+
+      
+  
+  </body>
+  
+</html>
