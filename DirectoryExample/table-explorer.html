@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Directory Exercise</title>
+  <!--link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css" integrity="sha512-byErQdWdTqREz6DLAA9pCnLbdoGGhXfU6gm1c8bkf7F51JVmUBlayGe2A31VpXWQP+eiJ3ilTAZHCR3vmMyybA==" crossorigin="anonymous" /-->
+  <!--link rel="stylesheet" href="style/mystyle.css" -->
+
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/client-apps/2.0.0/purecloud-client-app-sdk.js"></script>
+  <script src="genesys-spark/dist/index.js"></script>
+  <script type="text/javascript" src="standard-table-functions.js"></script>
+  <!-- adding JSONata for easier parsing -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/jsonata/jsonata.min.js"></script> -->
+  
+  <script type="text/javascript">
+    
+  
+  
+    const sampleSchema = [
+                          {"name":"Col1","id":"col1","type":"name"},
+                          {"name":"Column2","id":"col2","type":"name"},
+                          {"name":"Action","id":"col3","type":"action","button":true,"onClickAction":"dothis(this)"},
+                          {"name":"contextMenu","id":"menu","type":"contextMenu",
+                            "items":[
+                                    {"text":"edit","onClickAction":"edit(this)"},
+                                    {"text":"delete","onClickAction":"edit(this)"}
+                                    ]
+                          }
+                        ]
+    
+    
+
+    // After page loads...
+    window.addEventListener('load', (event) => {
+      registerSparkComponents();
+      document.getElementById("directoryTable").appendChild(emptyTable('currentDirTable',sampleSchema));
+      addRow(document.getElementById("currentDirTable"),'row1id',["value 1","this is the second value","3","menu"],sampleSchema)
+      addHeaders(document.getElementById("currentDirTable"),sampleSchema)
+      addRow(document.getElementById("currentDirTable"),'row2id',["value 1 row 2","Other"],sampleSchema)
+      
+      console.log('Finished setup.');
+        
+        
+      })
+    
+  
+
+  //This is some formatting helper functions
+  function phoneFormat(input) {//returns (###) ###-####
+    input = input.replace(/\D/g,'');
+    var size = input.length;
+    if (size>0) {input="("+input}
+    if (size>3) {input=input.slice(0,4)+") "+input.slice(4,11)}
+    if (size>6) {input=input.slice(0,9)+"-" +input.slice(9)}
+    return input;
+  }   
+  
+  </script>
+</head>
+<body>
+  <section class="section">
+    <!--h1 class="title is-3s">Hi <span id="span_name"></span>!</h1-->
+    <!--gux-dropdown id="dir-dropdown" onChange="loadGCDataTable(this.value)">
+      <gux-listbox id="dirlistbox" aria-label="ContactLists">
+      </gux-listbox>
+    </gux-dropdown-->
+    <hr>
+    <p><span id="span_dataTableJSON"></span></p>
+   
+    <gux-table-toolbar>
+      <div slot="search-and-filter">
+        <gux-form-field-search label-position="screenreader">
+          <input slot="input" type="search" name="a-3" id="myInput" placeholder="Enter search" onkeyup="filterTable()" />
+          <label slot="label">Toolbar Search</label>
+        </gux-form-field-search>
+       
+      </div>
+    
+      <div slot="contextual-actions">
+        <!--gux-table-toolbar-action action="delete"></gux-table-toolbar-action-->
+      </div>
+    
+      <div slot="permanent-actions">
+       
+      </div>
+    
+      <div slot="menu-actions">
+       
+        <gux-table-toolbar-action action="refresh" onclick="refresh()"></gux-table-toolbar-action>
+      </div>
+    
+      <gux-table-toolbar-custom-action slot="primary-action" accent="primary" id="enableButton">
+        <span slot="text" onclick="addContact()">Add</span>
+        <gux-icon slot="icon" icon-name="add" decorative onclick="addContact()"></gux-icon>
+      </gux-table-toolbar-custom-action>
+    </gux-table-toolbar>
+
+   
+
+    <hr>
+    <!-- (A) WE WILL GENERATE THE TABLE HERE -->
+    
+    <div id="directoryTable"></div>
+    
+   
+    <hr>
+    <p hidden="false"><em>Environment:&nbsp;<span id="span_environment" ></span> </em></p>
+    <p hidden="false"><em>Language:&nbsp;<span id="span_language" ></span> </em></p>
+    <p><em>User:&nbsp;<span id="span_name"></span> </em></p>
+    <p hidden="false"><em>Contact Table ID:&nbsp;<span id="span_datatableID" ></span> </em></p>
+    <p><em>Version:&nbsp;<span id="span_version"></span>0.0.3.13 </em></p>
+     <div><span id="ModalPlaceHolder"></span></div>
+  
+  </section>
+
+</body>
+</html>
+
+
+
+ 
