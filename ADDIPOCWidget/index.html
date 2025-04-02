@@ -385,6 +385,7 @@ function setSourceLanguage(language)
 {
   currentSourceLang = language;
   document.getElementById("SourceLanguageDropdown").value = language;
+  document.getElementById("sendLanguage").innerText = language;
   console.log("The Source language is now: " + language);
 }
 
