@@ -41,6 +41,7 @@
     let platformClient = require('platformClient');
     let ClientApp = window.purecloud.apps.ClientApp;
     let myClientApp = null;
+    let currentQuery = "";
 
     let currentDirectory = [];
     let myUserID = null;
@@ -220,27 +221,8 @@
       
     }
 
-    /*
-    *Function to catch and set up the camp.
-    *
-    */
-
-    function campContact(rowObject)
-    {
-      let parent = rowObject.closest("tr"); //using the class for selection
-      let contactID = parent.getAttribute("id");
-      console.log(`camp button clicked ${contactID}`);
-      myClientApp.alerting.showToastPopup(
-            'campStarted','camp Started');
-
-      let contact = currentDirectory.find(c => c.recordID == contactID);
-
-      userSocketSetup(contact.contactGCID, contact.contactName, 'AVAILABLE', rowObject);
-
-      rowObject.setAttribute('accent','danger');
-      
-      //client.directory.showUser('f1804415-bca9-4eb7-ad5a-521fca8d6128')
-    }
+ 
+    
 
     /*
     *Function to catch delete
@@ -285,12 +267,30 @@
       //let parent = rowObject.closest("tr"); //using the class for selection
       //let contactID = parent.getAttribute("id");
       console.log(`add button clicked`);
-      if (createModalForm('Add'));
-
-
       
+      let body = {
+      "firstName":"New",
+      "lastName":"Contact",
+      "schema":{"id":"c3b89745-8b30-4b9a-850c-6c7f73953d95","version":1},
+      "customFields":{"contactlists_tag":["UAT"]},
+      "externalSystemUrl":""
     }
-    
+
+    let externalContactsApi = new platformClient.ExternalContactsApi();
+
+
+
+// Create an external contact
+externalContactsApi.postExternalcontactsContacts(body)
+  .then((data) => {
+    console.log(`postExternalcontactsContacts success! data: ${JSON.stringify(data, null, 2)}`);
+    myClientApp.externalContacts.showExternalContactProfile(data.id);
+  })
+  .catch((err) => {
+    console.log("There was a failure calling postExternalcontactsContacts");
+    console.error(err);
+  });
+}
     /*
     *Function to add directory
     *
@@ -360,7 +360,7 @@
       
     
       
-      let externalContactsApi = new platformClient.ExternalContactsApi();;
+      let externalContactsApi = new platformClient.ExternalContactsApi();
 
       let opts = { 
         "pageSize": 40, // Number | Page size (limited to fetching first 1,000 records; pageNumber * pageSize must be <= 1,000)
