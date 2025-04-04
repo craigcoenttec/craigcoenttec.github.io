@@ -60,7 +60,7 @@
                           {"name":"Action","id":"action","type":"action","button":true,"onClickAction":"dialContact(this)"},
                           {"name":"contextMenu","id":"menu","type":"contextMenu",
                             "items":[
-                                    {"text":"edit","onClickAction":"edit(this)"},
+                                    {"text":"edit","onClickAction":"editContact(this)"},
                                     {"text":"delete","onClickAction":"delete(this)"}
                                     ]
                           }
@@ -270,19 +270,9 @@
       let parent = rowObject.closest("tr"); //using the class for selection
       let contactID = parent.getAttribute("id");
       console.log(`edit button clicked ${contactID}`);
-      let ourContact = currentDirectory.find(c => c.recordID == contactID);
-      createModalForm('Edit',ourContact,ourContact.contactName);
-        //document.getElementById('modalNameField').value = ourContact.contactName;
-        document.getElementById('modalTypeField').value = ourContact.contactType;
-        //document.getElementById('modalPhoneField').value = ourContact.contactNumber;
-        let selection = document.getElementById(`gux-option-${ourContact.contactType}`);
-        selection.setAttribute('aria-selected','true');
-        selection.setAttribute('class','gux-selected');
-        selection.closest('gux-dropdown').setAttribute('value',ourContact.contactType);
-        
-        //document.getElementById('modalRecordIDField').value = ourContact.recordID;
-        //document.getElementById('modalgcIDField').value = ourContact.contactGCID;
-        
+      myClientApp.externalContacts.showExternalOrganizationProfile(contactID);
+
+      
         
     }
 
