@@ -1122,6 +1122,9 @@
 
     async function ADDI_sendTTSMessage(transactionId, party, text, translate = true, cancel_playing = false) {
       const myHeaders = new Headers();
+      
+      console.log(`Translate Message ${text}`)
+      
       myHeaders.append("Content-Type", "application/json");
 
       const raw = JSON.stringify({
