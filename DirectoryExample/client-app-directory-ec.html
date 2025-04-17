@@ -17,7 +17,7 @@
   
   <script type="text/javascript">
     
-  
+    
     let url = new URL(document.location.href)
     let gc_region = url.searchParams.get('gc_region') || "usw2.pure.cloud"
     let clientId = url.searchParams.get('gc_clientId') || '37b975bb-f2fb-4d41-b2a8-90be8ce9e010'
@@ -137,7 +137,7 @@
           break;
 
         default:
-        body = {phoneNumber: number, sessionType: "softphone"}
+        body = {phoneNumber: number, sessionType: "softphone"} //, callFromQueueId:"54966478-8cb5-4c4f-983f-8ac77b7487f6",attributes: {"conversationDetails.participantData.Name": contactRowCells[0].innerText}}
           break;
       }
             
@@ -272,7 +272,7 @@
       "firstName":"New",
       "lastName":"Contact",
       "schema":{"id":"c3b89745-8b30-4b9a-850c-6c7f73953d95","version":1},
-      "customFields":{"contactlists_tag":["UAT"]},
+      "customFields":{"contactlists_tag":[currentQuery]},
       "externalSystemUrl":""
     }
 
@@ -354,6 +354,8 @@ externalContactsApi.postExternalcontactsContacts(body)
     
     function getExternalContacts(keywords)
     {
+      
+      currentQuery = keywords;
       document.getElementById('directoryTable').innerHTML = "";
       //Create Table
       document.getElementById("directoryTable").appendChild(emptyTable('currentDirTable',directorySchema));
@@ -398,7 +400,7 @@ externalContactsApi.getExternalcontactsContacts(opts)
 
      function refresh(){
 
-      getExternalContacts("UAT");
+      getExternalContacts(currentQuery);
      }
     
      
