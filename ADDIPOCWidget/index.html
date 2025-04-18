@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="./style/pane.css">
 
 
+
 </head>
 
 <body onload="start()">
@@ -41,8 +42,8 @@
     let gc_mediaType
     let gc_language = url.searchParams.get('gc_language')
 
-    let translateToken = "" //url.searchParams.get('translateToken')
-    let version = "0.0.0.2"
+    let translateToken = url.searchParams.get('translateToken')
+    let version = "0.0.0.3"
     let mySendTimer
     let currentSourceLang = "auto"
     let lastSourceLang = "en"
@@ -50,20 +51,21 @@
     let currentDelay = 4000
     let messageIds = [];
     let messageDetailList = [];
+    let messageDetailListv2 = [];
     let showAgent = false;
     let currentCustomerClass = "message-customer-small";
     let currentSystemClass = "message-system";
     let currentAgentClass = "message-agent";
     // let activeLanguages = ["auto","en","fi","fr","de","ko","zh","pt","es"]
     // let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","fr":"French","pt":"Portuguese","ko":"Korean","fi":"Finnish","zh":"Mandarin","zhc":"Cantonese"}
-    // let dialectlanguageMap = {"en":"english","de":"german","es":"spanish","auto":"auto","fr":"french","pt":"portuguese","ko":"korean","fi":"finnish","zh":"mandarin","zhc":"cantonese"}
+    let dialectlanguageMap = { "en": "english", "de": "german", "es": "spanish", "auto": "auto", "fr": "french", "pt": "portuguese", "ko": "korean", "fi": "finnish", "zh": "mandarin", "zhc": "cantonese" }
     // let spokenLanguageMap = {"en-US":"English","de-DE":"German","es-ES":"Spanish","auto":"Auto","fr-FR":"French","pt-BR":"Portuguese","ko-KR":"Korean","fi-FI":"Finnish","zh-CN":"Mandarin","zh":"Cantonese"}
-    let activeLanguages = ["auto", "english", "finnish", "french", "german", "korean", "mandarin", "polish", "portuguese", "spanish", "brit", "arabic","dutch"]
-    let languageMap = { "english": "English", "german": "German", "spanish": "Spanish", "auto": "Auto", "french": "French", "portuguese": "Portuguese", "korean": "Korean", "finnish": "Finnish", "mandarin": "Mandarin", "cantonese": "Cantonese", "polish": "Polish", "brit": "Brit", "arabic": "Arabic", "dutch":"Dutch" }
-    let flagMap = { "english": "us", "german": "de", "spanish": "es", "auto": "auto", "french": "fr", "portuguese": "br", "korean": "ko", "finnish": "fi", "mandarin": "ch", "cantonese": "ch", "polish": "pl", "brit": "gb", "arabic": "eg", "dutch":"nl" }
-    let spokenLanguageMap = { "en-US": "English", "de-DE": "German", "es-ES": "Spanish", "auto": "Auto", "fr-FR": "French", "pt-BR": "Portuguese", "ko-KR": "Korean", "fi-FI": "Finnish", "zh-CN": "Mandarin", "zh": "Cantonese", "pl-PL": "Polish", "en-GB": "Brit", "ar-EG": "Arabic", "nl-NL" : "Dutch" }
+    let activeLanguages = ["auto", "english", "finnish", "french", "german", "korean", "mandarin", "polish", "portuguese", "spanish", "brit", "arabic", "dutch"]
+    let languageMap = { "english": "English", "german": "German", "spanish": "Spanish", "auto": "Auto", "french": "French", "portuguese": "Portuguese", "korean": "Korean", "finnish": "Finnish", "mandarin": "Mandarin", "cantonese": "Cantonese", "polish": "Polish", "brit": "Brit", "arabic": "Arabic", "dutch": "Dutch" }
+    let flagMap = { "english": "us", "german": "de", "spanish": "es", "auto": "auto", "french": "fr", "portuguese": "br", "korean": "ko", "finnish": "fi", "mandarin": "ch", "cantonese": "ch", "polish": "pl", "brit": "gb", "arabic": "eg", "dutch": "nl" }
+    let spokenLanguageMap = { "en-US": "English", "de-DE": "German", "es-ES": "Spanish", "auto": "Auto", "fr-FR": "French", "pt-BR": "Portuguese", "ko-KR": "Korean", "fi-FI": "Finnish", "zh-CN": "Mandarin", "zh": "Cantonese", "pl-PL": "Polish", "en-GB": "Brit", "ar-EG": "Arabic", "nl-NL": "Dutch" }
 
-
+    let awsTranslateMap = { "german": "de-DE", "auto": "auto", "english": "en-US" }
 
 
     let myImage = "";
@@ -683,6 +685,7 @@
 
 
       messageDetailList.push({ "messageId": ourEventid, "messageTime": jsonEvent.timestamp, "messageSender": ourParticipant })
+      messageDetailListV2.push(createMessageObject(ourEventid, jsonEvent.timestamp, jsonEvent.text, sourceLang, flagMap[sourceLang], jsonEvent.translated, targetLang, flagMap[targetLang], "ADDI", ourParticipant));
       addStatementCard(jsonEvent.text, jsonEvent.translated, sourceLang, targetLang, ourEventid, ourClass);
     }
 
@@ -720,9 +723,9 @@
         currentSourceLang = document.getElementById("SourceLanguageDropdown").value
         currentTargetLang = document.getElementById("TargetLanguageDropdown").value
 
-        //let translation =  postTranslationAPI(text,currentSourceLang, currentTargetLang,messageId,postTranslationProcesing)//.then((translation) => {
+        let translation = postTranslationAPI(text, currentSourceLang, currentTargetLang, messageId, postTranslationProcesing)//.then((translation) => {
 
-        addStatementCard(text, "TRANSLATED: " + text, currentSourceLang, currentTargetLang, messageId, currentCustomerClass);
+        //addStatementCard(text, "TRANSLATED: " + text, currentSourceLang, currentTargetLang, messageId, currentCustomerClass);
       }
 
     }
@@ -758,10 +761,11 @@
 
         const raw = JSON.stringify({
           "Text": text,
-          "SourceLanguageCode": currentSourceLang,
-          "TargetLanguageCode": currentTargetLang
+          "SourceLanguageCode": awsTranslateMap[currentSourceLang],
+          "TargetLanguageCode": awsTranslateMap[currentTargetLang]
         });
 
+        console.log(`%craw: ${raw}`, "color:purple")
         const requestOptions = {
           method: "POST",
           headers: myHeaders,
@@ -864,7 +868,22 @@
     }
 
 
-
+    //===============
+    //New Message object.
+    function createMessageObject(messageid, Timestamp, OriginalText, OriginalLanguage, OriginalFlag, TranslatedText, TranslatedLanguage, TranslatedFlag, TranslationSource, SenderType) {
+      return {
+        messageid: messageid,
+        Timestamp: Timestamp,
+        OriginalText: OriginalText,
+        OriginalLanguage: OriginalLanguage,
+        OriginalFlag: OriginalFlag,
+        TranslatedFlag: TranslatedFlag,
+        TranslatedText: TranslatedText,
+        TranslatedLanguage: TranslatedLanguage,
+        TranslationSource: TranslationSource,
+        SenderType: SenderType
+      }
+    }
     //----------------    
     //Messaging Send Code
 
@@ -894,8 +913,11 @@
 
       document.getElementById("typedMessage").value = "";
 
-      //postTranslationAPI(messageText, "auto", lastSourceLang, "NONE", sendMessage);
-      sendMessage(messageText);
+
+
+
+      postTranslationAPI(messageText, "auto", document.getElementById("SourceLanguageDropdown").value, "NONE", sendMessage);
+      //sendMessage(messageText);
       //ADDI_sendTTSMessage(currentTransaction,"caller",messageText);
     }
 
@@ -903,10 +925,9 @@
     async function sendMessage(text) {
       console.log(text)
       let textToSend = text
-      if (typeof text == 'object') 
-        { textToSend = text.translatedText } 
+      if (typeof text == 'object') { textToSend = text.translatedText }
       else {
-        text = {originalText:text, translatedText:text}
+        text = { originalText: text, translatedText: text }
         textToSend = text.translatedText;
       }
 
@@ -1019,9 +1040,13 @@
 
 
 
+
     //-----------------
     //ADDI APIs
     //Get all active Transactions
+
+
+
     async function ADDI_getActiveTransactions(setTopToCurrent = false) {
 
       const requestOptions = {
@@ -1047,7 +1072,7 @@
         redirect: "follow"
       };
 
-      fetch("https://addi.smldev.com/addi/v1/languages", requestOptions)
+      fetch(`${ADDIURLHOST}/addi/v1/languages`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result)
@@ -1122,9 +1147,9 @@
 
     async function ADDI_sendTTSMessage(transactionId, party, text, translate = true, cancel_playing = false) {
       const myHeaders = new Headers();
-      
+
       console.log(`Translate Message ${text}`)
-      
+
       myHeaders.append("Content-Type", "application/json");
 
       const raw = JSON.stringify({
@@ -1158,7 +1183,31 @@
       ADDI_updateActiveTransactionLanguage(currentTargetLang, currentSourceLang)
     }
 
+    function drag(event) {
+      console.log(event)
+      event.dataTransfer.setData("text", event.target.innerText);
+    }
 
+    function allowDrop(event) {
+      event.preventDefault();
+      console.log("preventing default")
+    }
+
+    function drop(event) {
+      event.preventDefault();
+      var data = event.dataTransfer.getData("text");
+      let messageText = data;
+
+      postTranslationAPI(messageText, "auto", document.getElementById("SourceLanguageDropdown").value, "NONE", sendMessage);
+      console.log("dropped")
+    }
+
+    function insertMessage(messageElement) {
+      document.getElementById("typedMessage").value = messageElement.getElementsByTagName('input')[0].value
+
+      let tabs = document.getElementById("textTab")
+      tabs.setAttribute("active-tab", "1-1")
+    }
   </script>
 
 
@@ -1243,33 +1292,111 @@
 
       <!-- Conversation Div is where we fill with messages -->
       <div id="conversation-panel" class="conversation-pane">
-        <div id="conversation" class="conversation-customer"></div>
+
+
+
+        <div id="conversation" class="conversation-customer" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
         <!--div id="conversation-agent" class="conversation-agent-hidden"></div-->
 
       </div>
 
       <!-- footer div is our messages submission -->
       <div class="textarea-pane" id="footer">
-        <div class="top-information"></div>
-        <div class="input-group">
-          <textarea id="typedMessage" dir="auto" placeholder="Enter message..." aria-label="Enter message..."
-            class="text-area-2" style="height: 60px;"></textarea>
+        <!--div class="top-information"></div-->
+        <gux-tabs class="example" id="textTab" active-tab="1-1">
+          <gux-tab-list slot="tab-list">
+            <gux-tab tab-id="1-1">
+              <span id="tabTitle1">Message</span>
+            </gux-tab>
+            <gux-tab tab-id="1-2"> Canned Response </gux-tab>
+
+          </gux-tab-list>
+          <gux-tab-panel tab-id="1-1">
+
+            <div class="input-group">
+              <textarea id="typedMessage" dir="auto" placeholder="Enter message..." aria-label="Enter message..."
+                class="text-area-2" style="height: 60px;"></textarea>
 
 
-          <div class="textarea-buttons">
+              <div class="textarea-buttons">
 
 
-            <button type="button" aria-label="Translate" class="translate-button2" onclick="sendTranslatedMessage()"
-              id="target-for-tooltip-or-popover-1" tabindex="0">
-              <gux-icon icon-name="custom/arrows-retweet-regular" decorative="true" hydrated=""></gux-icon>
-            </button>
+                <button type="button" aria-label="Translate" class="translate-button2" onclick="sendTranslatedMessage()"
+                  id="target-for-tooltip-or-popover-1" tabindex="0">
+                  <gux-icon icon-name="custom/arrows-retweet-regular" decorative="true" hydrated=""></gux-icon>
+                </button>
 
 
-          </div>
-        </div>
+              </div>
+            </div>
 
-        <div class="sms-footer"><span id="sendLanguage">German</span> to <span id="sendTranslateLanguage">English</span>
-        </div>
+            <!--div class="sms-footer"><span id="sendLanguage">German</span> to <span id="sendTranslateLanguage">English</span>
+        </div-->
+
+          </gux-tab-panel>
+          <gux-tab-panel tab-id="1-2">
+            <div class="input-group">
+
+              <div class="row">
+                <div class="card-container">
+
+                  <gux-selector-card-beta draggable="true" ondragstart="drag(event)" variant="descriptive"
+                    ondblclick="insertMessage(this)">
+                    <label slot="label" for="1-B">Greeting</label>
+                    <input slot="input" id="1-B" type="radio" name="Greeting"
+                      value="Hello! How are you doing today?  I'll be glad to assist." />
+                    <span slot="description">Hello! How are you doing today? I'll be glad to assist.</span>
+                    <!--gux-badge slot="badge" bold
+                      ><gux-icon icon-name="fa/diamond-regular" decorative></gux-icon
+                      >Badge</gux-badge
+                      >
+                    <gux-icon slot="icon" icon-name="fa/diamond-regular" decorative /-->
+                  </gux-selector-card-beta>
+                </div>
+
+                <div class="card-container">
+
+                  <gux-selector-card-beta variant="descriptive">
+                    <label slot="label" for="2-B">Website</label>
+                    <input slot="input" id="2-B" type="radio" name="example-desc" value="Website" />
+                    <span slot="description">You can visit https://www.google.com for more info.</span>
+                    <!--gux-badge slot="badge" bold
+                      ><gux-icon icon-name="fa/diamond-regular" decorative></gux-icon
+                      >Badge</gux-badge
+                      >
+                    <gux-icon slot="icon" icon-name="fa/diamond-regular" decorative /-->
+                  </gux-selector-card-beta>
+                </div>
+
+                <div class="card-container">
+
+                  <gux-selector-card-beta variant="descriptive">
+                    <label slot="label" for="3-B">Goodbye</label>
+                    <input slot="input" id="3-B" type="radio" name="example-desc" value="Goodbye" />
+                    <span id="goodbyeMessage" slot="description">Thanks for contacting us today, I appreciate your time.
+                      Have a great day!</span>
+                    <!--gux-badge slot="badge" bold
+                      ><gux-icon icon-name="fa/diamond-regular" decorative></gux-icon
+                      >Badge</gux-badge
+                    >
+                    <gux-icon slot="icon" icon-name="fa/diamond-regular" decorative /-->
+                  </gux-selector-card-beta>
+                </div>
+              </div>
+
+
+
+            </div>
+          </gux-tab-panel>
+
+          <gux-tab-panel tab-id="1-10">Tab content 10</gux-tab-panel>
+        </gux-tabs>
+
+
+
+
+
+
       </div>
     </div>
   </div>
