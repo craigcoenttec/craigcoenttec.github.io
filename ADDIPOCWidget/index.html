@@ -39,6 +39,7 @@
     let gc_agentCommunicationId
     let currentEvent = 0;
     let gc_agentParticipantId
+    let gc_queueId
     let gc_mediaType
     let gc_language = url.searchParams.get('gc_language')
 
@@ -111,6 +112,8 @@
     const uapi = new platformClient.UsersApi()
     const napi = new platformClient.NotificationsApi()
     const capi = new platformClient.ConversationsApi()
+    const rapi = new platformClient.RoutingApi()
+    const resapi = new platformClient.ResponseManagementApi()
 
     let statementToTranslate = "";
 
@@ -611,6 +614,70 @@
 
     }
 
+
+    //Create Canned Response Entry
+    function addResponseCard(responseName, responseText, responseLibrary, responseId)
+    {
+      
+      
+
+      const parser = new DOMParser();
+      // Parse the HTML string
+      const doc = parser.parseFromString(responseText, 'text/html');
+      // Extract text content
+      const textContent = doc.body.textContent || "";
+
+      let ourResponseRow = document.getElementById("CannedResponseRow");
+      let ourResponseCard = createCardElement(responseId, responseName, textContent, responseName, textContent);
+      ourResponseRow.appendChild(ourResponseCard);
+
+
+    }
+    function createCardElement(id, label, value, name, description) {
+ 
+    // Create the card container
+  const cardContainer = document.createElement('div');
+  cardContainer.className = 'card-container';
+
+  // Create the gux-selector-card-beta element
+  const selectorCard = document.createElement('gux-selector-card-beta');
+  selectorCard.setAttribute('draggable', 'true');
+  selectorCard.setAttribute('ondragstart', 'drag(event)');
+  selectorCard.setAttribute('variant', 'descriptive');
+  selectorCard.setAttribute('ondblclick', 'insertMessage(this)');
+
+  // Create the label element
+  const labelElement = document.createElement('label');
+  labelElement.setAttribute('slot', 'label');
+  labelElement.setAttribute('for', id);
+  labelElement.textContent = label;
+
+  // Create the input element
+  const inputElement = document.createElement('input');
+  inputElement.setAttribute('slot', 'input');
+  inputElement.setAttribute('id', id);
+  inputElement.setAttribute('type', 'radio');
+  inputElement.setAttribute('name', name);
+  inputElement.setAttribute('value', value);
+
+  // Create the description element
+  const descriptionElement = document.createElement('span');
+  descriptionElement.setAttribute('slot', 'description');
+  descriptionElement.textContent = description;
+
+  // Append the elements to the selector card
+  selectorCard.appendChild(labelElement);
+  selectorCard.appendChild(inputElement);
+  selectorCard.appendChild(descriptionElement);
+
+  // Append the selector card to the card container
+  cardContainer.appendChild(selectorCard);
+
+  return cardContainer;
+}
+
+
+
     //generic "sleep" timer
     function timer(ms) {
       return new Promise(res => setTimeout(res, ms));
@@ -961,11 +1028,14 @@
           //get some agent data we will need
           let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
           gc_agentParticipantId = agentParticipant.id
+          gc_queueId = agentParticipant.queueId
+          getCurrentQueue(gc_queueId)
 
           let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
 
           if (customerAttributes.speaker_language) {
-            setSourceLanguage(customerAttributes.speaker_language);
+            //setSourceLanguage(customerAttributes.speaker_language);
+            updateLanguages({agent:"english",caller:customerAttributes.speaker_language})
           }
           if (customerAttributes.ADDI_TransactionId) {
             currentTransaction = customerAttributes.ADDI_TransactionId;
@@ -1004,7 +1074,7 @@
           }
 
 
-          console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}`, 'color: green')
+          console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}.  The queue is ${gc_queueId}`, 'color: Blue')
           document.getElementById('span_communication').innerText = gc_agentCommunicationId;
           document.getElementById('span_participant').innerText = gc_agentParticipantId;
           document.getElementById('span_media').innerText = gc_mediaType;
@@ -1019,6 +1089,59 @@
           console.error(err);
         });
     }
+
+    function getCurrentQueue(id) {
+
+
+
+      let opts = {
+        "pageNumber": 1, // Number | Page number
+        "pageSize": 1, // Number | Page size
+        "sortOrder": "asc", // String | Note: results are sorted by name.
+        //"name": "name_example", // String | Include only queues with the given name (leading and trailing asterisks allowed)
+        "id": [id], // [String] | Include only queues with the specified ID(s)
+        //"divisionId": ["divisionId_example"], // [String] | Include only queues in the specified division ID(s)
+        //"peerId": ["peerId_example"], // [String] | Include only queues with the specified peer ID(s)
+        //"cannedResponseLibraryId": "cannedResponseLibraryId_example", // String | Include only queues explicitly associated with the specified canned response library ID
+        //"hasPeer": true // Boolean | Include only queues with a peer ID
+      };
+
+      // Get list of queues.
+      rapi.getRoutingQueues(opts)
+        .then((data) => {
+          console.log(`getRoutingQueues success! data: ${JSON.stringify(data, null, 2)}`);
+          
+          let libraryId = data.entities[0].cannedResponseLibraries.libraryIds[0]; // String | Library ID
+          let opts = {
+            "pageNumber": 1, // Number | Page number
+            "pageSize": 25, // Number | Page size
+            //"expand": "expand_example" // String | Expand instructions for the return value.
+          };
+
+          // Gets a list of existing responses.
+          resapi.getResponsemanagementResponses(libraryId, opts)
+            .then((data) => {
+              console.log(`getResponsemanagementResponses success! data: ${JSON.stringify(data, null, 2)}`);
+              let responseList = data.entities;
+              console.log(responseList);
+              for (const response of responseList) {
+                addResponseCard(response.name, response.texts[0].content, response.libraries, response.id);
+              }
+            })
+            .catch((err) => {
+              console.log("There was a failure calling getResponsemanagementResponses");
+              console.error(err);
+            });
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getRoutingQueues");
+          console.error(err);
+        });
+
+    }
+
+
+
 
     //---------------
     //Test functions
@@ -1337,55 +1460,11 @@
           <gux-tab-panel tab-id="1-2">
             <div class="input-group">
 
-              <div class="row">
-                <div class="card-container">
-
-                  <gux-selector-card-beta draggable="true" ondragstart="drag(event)" variant="descriptive"
-                    ondblclick="insertMessage(this)">
-                    <label slot="label" for="1-B">Greeting</label>
-                    <input slot="input" id="1-B" type="radio" name="Greeting"
-                      value="Hello! How are you doing today?  I'll be glad to assist." />
-                    <span slot="description">Hello! How are you doing today? I'll be glad to assist.</span>
-                    <!--gux-badge slot="badge" bold
-                      ><gux-icon icon-name="fa/diamond-regular" decorative></gux-icon
-                      >Badge</gux-badge
-                      >
-                    <gux-icon slot="icon" icon-name="fa/diamond-regular" decorative /-->
-                  </gux-selector-card-beta>
-                </div>
-
-                <div class="card-container">
-
-                  <gux-selector-card-beta variant="descriptive">
-                    <label slot="label" for="2-B">Website</label>
-                    <input slot="input" id="2-B" type="radio" name="example-desc" value="Website" />
-                    <span slot="description">You can visit https://www.google.com for more info.</span>
-                    <!--gux-badge slot="badge" bold
-                      ><gux-icon icon-name="fa/diamond-regular" decorative></gux-icon
-                      >Badge</gux-badge
-                      >
-                    <gux-icon slot="icon" icon-name="fa/diamond-regular" decorative /-->
-                  </gux-selector-card-beta>
-                </div>
-
-                <div class="card-container">
-
-                  <gux-selector-card-beta variant="descriptive">
-                    <label slot="label" for="3-B">Goodbye</label>
-                    <input slot="input" id="3-B" type="radio" name="example-desc" value="Goodbye" />
-                    <span id="goodbyeMessage" slot="description">Thanks for contacting us today, I appreciate your time.
-                      Have a great day!</span>
-                    <!--gux-badge slot="badge" bold
-                      ><gux-icon icon-name="fa/diamond-regular" decorative></gux-icon
-                      >Badge</gux-badge
-                    >
-                    <gux-icon slot="icon" icon-name="fa/diamond-regular" decorative /-->
-                  </gux-selector-card-beta>
-                </div>
-              </div>
+              <div id = "CannedResponseRow" class="row"></div>
+                
 
 
-
+              
             </div>
           </gux-tab-panel>
 
