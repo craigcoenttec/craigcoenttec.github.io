@@ -68,6 +68,13 @@
 
     let awsTranslateMap = { "german": "de-DE", "auto": "auto", "english": "en-US" }
 
+    let languageDefs;
+    let agentLanguage = 'english';
+    let customerLanguage = 'english';
+    let agentLanguageObject;
+    let customerLanguageObject;
+    let agentProfileObject;
+    let customerProfileObject;
 
     let myImage = "";
     let myName = "";
@@ -118,10 +125,20 @@
     let statementToTranslate = "";
 
     async function start() {
-      try {
-        //Set up UI with our available languages
-        populateLanguages();
 
+      //Set up UI with our available languages
+      try {
+        const langJson = await fetch("./scripts/languageDefinition.json");
+        languageDefs = await langJson.json();
+      
+        await populateLanguages();
+      }
+      catch (err) {
+        console.log("Error loading language definition file: ", err)
+      }
+
+      
+      try {
         //
         client.setEnvironment(gc_region)
         client.setPersistSettings(true, '_mm_')
@@ -140,7 +157,7 @@
 
 
       } catch (err) {
-        console.log('Error: ', err)
+        console.log('Error logging into Genesys: ', err)
       }
 
       //Get our info about this conversation.
@@ -208,9 +225,10 @@
                 if (!messageIds.includes(message.message.id)) {
                   messageIds.push(message.message.id);
                   messageDetailList.push({ "messageId": message.message.id, "messageTime": message.messageTime, "messageSender": "Customer" })
+                  
 
                   console.log(`%cNew Message: ${message.message.id}`, 'color: green');
-                  translateMessage(message.message.id);
+                  translateGenesysMessage(message.message.id);
                   //translateLatestMessage();
 
                 }
@@ -408,30 +426,25 @@
 
 
     //Sets Language details in the UI and what is available.
-    function populateLanguages() {
+     function populateLanguages() {
 
       let sourceDropdownElement = document.getElementById("SourceListBox");
-      let targetDropdownElement = document.getElementById("TargetListBox")
+      let targetDropdownElement = document.getElementById("TargetListBox");
+      console.log("Populating languages")
 
 
-
-      for (const key in activeLanguages) {
-        let lang = activeLanguages[key]
+      Object.keys(languageDefs).forEach((key) => {
+        
+        console.log("adding language " + languageDefs[key].name)
+        let lang = languageDefs[key];
         let currentOption = document.createElement("gux-option");
-        currentOption.setAttribute("value", lang);
-        currentOption.innerText = languageMap[lang];
+        currentOption.setAttribute("value", lang.key);
+        currentOption.innerText = lang.name;
         sourceDropdownElement.appendChild(currentOption)
         let currentOption2 = currentOption.cloneNode(true);
         targetDropdownElement.appendChild(currentOption2);
-      }
-
-
-      let autoOption = document.createElement("gux-option");
-      autoOption.setAttribute("value", "debug");
-      autoOption.innerText = "debug";
-      targetDropdownElement.appendChild(autoOption)
-
-
+      })
+      
     }
 
     //function to add a new card to the conversation pane
@@ -616,10 +629,9 @@
 
 
     //Create Canned Response Entry
-    function addResponseCard(responseName, responseText, responseLibrary, responseId)
-    {
-      
-      
+    function addResponseCard(responseName, responseText, responseLibrary, responseId) {
+
+
 
       const parser = new DOMParser();
       // Parse the HTML string
@@ -633,48 +645,50 @@
 
 
     }
+
+    //create canned response card element
     function createCardElement(id, label, value, name, description) {
- 
-    // Create the card container
-  const cardContainer = document.createElement('div');
-  cardContainer.className = 'card-container';
 
-  // Create the gux-selector-card-beta element
-  const selectorCard = document.createElement('gux-selector-card-beta');
-  selectorCard.setAttribute('draggable', 'true');
-  selectorCard.setAttribute('ondragstart', 'drag(event)');
-  selectorCard.setAttribute('variant', 'descriptive');
-  selectorCard.setAttribute('ondblclick', 'insertMessage(this)');
+      // Create the card container
+      const cardContainer = document.createElement('div');
+      cardContainer.className = 'card-container';
 
-  // Create the label element
-  const labelElement = document.createElement('label');
-  labelElement.setAttribute('slot', 'label');
-  labelElement.setAttribute('for', id);
-  labelElement.textContent = label;
+      // Create the gux-selector-card-beta element
+      const selectorCard = document.createElement('gux-selector-card-beta');
+      selectorCard.setAttribute('draggable', 'true');
+      selectorCard.setAttribute('ondragstart', 'drag(event)');
+      selectorCard.setAttribute('variant', 'descriptive');
+      selectorCard.setAttribute('ondblclick', 'insertMessage(this)');
 
-  // Create the input element
-  const inputElement = document.createElement('input');
-  inputElement.setAttribute('slot', 'input');
-  inputElement.setAttribute('id', id);
-  inputElement.setAttribute('type', 'radio');
-  inputElement.setAttribute('name', name);
-  inputElement.setAttribute('value', value);
+      // Create the label element
+      const labelElement = document.createElement('label');
+      labelElement.setAttribute('slot', 'label');
+      labelElement.setAttribute('for', id);
+      labelElement.textContent = label;
 
-  // Create the description element
-  const descriptionElement = document.createElement('span');
-  descriptionElement.setAttribute('slot', 'description');
-  descriptionElement.textContent = description;
+      // Create the input element
+      const inputElement = document.createElement('input');
+      inputElement.setAttribute('slot', 'input');
+      inputElement.setAttribute('id', id);
+      inputElement.setAttribute('type', 'radio');
+      inputElement.setAttribute('name', name);
+      inputElement.setAttribute('value', value);
 
-  // Append the elements to the selector card
-  selectorCard.appendChild(labelElement);
-  selectorCard.appendChild(inputElement);
-  selectorCard.appendChild(descriptionElement);
+      // Create the description element
+      const descriptionElement = document.createElement('span');
+      descriptionElement.setAttribute('slot', 'description');
+      descriptionElement.textContent = description;
 
-  // Append the selector card to the card container
-  cardContainer.appendChild(selectorCard);
+      // Append the elements to the selector card
+      selectorCard.appendChild(labelElement);
+      selectorCard.appendChild(inputElement);
+      selectorCard.appendChild(descriptionElement);
 
-  return cardContainer;
-}
+      // Append the selector card to the card container
+      cardContainer.appendChild(selectorCard);
+
+      return cardContainer;
+    }
 
 
 
@@ -731,6 +745,13 @@
       console.log(agentLanguage + " " + callerLanguage)
       document.getElementById("SourceLanguageDropdown").value = callerLanguage
       document.getElementById("TargetLanguageDropdown").value = agentLanguage
+
+
+      agentLanguageObject = languageDefs[agentLanguage]
+      customerLanguageObject = languageDefs[callerLanguage]
+
+      ADDI_setOurTranslationProfiles()
+
     }
 
     //parse and display the live transcription events
@@ -764,20 +785,22 @@
       console.log(conversation);
       let messageId = conversation.participants[0].messages[0].messageId
       console.log(`messageId = ${messageId}`)
-      translateMessage(messageId);
+      translateGenesysMessage(messageId);
       addStatementCard("Original Text", "Translated Text", "en", "de", "NONE", "message-agent")
 
 
     }
 
     //Gets message and sends for translation
-    async function translateMessage(messageId) {
+    async function translateGenesysMessage(message, translationProfile) {
 
 
 
-      let message = await capi.getConversationsMessageMessage(gc_conversationId, messageId)
-      console.log(message.normalizedMessage.text);
-      getTranslation(message.normalizedMessage.text, messageId);
+      let messageResult = await capi.getConversationsMessageMessage(gc_conversationId, message.messageId)
+      console.log(messageResult.normalizedMessage.text);
+      messageDetailListv2[message.messageId].OriginalText = messageResult.normalizedMessage.text;
+      //getTranslation(message.normalizedMessage.text, messageId);
+       ADDI_translateMessage(message.messageId, message.messageSender, message.originalText, translationProfile.ProfileId, translateHistoricalADDIMessage);
 
 
     }
@@ -790,7 +813,10 @@
         currentSourceLang = document.getElementById("SourceLanguageDropdown").value
         currentTargetLang = document.getElementById("TargetLanguageDropdown").value
 
-        let translation = postTranslationAPI(text, currentSourceLang, currentTargetLang, messageId, postTranslationProcesing)//.then((translation) => {
+
+        
+
+        //let translation = postTranslationAPI(text, currentSourceLang, currentTargetLang, messageId, postTranslationProcesing)//.then((translation) => {
 
         //addStatementCard(text, "TRANSLATED: " + text, currentSourceLang, currentTargetLang, messageId, currentCustomerClass);
       }
@@ -889,6 +915,7 @@
 
     //Translate existing thread of a digital conversation
     async function TranslateExistingConversation(customerMessages, agentMessages, workflowMessages) {
+      let result = await timer(1000);
       console.log(customerMessages);
       let workingList = [];
 
@@ -897,8 +924,7 @@
         messageIds.push(message.messageId);
         message.messageSender = "Customer";
         workingList.push(message);
-
-
+        
       }
 
       for (const message of agentMessages) {
@@ -921,19 +947,41 @@
       }
 
       //sort and translate
+      
       for (const message of workingList.sort((m1, m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0)) {
-        //if(!messageIds.includes(message.messageId))
-        //{
-        //messageIds.push(message.messageId);
+       
         messageDetailList.push(message);
+        
+
+        let sourceLangObject = agentLanguageObject;
+        let targetLangObject = customerLanguageObject;
+        let translationProfile = agentProfileObject;
+        if (message.messageSender == 'Customer')
+        {
+          let sourceLangObject = customerLanguageObject;
+          let targetLangObject = agentLanguageObject;
+          let translationProfile = customerProfileObject;
+        }
+        
+        messageDetailListv2.push(createMessageObject(message.messageId, message.timestamp, "", sourceLangObject.name, sourceLangObject.flag_id, "", targetLangObject.name, targetLangObject.flag_id, "ADDI", message.messageSender));
+        
+
+      
+
         console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-        await timer(750);
-        await translateMessage(message.messageId);
-        //}
+        //await timer(750);
+        await translateGenesysMessage(message, translationProfile);
+        //await ADDI_translateMessage(message.messageId, message.messageSender, message.originalText, translationProfile.ProfileId, translateHistoricalADDIMessage);
+       
       }
 
+      
+      //await ADDI_translateMessage(message.messageId, message.messageSender, message.originalText, translationProfile.ProfileId, translateHistoricalADDIMessage);
     }
 
+    function translateHistoricalADDIMessage(resultObject){
+      messageDetailListv2[resultObject.transaction_id].TranslatedText = resultObject.text;
+    }
 
     //===============
     //New Message object.
@@ -951,6 +999,20 @@
         SenderType: SenderType
       }
     }
+
+    //language Object
+    function createLanguageObject(languageId, voiceLanguage, messageLanguage, languageDisplayName, languageCode, languageFlagCode) {
+      return {
+        languageId: languageId,
+        voiceLanguage: voiceLanguage,
+        messageLanguage: messageLanguage,
+        languageDisplayName: languageDisplayName,
+        languageCode: languageCode,
+        languageFlagCode: languageFlagCode
+      }
+    }
+
+
     //----------------    
     //Messaging Send Code
 
@@ -981,9 +1043,9 @@
       document.getElementById("typedMessage").value = "";
 
 
+      ADDI_translateMessage("","agent",messageText,agentProfileObject.ProfileId,sendADDITranslatedMessage);
 
-
-      postTranslationAPI(messageText, "auto", document.getElementById("SourceLanguageDropdown").value, "NONE", sendMessage);
+      //postTranslationAPI(messageText, "auto", document.getElementById("SourceLanguageDropdown").value, "NONE", sendMessage);
       //sendMessage(messageText);
       //ADDI_sendTTSMessage(currentTransaction,"caller",messageText);
     }
@@ -1013,17 +1075,40 @@
       //addStatementCard(text.originalText, text.translatedText, text.sourceLanguage, text.targetLanguage, data.id, currentAgentClass);
     }
 
+    //Sends ADDI translated message.
+    async function sendADDITranslatedMessage(translatedObject) {
+      console.log(translatedObject)
+      
+      let textToSend = translatedObject.text
+      
+
+      let body = { "textBody": textToSend }
+      let opts = {
+        "useNormalizedMessage": false // Boolean | If true, response removes deprecated fields (textBody, media, stickers)
+      };
+
+
+      // Send message
+      let data = await capi.postConversationsMessageCommunicationMessages(gc_conversationId, gc_agentCommunicationId, body, opts);
+      console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
+
+      messageDetailList.push({ "messageId": data.id, "messageTime": data.timestamp, "messageSender": "Agent" })
+      messageDetailListV2.push(createMessageObject(data.id, data.timestamp, translatedObject.original_text, agentLanguage, agentLanguageObject.flag_id, translatedObject.text, customerLanguage, customerLanguageObject, "ADDI", "Agent"));
+      addStatementCard(translatedObject.original_text, translatedObject.text, agentLanguageObject.name, customerLanguageObject.name, data.id, currentAgentClass);
+      //addStatementCard(text.originalText, text.translatedText, text.sourceLanguage, text.targetLanguage, data.id, currentAgentClass);
+    }
 
 
     //---------------- 
     //Genesys Specific Setup
     function getCurrentConversationDetails() {
 
+      let customerMessages,workflowMessages, agentMessages;
 
       // Get conversation
       capi.getConversation(gc_conversationId)
         .then((data) => {
-          console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`, 'color: green');
+          //console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`, 'color: green');
 
           //get some agent data we will need
           let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
@@ -1032,11 +1117,22 @@
           getCurrentQueue(gc_queueId)
 
           let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
-
+          
           if (customerAttributes.speaker_language) {
+            if (customerAttributes.speaker_language == "default") {
+              customerLanguage="german"
+            }
+            else{
+              customerLanguage = customerAttributes.speaker_language;
+            }
             //setSourceLanguage(customerAttributes.speaker_language);
-            updateLanguages({agent:"english",caller:customerAttributes.speaker_language})
+            //updateLanguages({ agent: "english", caller: customerAttributes.speaker_language })
+            
+
           }
+
+          updateLanguageSelections({agent: agentLanguage, caller: customerLanguage});
+          
           if (customerAttributes.ADDI_TransactionId) {
             currentTransaction = customerAttributes.ADDI_TransactionId;
             document.getElementById("span_transactionId").innerText = currentTransaction;
@@ -1051,12 +1147,22 @@
             document.getElementById("footer").style.visibility = "visible";
             //document.getElementById("delayDiv").style.visibility = "hidden";
 
-            let customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
-            let agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
-            let workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
+            customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
+            agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
+            workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
+
             console.log(customerMessages[0].messages);
             subscribeMessageEvents();
-            TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages, workflowMessages[0].messages);
+            
+            TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages, workflowMessages[0].messages)
+            setTimeout(() => { 
+              for (const message of messageDetailListv2) {
+                console.log(message);
+                
+                addStatementCard(message.OriginalText, message.TranslatedText, message.OriginalLanguage, message.TranslatedLanguage, message.messageid, currentCustomerClass);
+              }
+            }, 1000);
+           
 
           }
           else if (agentParticipant.calls.length > 0) {
@@ -1081,6 +1187,7 @@
 
           //let customerParticipant = data.participants.slice().reverse().find(p => p.purpose === 'customer');
 
+          
 
 
         })
@@ -1109,8 +1216,8 @@
       // Get list of queues.
       rapi.getRoutingQueues(opts)
         .then((data) => {
-          console.log(`getRoutingQueues success! data: ${JSON.stringify(data, null, 2)}`);
-          
+          //console.log(`getRoutingQueues success! data: ${JSON.stringify(data, null, 2)}`);
+
           let libraryId = data.entities[0].cannedResponseLibraries.libraryIds[0]; // String | Library ID
           let opts = {
             "pageNumber": 1, // Number | Page number
@@ -1121,9 +1228,9 @@
           // Gets a list of existing responses.
           resapi.getResponsemanagementResponses(libraryId, opts)
             .then((data) => {
-              console.log(`getResponsemanagementResponses success! data: ${JSON.stringify(data, null, 2)}`);
+              //console.log(`getResponsemanagementResponses success! data: ${JSON.stringify(data, null, 2)}`);
               let responseList = data.entities;
-              console.log(responseList);
+              //console.log(responseList);
               for (const response of responseList) {
                 addResponseCard(response.name, response.texts[0].content, response.libraries, response.id);
               }
@@ -1199,6 +1306,51 @@
         .then((response) => response.text())
         .then((result) => {
           console.log(result)
+        })
+        .catch((error) => console.error(error));
+    }
+
+    //Get Supported profiles
+    async function ADDI_gettranslationProfiles() {
+      const requestOptions = {
+        method: "GET",
+        redirect: "follow"
+      };
+
+      fetch(`${ADDIURLHOST}/addi/v1/profiles`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          console.log(result);
+          return JSON.parse(result);
+        })
+        .catch((error) => console.error(error));
+    }
+
+    //Get Supported profiles
+    async function ADDI_setOurTranslationProfiles() {
+      const requestOptions = {
+        method: "GET",
+        redirect: "follow"
+      };
+
+      fetch(`${ADDIURLHOST}/addi/v1/profiles`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          console.log(result)
+          let profileList = JSON.parse(result);
+
+          Object.keys(profileList).forEach((key) => {
+            let profile = profileList[key];
+            if (profile.Source == agentLanguageObject.id && profile.Target == customerLanguageObject.id) {
+              agentProfileObject = profile;
+            }
+            if (profile.Source == customerLanguageObject.id && profile.Target == agentLanguageObject.id) {
+              customerProfileObject = profile;
+            }
+          })
+
+          
+          console.log(`Agent Profile now: ${agentProfileObject.ProfileId} :: Customer Profile now: ${customerProfileObject.ProfileId}`);
         })
         .catch((error) => console.error(error));
     }
@@ -1296,6 +1448,36 @@
         .catch((error) => console.error(error));
     }
 
+    // sends a message for translation.
+    async function ADDI_translateMessage(transactionId, party, text, profile, resultProcessor) {
+      const myHeaders = new Headers();
+
+      console.log(`Translate Message ${text}`)
+
+      myHeaders.append("Content-Type", "application/json");
+
+      const raw = JSON.stringify({
+        "transaction_id": transactionId,
+        "party": party,
+        "text": text,
+        "profile": profile
+      });
+
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+      };
+
+      fetch(`${ADDIURLHOST}/addi/v1/translate`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          console.log(result)
+          resultProcessor(JSON.parse(result));
+        })
+        .catch((error) => console.error(error));
+    }
 
     //Updates the language currently used by ADDI
     async function updateLanguages() {
@@ -1321,7 +1503,8 @@
       var data = event.dataTransfer.getData("text");
       let messageText = data;
 
-      postTranslationAPI(messageText, "auto", document.getElementById("SourceLanguageDropdown").value, "NONE", sendMessage);
+      //postTranslationAPI(messageText, "auto", document.getElementById("SourceLanguageDropdown").value, "NONE", sendMessage);
+      ADDI_translateMessage("","agent",document.getElementById("SourceLanguageDropdown").value,agentProfileObject.ProfileId,sendADDITranslatedMessage);
       console.log("dropped")
     }
 
@@ -1460,11 +1643,11 @@
           <gux-tab-panel tab-id="1-2">
             <div class="input-group">
 
-              <div id = "CannedResponseRow" class="row"></div>
-                
+              <div id="CannedResponseRow" class="row"></div>
 
 
-              
+
+
             </div>
           </gux-tab-panel>
 
