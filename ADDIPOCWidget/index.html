@@ -1422,18 +1422,26 @@
         .then((result) => {
           console.log(result)
           let profileList = JSON.parse(result);
-
+          let agentProfFound = false;
+          let customerProfFound = false;
           Object.keys(profileList).forEach((key) => {
             let profile = profileList[key];
             if (profile.Source == agentLanguageObject.id && profile.Target == customerLanguageObject.id) {
               agentProfileObject = profile;
+              agentProfFound = true;
             }
             if (profile.Source == customerLanguageObject.id && profile.Target == agentLanguageObject.id) {
               customerProfileObject = profile;
+              customerProfFound = true;
             }
           })
 
-
+          if (agentProfFound == false || customerProfFound == false) {
+            document.getElementById("warning").innerText = "Warning: No translation profiles found for the selected languages.  Please check your ADDI configuration.";
+            document.getElementById("warning").style.visibility = "visible";
+            setTimeout(() => { document.getElementById("warning").style.visibility = "hidden"; }, 5000);
+          
+          }
           console.log(`%cAgent Profile now: ${agentProfileObject.ProfileId} :: Customer Profile now: ${customerProfileObject.ProfileId}`, "color:Yellow");
         })
         .catch((error) => console.error(error));
@@ -1670,6 +1678,7 @@
             <gux-button accent="primary" onclick="updateLanguages()">Update</gux-button>
 
           </div>
+          <div id="warning" style="visibility: hidden;"></div> 
 
           <!--  <div id = "delayDiv" style="width:20%;padding:5px">
           
@@ -1726,7 +1735,7 @@
 
             <div class="input-group">
               <textarea id="typedMessage" dir="auto" placeholder="Enter message..." aria-label="Enter message..."
-                class="text-area-2" style="height: 60px;"></textarea>
+                class="text-area-2" spellcheck="true" style="height: 60px;"></textarea>
 
 
               <div class="textarea-buttons">
