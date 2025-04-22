@@ -13,7 +13,7 @@
   <link
     href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css"
     rel="stylesheet" />
-  
+
   <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script -->
   <script type="module"
     src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
@@ -83,6 +83,7 @@
 
     let myImage = "";
     let myName = "";
+    let myAlias = "";
     let translationURL = 'https://qx4fkw52e1.execute-api.us-west-2.amazonaws.com/Prod/ttec_sc_translate';
     let workflowImage = "https://craigcoenttec.github.io/TranscriptionExample/sandcastlerobot.jpg";
     //let workflowImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg";
@@ -141,6 +142,7 @@
         userId = user.id
         myName = user.name;
         myImage = user.images[0].imageUri;
+        myAlias = user.preferredName;
         updateDebug(gc_region, gc_language, version, user.name, gc_clientId, translateToken, gc_redirectUrl, gc_conversationId)
 
 
@@ -247,7 +249,7 @@
 
                   console.log(`%cNew Message: ${message.message.id}`, 'color: green');
                   //translateGenesysMessage(message.message.id);
-                  translateGenesysMessage(ourMessageObject, customerProfileObject,translateNewADDIMessage)
+                  translateGenesysMessage(ourMessageObject, customerProfileObject, translateNewADDIMessage)
                   //translateLatestMessage();
 
                 }
@@ -375,39 +377,6 @@
 
     }
 
-    //Diagnostic Test for subscription.
-    async function subscribeEchoTest() {
-      //Create websocket for events
-      try {
-        console.log(`starting web socket connection to wss://echo.websocket.org/`)
-        let socket = new WebSocket(`wss://echo.websocket.org/`);
-
-        socket.onmessage = async function (event) {
-
-          console.log("%cTRANSCRIPTION EVENT", 'color: red');
-          console.log(event);
-          addStatementCard("echoTest", JSON.stringify(event), "en", "en", "123")
-
-          //if Message notification
-
-        }
-        socket.onclose = async function (event) {
-
-          console.log(event);
-
-        }
-        socket.onerror = async function (event) {
-
-          console.log(event);
-
-        }
-
-      }
-      catch (err) {
-        console.error('Websocket error: ', err)
-      }
-    }
-
 
 
     //---------------- 
@@ -428,12 +397,6 @@
     }
 
     //Update relevant UI in relation to the source language changes.
-    function setSourceLanguage(language) {
-      currentSourceLang = language;
-      document.getElementById("SourceLanguageDropdown").value = language;
-      document.getElementById("sendLanguage").innerText = language;
-      console.log("The Source language is now: " + language);
-    }
 
     //Timer function to delay translation request... Native genesys voice helper.
     function testTimer(utterance) {
@@ -551,8 +514,8 @@
 
 
 
-            document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
-            document.getElementById("sendLanguage").innerText = "Auto";
+            //document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
+            //document.getElementById("sendLanguage").innerText = "Auto";
             lastSourceLang = sourceLanguage;
 
 
@@ -579,8 +542,8 @@
 
 
 
-          document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
-          document.getElementById("sendLanguage").innerText = "Auto";
+          //document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
+          //document.getElementById("sendLanguage").innerText = "Auto";
           lastSourceLang = sourceLanguage;
         }
 
@@ -646,6 +609,7 @@
 
     }
 
+    //function to add a new card to the conversation pane using the new message object.
     function addStatementCardbyObject(messageObject, className = "message-customer") {
 
       let card = document.createElement("div");
@@ -674,7 +638,7 @@
         //console.log("true")
         let currentMessage = messageObject;
         if (typeof currentMessage != "undefined") {
-          cardTimestamp.innerHTML = currentMessage.messageTime;
+          cardTimestamp.innerHTML = currentMessage.Timestamp;
 
           if (currentMessage.SenderType && currentMessage.SenderType === "Agent") {
             cardUser.className = "message-details-user";
@@ -886,7 +850,7 @@
       return new Promise(res => setTimeout(res, ms));
     }
 
-      
+
 
     //Updates language selections in the drop down and update our translation profile
     async function updateLanguageSelections(TransactionObject) {
@@ -928,13 +892,13 @@
 
 
       messageDetailList.push({ "messageId": ourEventid, "messageTime": jsonEvent.timestamp, "messageSender": ourParticipant })
-      messageDetailListv2[ourEventId] = (createMessageObject(ourEventid, jsonEvent.timestamp, jsonEvent.text, sourceLang, flagMap[sourceLang], jsonEvent.translated, targetLang, flagMap[targetLang], "ADDI", ourParticipant));
+      messageDetailListv2[ourEventid] = (createMessageObject(ourEventid, jsonEvent.timestamp, jsonEvent.text, sourceLang, flagMap[sourceLang], jsonEvent.translated, targetLang, flagMap[targetLang], "ADDI", ourParticipant));
       addStatementCard(jsonEvent.text, jsonEvent.translated, sourceLang, targetLang, ourEventid, ourClass);
     }
 
     //---------------- 
     //Translation Code
-    
+
 
     //Gets message and sends for translation
     async function translateGenesysMessage(message, translationProfile, processor = translateHistoricalADDIMessage) {
@@ -1111,10 +1075,10 @@
         //let targetLangObject = customerLanguageObject;
         // always use the customer profile for historical translation to make sure everything is readable for the agent.
         //let translationProfile = customerProfileObject;
-       // if (message.messageSender == 'Customer') {
-          let sourceLangObject = customerLanguageObject;
-          let targetLangObject = agentLanguageObject;
-          let translationProfile = customerProfileObject;
+        // if (message.messageSender == 'Customer') {
+        let sourceLangObject = customerLanguageObject;
+        let targetLangObject = agentLanguageObject;
+        let translationProfile = customerProfileObject;
         //}
 
         messageDetailListv2[message.messageId] = createMessageObject(message.messageId, message.messageTime, "", sourceLangObject.name, sourceLangObject.flag_id, "", targetLangObject.name, targetLangObject.flag_id, "ADDI", message.messageSender);
@@ -1179,18 +1143,20 @@
     //Messaging Send Code
 
     //Sends a request for TTS to ADDI
-    function sendTranslatedMessage() {
+    function sendTranslatedMessage(text = '') {
 
       if (gc_mediaType == "MESSAGE") {
-        sendTranslatedMessageDigital();
+        sendTranslatedMessageDigital(text);
       }
       else {
         let messageText = document.getElementById("typedMessage").value;
 
-        document.getElementById("typedMessage").value = "";
-
-        //postTranslationAPI(messageText, "auto", lastSourceLang, "NONE", sendMessage);
-
+        if (text != '') {
+          messageText = text;
+        }
+        else {
+          document.getElementById("typedMessage").value = "";
+        }
 
         ADDI_sendTTSMessage(currentTransaction, "caller", messageText);
 
@@ -1199,43 +1165,27 @@
     }
 
     //Chat send message.
-    function sendTranslatedMessageDigital() {
-      let messageText = document.getElementById("typedMessage").value;
+    function sendTranslatedMessageDigital(text = '') {
 
-      document.getElementById("typedMessage").value = "";
+      let messageText = document.getElementById("typedMessage").value;
+      if (text != '') {
+        messageText = text;
+      }
+      else {
+        document.getElementById("typedMessage").value = "";
+      }
+
+
+
 
 
       ADDI_translateMessage("", "agent", messageText, agentProfileObject.ProfileId, sendADDITranslatedMessage);
 
-      //postTranslationAPI(messageText, "auto", document.getElementById("SourceLanguageDropdown").value, "NONE", sendMessage);
-      //sendMessage(messageText);
+
       //ADDI_sendTTSMessage(currentTransaction,"caller",messageText);
     }
 
-    //Sends message to conversation.
-    async function sendMessage(text) {
-      console.log(text)
-      let textToSend = text
-      if (typeof text == 'object') { textToSend = text.translatedText }
-      else {
-        text = { originalText: text, translatedText: text }
-        textToSend = text.translatedText;
-      }
 
-      let body = { "textBody": textToSend }
-      let opts = {
-        "useNormalizedMessage": false // Boolean | If true, response removes deprecated fields (textBody, media, stickers)
-      };
-
-
-      // Send message
-      let data = await capi.postConversationsMessageCommunicationMessages(gc_conversationId, gc_agentCommunicationId, body, opts);
-      console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
-
-      messageDetailList.push({ "messageId": data.id, "messageTime": data.timestamp, "messageSender": "Agent" })
-      addStatementCard(text.originalText, text.translatedText, text.sourceLanguage, text.targetLanguage, data.id, currentAgentClass);
-      //addStatementCard(text.originalText, text.translatedText, text.sourceLanguage, text.targetLanguage, data.id, currentAgentClass);
-    }
 
     //Sends ADDI translated message.
     async function sendADDITranslatedMessage(translatedObject) {
@@ -1257,7 +1207,7 @@
       messageDetailList.push({ "messageId": data.id, "messageTime": data.timestamp, "messageSender": "Agent" })
       messageDetailListv2[data.id] = createMessageObject(data.id, data.timestamp, translatedObject.original_text, agentLanguage, agentLanguageObject.flag_id, translatedObject.text, customerLanguage, customerLanguageObject.flag_id, "ADDI", "Agent");
       //addStatementCard(translatedObject.original_text, translatedObject.text, agentLanguageObject.name, customerLanguageObject.name, data.id, currentAgentClass);
-      addStatementCardbyObject(messageDetailListv2[data.id],currentAgentClass)
+      addStatementCardbyObject(messageDetailListv2[data.id], currentAgentClass)
       //addStatementCard(text.originalText, text.translatedText, text.sourceLanguage, text.targetLanguage, data.id, currentAgentClass);
     }
 
@@ -1404,7 +1354,7 @@
     }
 
 
-    
+
     //-----------------
     //ADDI APIs
     //Get all active Transactions
@@ -1484,7 +1434,7 @@
           })
 
 
-          console.log(`%cAgent Profile now: ${agentProfileObject.ProfileId} :: Customer Profile now: ${customerProfileObject.ProfileId}`,"color:Yellow");
+          console.log(`%cAgent Profile now: ${agentProfileObject.ProfileId} :: Customer Profile now: ${customerProfileObject.ProfileId}`, "color:Yellow");
         })
         .catch((error) => console.error(error));
     }
@@ -1618,12 +1568,25 @@
       let currentSourceLang = document.getElementById("SourceLanguageDropdown").value
       let currentTargetLang = document.getElementById("TargetLanguageDropdown").value
 
-      ADDI_updateActiveTransactionLanguage(currentTargetLang, currentSourceLang)
+      if(gc_mediaType == "VOICE")
+      {
+        ADDI_updateActiveTransactionLanguage(currentTargetLang, currentSourceLang)
+      }
+      else
+      {
+        updateLanguageSelections({
+          agent: currentTargetLang,
+          caller: currentSourceLang
+        });
+      }
+      
     }
 
     function drag(event) {
       console.log(event)
-      event.dataTransfer.setData("text", event.target.innerText);
+      event.dataTransfer.setData("text", event.target.getElementsByTagName('input')[0].value);
+
+      
     }
 
     function allowDrop(event) {
@@ -1634,18 +1597,27 @@
     function drop(event) {
       event.preventDefault();
       var data = event.dataTransfer.getData("text");
-      let messageText = data;
+      let messageText = replacePlaceHolders(data);
 
-      //postTranslationAPI(messageText, "auto", document.getElementById("SourceLanguageDropdown").value, "NONE", sendMessage);
-      ADDI_translateMessage("", "agent", document.getElementById("SourceLanguageDropdown").value, agentProfileObject.ProfileId, sendADDITranslatedMessage);
-      console.log("dropped")
+
+
+      sendTranslatedMessage(messageText);
+      //console.log("dropped")
     }
 
     function insertMessage(messageElement) {
       document.getElementById("typedMessage").value = messageElement.getElementsByTagName('input')[0].value
-
+      document.getElementById("typedMessage").value = replacePlaceHolders(document.getElementById("typedMessage").value)
       let tabs = document.getElementById("textTab")
       tabs.setAttribute("active-tab", "1-1")
+    }
+  
+    function replacePlaceHolders(text) {
+      let alias = myAlias;
+      if (myAlias && myAlias.length > 0) {alias = myAlias} else {alias = myName} 
+      text = text.replace(/{{\s*AGENT_NAME\s*}}/g, myName);
+      text = text.replace(/{{\s*AGENT_ALIAS\s*}}/g, myAlias)
+      return text;
     }
   </script>
 
