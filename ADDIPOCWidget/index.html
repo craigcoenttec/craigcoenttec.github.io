@@ -13,6 +13,7 @@
   <link
     href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css"
     rel="stylesheet" />
+
   <!--script type="module" src="https://unpkg.com/genesys-spark-components@4.91.0/dist/genesys-webcomponents/genesys-webcomponents.esm.js"></script -->
   <script type="module"
     src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
@@ -24,9 +25,11 @@
   <link rel="stylesheet" href="./style/pane.css">
 
 
+
 </head>
 
 <body onload="start()">
+
   <script>
     'use strict' //Enables strict mode is JavaScript
     let url = new URL(document.location.href)
@@ -38,11 +41,14 @@
     let gc_agentCommunicationId
     let currentEvent = 0;
     let gc_agentParticipantId
+    let gc_queueId
     let gc_mediaType
     let gc_language = url.searchParams.get('gc_language')
 
-    let translateToken = "" //url.searchParams.get('translateToken')
-    let version = "0.0.0.2"
+    let gc_currentConversationObject;
+
+    let translateToken = url.searchParams.get('translateToken')
+    let version = "0.0.0.3"
     let mySendTimer
     let currentSourceLang = "auto"
     let lastSourceLang = "en"
@@ -50,26 +56,36 @@
     let currentDelay = 4000
     let messageIds = [];
     let messageDetailList = [];
+    let messageDetailListv2 = {};
     let showAgent = false;
     let currentCustomerClass = "message-customer-small";
     let currentSystemClass = "message-system";
     let currentAgentClass = "message-agent";
     // let activeLanguages = ["auto","en","fi","fr","de","ko","zh","pt","es"]
     // let languageMap = {"en":"English","de":"German","es":"Spanish","auto":"Auto","fr":"French","pt":"Portuguese","ko":"Korean","fi":"Finnish","zh":"Mandarin","zhc":"Cantonese"}
-    // let dialectlanguageMap = {"en":"english","de":"german","es":"spanish","auto":"auto","fr":"french","pt":"portuguese","ko":"korean","fi":"finnish","zh":"mandarin","zhc":"cantonese"}
+    let dialectlanguageMap = { "en": "english", "de": "german", "es": "spanish", "auto": "auto", "fr": "french", "pt": "portuguese", "ko": "korean", "fi": "finnish", "zh": "mandarin", "zhc": "cantonese" }
     // let spokenLanguageMap = {"en-US":"English","de-DE":"German","es-ES":"Spanish","auto":"Auto","fr-FR":"French","pt-BR":"Portuguese","ko-KR":"Korean","fi-FI":"Finnish","zh-CN":"Mandarin","zh":"Cantonese"}
-    let activeLanguages = ["auto", "english", "finnish", "french", "german", "korean", "mandarin", "polish", "portuguese", "spanish", "brit", "arabic","dutch"]
-    let languageMap = { "english": "English", "german": "German", "spanish": "Spanish", "auto": "Auto", "french": "French", "portuguese": "Portuguese", "korean": "Korean", "finnish": "Finnish", "mandarin": "Mandarin", "cantonese": "Cantonese", "polish": "Polish", "brit": "Brit", "arabic": "Arabic", "dutch":"Dutch" }
-    let flagMap = { "english": "us", "german": "de", "spanish": "es", "auto": "auto", "french": "fr", "portuguese": "br", "korean": "ko", "finnish": "fi", "mandarin": "ch", "cantonese": "ch", "polish": "pl", "brit": "gb", "arabic": "eg", "dutch":"nl" }
-    let spokenLanguageMap = { "en-US": "English", "de-DE": "German", "es-ES": "Spanish", "auto": "Auto", "fr-FR": "French", "pt-BR": "Portuguese", "ko-KR": "Korean", "fi-FI": "Finnish", "zh-CN": "Mandarin", "zh": "Cantonese", "pl-PL": "Polish", "en-GB": "Brit", "ar-EG": "Arabic", "nl-NL" : "Dutch" }
+    let activeLanguages = ["auto", "english", "finnish", "french", "german", "korean", "mandarin", "polish", "portuguese", "spanish", "brit", "arabic", "dutch"]
+    let languageMap = { "english": "English", "german": "German", "spanish": "Spanish", "auto": "Auto", "french": "French", "portuguese": "Portuguese", "korean": "Korean", "finnish": "Finnish", "mandarin": "Mandarin", "cantonese": "Cantonese", "polish": "Polish", "brit": "Brit", "arabic": "Arabic", "dutch": "Dutch" }
+    let flagMap = { "english": "us", "german": "de", "spanish": "es", "auto": "auto", "french": "fr", "portuguese": "br", "korean": "ko", "finnish": "fi", "mandarin": "ch", "cantonese": "ch", "polish": "pl", "brit": "gb", "arabic": "eg", "dutch": "nl" }
+    let spokenLanguageMap = { "en-US": "English", "de-DE": "German", "es-ES": "Spanish", "auto": "Auto", "fr-FR": "French", "pt-BR": "Portuguese", "ko-KR": "Korean", "fi-FI": "Finnish", "zh-CN": "Mandarin", "zh": "Cantonese", "pl-PL": "Polish", "en-GB": "Brit", "ar-EG": "Arabic", "nl-NL": "Dutch" }
 
+    let awsTranslateMap = { "german": "de-DE", "auto": "auto", "english": "en-US" }
 
+    let languageDefs;
 
+    let agentLanguage = 'english';
+    let customerLanguage = 'english';
+    let agentLanguageObject;
+    let customerLanguageObject;
+    let agentProfileObject;
+    let customerProfileObject;
 
     let myImage = "";
     let myName = "";
+    let myAlias = "";
     let translationURL = 'https://qx4fkw52e1.execute-api.us-west-2.amazonaws.com/Prod/ttec_sc_translate';
-    let workflowImage = "https://craigcoenttec.github.io/TranscriptionExample/LG_Umbrella.png";
+    let workflowImage = "https://craigcoenttec.github.io/TranscriptionExample/sandcastlerobot.jpg";
     //let workflowImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg";
     let customerImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg";
     let ADDIURLHOST = "https://addi.smldev.com"
@@ -77,24 +93,7 @@
     let currentTransaction = "";
     let transcriptionWebSocket = null;
     let pingInterval = null;
-    let sampleMessages = [{
-      "participant": "caller",
-      "timestamp": "2024-10-23T12:46:21.991367361Z",
-      "text": "cómo está",
-      "translated": "how are you"
-    },
-    {
-      "participant": "caller",
-      "timestamp": "2024-10-23T12:46:32.059910671Z",
-      "text": "Alright.",
-      "translated": "Está bien."
-    },
-    {
-      "participant": "caller",
-      "timestamp": "2024-10-23T12:46:33.867261812Z",
-      "text": " hola señor call cómo está",
-      "translated": "Hello Mr. Call, how are you?"
-    }];
+
 
 
     //Getting and setting the GC details from dynamic URL and session storage
@@ -109,14 +108,26 @@
     const uapi = new platformClient.UsersApi()
     const napi = new platformClient.NotificationsApi()
     const capi = new platformClient.ConversationsApi()
+    const rapi = new platformClient.RoutingApi()
+    const resapi = new platformClient.ResponseManagementApi()
 
     let statementToTranslate = "";
 
     async function start() {
-      try {
-        //Set up UI with our available languages
-        populateLanguages();
 
+      //Set up UI with our available languages
+      try {
+        const langJson = await fetch("./scripts/languageDefinition.json");
+        languageDefs = await langJson.json();
+
+        await populateLanguages();
+      }
+      catch (err) {
+        console.log("Error loading language definition file: ", err)
+      }
+
+
+      try {
         //
         client.setEnvironment(gc_region)
         client.setPersistSettings(true, '_mm_')
@@ -131,15 +142,44 @@
         userId = user.id
         myName = user.name;
         myImage = user.images[0].imageUri;
+        myAlias = user.preferredName;
         updateDebug(gc_region, gc_language, version, user.name, gc_clientId, translateToken, gc_redirectUrl, gc_conversationId)
 
 
       } catch (err) {
-        console.log('Error: ', err)
+        console.log('Error logging into Genesys: ', err)
       }
 
       //Get our info about this conversation.
       getCurrentConversationDetails();
+
+
+      timer(1000).then(() => {
+        if (gc_mediaType == "MESSAGE") {
+
+          TranslateExistingConversation(gc_currentConversationObject);
+          setTimeout(() => {
+            console.log("running later")
+            console.log(JSON.stringify(messageDetailListv2, null, 2));
+
+            Object.keys(messageDetailListv2).forEach((key) => {
+              let message = messageDetailListv2[key];
+              console.log(message);
+              addStatementCardbyObject(message)
+
+              //addStatementCard(message.OriginalText, message.TranslatedText, message.OriginalLanguage, message.TranslatedLanguage, message.messageid, currentCustomerClass);
+
+            })
+
+            subscribeMessageEvents();
+
+
+          }, 2000);
+        }
+      })
+
+
+
 
       //Add listener for enter to send message.
       document.getElementById("typedMessage").addEventListener('keyup', function (e) {
@@ -203,9 +243,13 @@
                 if (!messageIds.includes(message.message.id)) {
                   messageIds.push(message.message.id);
                   messageDetailList.push({ "messageId": message.message.id, "messageTime": message.messageTime, "messageSender": "Customer" })
+                  let ourMessageObject = createMessageObject(message.message.id, message.messageTime, "", customerLanguageObject.name, customerLanguageObject.flag_id, "", agentLanguageObject.name, agentLanguageObject.flag_id, "ADDI", "Customer");
+
+                  messageDetailListv2[message.message.id] = ourMessageObject;
 
                   console.log(`%cNew Message: ${message.message.id}`, 'color: green');
-                  translateMessage(message.message.id);
+                  //translateGenesysMessage(message.message.id);
+                  translateGenesysMessage(ourMessageObject, customerProfileObject, translateNewADDIMessage)
                   //translateLatestMessage();
 
                 }
@@ -333,39 +377,6 @@
 
     }
 
-    //Diagnostic Test for subscription.
-    async function subscribeEchoTest() {
-      //Create websocket for events
-      try {
-        console.log(`starting web socket connection to wss://echo.websocket.org/`)
-        let socket = new WebSocket(`wss://echo.websocket.org/`);
-
-        socket.onmessage = async function (event) {
-
-          console.log("%cTRANSCRIPTION EVENT", 'color: red');
-          console.log(event);
-          addStatementCard("echoTest", JSON.stringify(event), "en", "en", "123")
-
-          //if Message notification
-
-        }
-        socket.onclose = async function (event) {
-
-          console.log(event);
-
-        }
-        socket.onerror = async function (event) {
-
-          console.log(event);
-
-        }
-
-      }
-      catch (err) {
-        console.error('Websocket error: ', err)
-      }
-    }
-
 
 
     //---------------- 
@@ -386,12 +397,6 @@
     }
 
     //Update relevant UI in relation to the source language changes.
-    function setSourceLanguage(language) {
-      currentSourceLang = language;
-      document.getElementById("SourceLanguageDropdown").value = language;
-      document.getElementById("sendLanguage").innerText = language;
-      console.log("The Source language is now: " + language);
-    }
 
     //Timer function to delay translation request... Native genesys voice helper.
     function testTimer(utterance) {
@@ -406,26 +411,21 @@
     function populateLanguages() {
 
       let sourceDropdownElement = document.getElementById("SourceListBox");
-      let targetDropdownElement = document.getElementById("TargetListBox")
+      let targetDropdownElement = document.getElementById("TargetListBox");
+      console.log("Populating languages")
 
 
+      Object.keys(languageDefs).forEach((key) => {
 
-      for (const key in activeLanguages) {
-        let lang = activeLanguages[key]
+        console.log("adding language " + languageDefs[key].name)
+        let lang = languageDefs[key];
         let currentOption = document.createElement("gux-option");
-        currentOption.setAttribute("value", lang);
-        currentOption.innerText = languageMap[lang];
+        currentOption.setAttribute("value", lang.key);
+        currentOption.innerText = lang.name;
         sourceDropdownElement.appendChild(currentOption)
         let currentOption2 = currentOption.cloneNode(true);
         targetDropdownElement.appendChild(currentOption2);
-      }
-
-
-      let autoOption = document.createElement("gux-option");
-      autoOption.setAttribute("value", "debug");
-      autoOption.innerText = "debug";
-      targetDropdownElement.appendChild(autoOption)
-
+      })
 
     }
 
@@ -514,8 +514,8 @@
 
 
 
-            document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
-            document.getElementById("sendLanguage").innerText = "Auto";
+            //document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
+            //document.getElementById("sendLanguage").innerText = "Auto";
             lastSourceLang = sourceLanguage;
 
 
@@ -542,8 +542,8 @@
 
 
 
-          document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
-          document.getElementById("sendLanguage").innerText = "Auto";
+          //document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
+          //document.getElementById("sendLanguage").innerText = "Auto";
           lastSourceLang = sourceLanguage;
         }
 
@@ -609,52 +609,252 @@
 
     }
 
+    //function to add a new card to the conversation pane using the new message object.
+    function addStatementCardbyObject(messageObject, className = "message-customer") {
+
+      let card = document.createElement("div");
+      card.id = messageObject.messageid;
+
+      card.setAttribute('accent', 'raised');
+
+      let cardHeader = document.createElement("div");
+
+      let cardTimestamp = document.createElement("gux-tag");
+      cardTimestamp.setAttribute("size", "small");
+      cardTimestamp.className = "message-details-time";
+      cardTimestamp.setAttribute("disabled", "true")
+      let cardUser = document.createElement("gux-tag");
+      cardUser.setAttribute("size", "small");
+      cardUser.className = "message-details-user";
+      let cardAvatar = document.createElement("gux-avatar-beta");
+      cardAvatar.setAttribute("size", "small")
+      let cardAvatarImage = document.createElement("img");
+
+
+
+      //console.log(messageDetailList);
+      //let index = messageDetailList.findIndex(m => m.messageId == messageId)
+      if (true) {
+        //console.log("true")
+        let currentMessage = messageObject;
+        if (typeof currentMessage != "undefined") {
+          cardTimestamp.innerHTML = currentMessage.Timestamp;
+
+          if (currentMessage.SenderType && currentMessage.SenderType === "Agent") {
+            cardUser.className = "message-details-user";
+            cardHeader.className = "message-details-userdiv";
+            cardUser.innerHTML = currentMessage.SenderType;
+            cardUser.setAttribute("accent", "10");
+            cardAvatarImage.setAttribute("slot", "image");
+            cardAvatarImage.setAttribute("src", myImage);
+            cardAvatarImage.setAttribute("alt", myName);
+            cardAvatar.setAttribute("name", myName);
+            cardHeader.appendChild(cardTimestamp);
+            cardHeader.appendChild(cardUser);
+            cardAvatar.appendChild(cardAvatarImage);
+            cardHeader.appendChild(cardAvatar);
+
+            //card.className = currentAgentClass;
+            card.className = currentAgentClass + " talk-bubble tri-right round btm-right-in"
+
+          }
+          else if (currentMessage.SenderType && currentMessage.SenderType != "Customer") {
+            cardUser.className = "message-details-user";
+            cardHeader.className = "message-details-userdiv";
+            cardUser.innerHTML = currentMessage.SenderType;
+            cardUser.setAttribute("accent", "2");
+            cardAvatarImage.setAttribute("slot", "image");
+            cardAvatarImage.setAttribute("src", workflowImage);
+            cardAvatarImage.setAttribute("alt", "Workflow");
+            cardAvatar.setAttribute("name", "Workflow");
+
+            cardHeader.appendChild(cardTimestamp);
+            cardHeader.appendChild(cardUser);
+            cardAvatar.appendChild(cardAvatarImage);
+            cardHeader.appendChild(cardAvatar);
+            card.className = currentSystemClass + " talk-bubble tri-right round btm-right-in"
+
+          }
+          else {
+            cardUser.className = "message-details-customer";
+            cardHeader.className = "message-details-customerdiv";
+            cardUser.innerHTML = "Customer"
+            cardUser.setAttribute("accent", "3");
+            cardAvatarImage.setAttribute("slot", "image");
+            cardAvatarImage.setAttribute("src", customerImage);
+            cardAvatarImage.setAttribute("alt", "Customer");
+            cardAvatar.setAttribute("name", "Customer");
+            cardAvatar.appendChild(cardAvatarImage);
+            cardHeader.appendChild(cardAvatar);
+            cardHeader.appendChild(cardUser);
+            cardHeader.appendChild(cardTimestamp);
+            card.className = currentCustomerClass + " talk-bubble-left tri-right round btm-left-in"
+
+
+
+            //document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
+            //document.getElementById("sendLanguage").innerText = "Auto";
+            //lastSourceLang = sourceLanguage;
+
+
+          }
+
+
+        }
+        //voice
+        else {
+          cardUser.className = "message-details-customer";
+          cardHeader.className = "message-details-customerdiv";
+          cardUser.innerHTML = "Customer"
+          cardUser.setAttribute("accent", "3");
+          cardAvatarImage.setAttribute("slot", "image");
+          cardAvatarImage.setAttribute("src", customerImage);
+          cardAvatarImage.setAttribute("alt", "Customer");
+          cardAvatar.setAttribute("name", "Customer");
+          cardAvatar.appendChild(cardAvatarImage);
+          cardHeader.appendChild(cardAvatar);
+          cardHeader.appendChild(cardUser);
+          cardHeader.appendChild(cardTimestamp);
+          card.className = currentCustomerClass + " talk-bubble-left tri-right round btm-left-in"
+
+
+
+          //document.getElementById("sendTranslateLanguage").innerText = languageMap[sourceLanguage];
+          //document.getElementById("sendLanguage").innerText = "Auto";
+          //lastSourceLang = sourceLanguage;
+        }
+
+      }
+
+      //if (sourceLanguage === "en") {
+      //sourceLanguage = "gb";
+      //}
+      //if (destinationLanguage === "en") {
+      // destinationLanguage = "gb";
+      //}
+
+
+      let cardOriginal = document.createElement("div");
+
+      cardOriginal.setAttribute('accent', 'bordered');
+      cardOriginal.className = "original-message-text"
+      let sourceFlag = document.createElement("gux-flag-icon-beta");
+      sourceFlag.setAttribute('flag', messageObject.OriginalFlag);
+      let cardOriginalTextBlock = document.createElement("span");
+      cardOriginalTextBlock.setAttribute('class', 'gux-body-lg-semibold');
+      let cardOriginalText = document.createElement("span");
+      cardOriginalTextBlock.innerHTML = messageObject.OriginalText;
+      //cardOriginalTextBlock.appendChild(cardOriginalText)
+      cardOriginal.appendChild(sourceFlag);
+      cardOriginal.appendChild(cardOriginalTextBlock);
+
+      let borderDiv = document.createElement("div");
+      borderDiv.className = "border-divider"
+
+      let cardNew = document.createElement("div");
+      cardNew.className = "translated-message-text"
+      cardNew.setAttribute('accent', 'bordered');
+      let newFlag = document.createElement("gux-flag-icon-beta");
+      newFlag.setAttribute('flag', messageObject.TranslatedFlag);
+      let cardNewTextBlock = document.createElement("span");
+      cardNewTextBlock.setAttribute('class', 'gux-body-lg-semibold');
+      let cardNewText = document.createElement("span");
+      //cardNewTextBlock.appendChild(cardNewText)
+      cardNewTextBlock.innerHTML = messageObject.TranslatedText;;
+      cardNew.appendChild(newFlag);
+      cardNew.appendChild(cardNewTextBlock);
+
+      card.appendChild(cardOriginal);
+      card.appendChild(borderDiv);
+      card.appendChild(cardNew);
+      //card.appendChild(cardHeader);
+
+
+
+
+
+      document.getElementById("conversation").appendChild(card)
+      document.getElementById("conversation").appendChild(cardHeader)
+      //card.scrollIntoView();
+      setTimeout(() => { document.getElementById("conversation-panel").scrollTop = document.getElementById("conversation-panel").scrollHeight; }, 500);
+
+    }
+
+
+    //Create Canned Response Entry
+    function addResponseCard(responseName, responseText, responseLibrary, responseId) {
+
+
+
+      const parser = new DOMParser();
+      // Parse the HTML string
+      const doc = parser.parseFromString(responseText, 'text/html');
+      // Extract text content
+      const textContent = doc.body.textContent || "";
+
+      let ourResponseRow = document.getElementById("CannedResponseRow");
+      let ourResponseCard = createCardElement(responseId, responseName, textContent, responseName, textContent);
+      ourResponseRow.appendChild(ourResponseCard);
+
+
+    }
+
+    //create canned response card element
+    function createCardElement(id, label, value, name, description) {
+
+      // Create the card container
+      const cardContainer = document.createElement('div');
+      cardContainer.className = 'card-container';
+
+      // Create the gux-selector-card-beta element
+      const selectorCard = document.createElement('gux-selector-card-beta');
+      selectorCard.setAttribute('draggable', 'true');
+      selectorCard.setAttribute('ondragstart', 'drag(event)');
+      selectorCard.setAttribute('variant', 'descriptive');
+      selectorCard.setAttribute('ondblclick', 'insertMessage(this)');
+
+      // Create the label element
+      const labelElement = document.createElement('label');
+      labelElement.setAttribute('slot', 'label');
+      labelElement.setAttribute('for', id);
+      labelElement.textContent = label;
+
+      // Create the input element
+      const inputElement = document.createElement('input');
+      inputElement.setAttribute('slot', 'input');
+      inputElement.setAttribute('id', id);
+      inputElement.setAttribute('type', 'radio');
+      inputElement.setAttribute('name', name);
+      inputElement.setAttribute('value', value);
+
+      // Create the description element
+      const descriptionElement = document.createElement('span');
+      descriptionElement.setAttribute('slot', 'description');
+      descriptionElement.textContent = description;
+
+      // Append the elements to the selector card
+      selectorCard.appendChild(labelElement);
+      selectorCard.appendChild(inputElement);
+      selectorCard.appendChild(descriptionElement);
+
+      // Append the selector card to the card container
+      cardContainer.appendChild(selectorCard);
+
+      return cardContainer;
+    }
+
+
+
     //generic "sleep" timer
     function timer(ms) {
       return new Promise(res => setTimeout(res, ms));
     }
 
 
-    //UI handling to hide or show agent side of conversation (needs work)
-    function toggleAgentDiv() {
-      console.log("toggled")
-      showAgent = !showAgent
-      let agentToggle = document.getElementById("agentToggle");
-      if (showAgent == true) {
-        let agentDivs = document.getElementsByClassName(currentAgentClass);
-        let customerDivs = document.getElementsByClassName(currentCustomerClass);
 
-
-        currentAgentClass = "message-agent";
-        currentCustomerClass = "message-customer-small"
-
-        while (agentDivs.length) {
-          agentDivs[0].className = currentAgentClass;
-        }
-        while (customerDivs.length) {
-          customerDivs[0].className = currentCustomerClass;
-        }
-      }
-      else {
-        let agentDivs = document.getElementsByClassName(currentAgentClass);
-        let customerDivs = document.getElementsByClassName(currentCustomerClass);
-        currentAgentClass = "message-agent-hidden";
-        currentCustomerClass = "message-customer"
-
-        while (agentDivs.length) {
-          agentDivs[0].className = currentAgentClass;
-        }
-        while (customerDivs.length) {
-          customerDivs[0].className = currentCustomerClass;
-        }
-      }
-
-
-    }
-
-    //Updates language selections
+    //Updates language selections in the drop down and update our translation profile
     async function updateLanguageSelections(TransactionObject) {
-      console.log("udpating interface")
+      console.log("udpating languages")
 
       let agentLanguage = TransactionObject.agent
       let callerLanguage = TransactionObject.caller
@@ -662,6 +862,15 @@
       console.log(agentLanguage + " " + callerLanguage)
       document.getElementById("SourceLanguageDropdown").value = callerLanguage
       document.getElementById("TargetLanguageDropdown").value = agentLanguage
+
+
+      agentLanguageObject = languageDefs[agentLanguage]
+      customerLanguageObject = languageDefs[callerLanguage]
+      console.log("Agent Language Object: " + JSON.stringify(agentLanguageObject, null, 2))
+      console.log("Customer Language Object: " + JSON.stringify(customerLanguageObject, null, 2))
+
+      ADDI_setOurTranslationProfiles()
+
     }
 
     //parse and display the live transcription events
@@ -683,31 +892,26 @@
 
 
       messageDetailList.push({ "messageId": ourEventid, "messageTime": jsonEvent.timestamp, "messageSender": ourParticipant })
+      messageDetailListv2[ourEventid] = (createMessageObject(ourEventid, jsonEvent.timestamp, jsonEvent.text, sourceLang, flagMap[sourceLang], jsonEvent.translated, targetLang, flagMap[targetLang], "ADDI", ourParticipant));
       addStatementCard(jsonEvent.text, jsonEvent.translated, sourceLang, targetLang, ourEventid, ourClass);
     }
 
     //---------------- 
     //Translation Code
-    async function translateLatestMessage() {
 
-      let conversation = await capi.getConversationsMessage(gc_conversationId);
-      console.log(conversation);
-      let messageId = conversation.participants[0].messages[0].messageId
-      console.log(`messageId = ${messageId}`)
-      translateMessage(messageId);
-      addStatementCard("Original Text", "Translated Text", "en", "de", "NONE", "message-agent")
-
-
-    }
 
     //Gets message and sends for translation
-    async function translateMessage(messageId) {
+    async function translateGenesysMessage(message, translationProfile, processor = translateHistoricalADDIMessage) {
 
+      console.log("Translating message: " + JSON.stringify(message));
 
-
-      let message = await capi.getConversationsMessageMessage(gc_conversationId, messageId)
-      console.log(message.normalizedMessage.text);
-      getTranslation(message.normalizedMessage.text, messageId);
+      let messageResult = await capi.getConversationsMessageMessage(gc_conversationId, message.messageid)
+      console.log(messageResult.normalizedMessage.text);
+      //console.log(messageDetailListv2)
+      messageDetailListv2[message.messageid].OriginalText = messageResult.normalizedMessage.text;
+      //console.log(messageDetailListv2)
+      //getTranslation(message.normalizedMessage.text, messageId);
+      ADDI_translateMessage(message.messageid, message.messageSender, messageDetailListv2[message.messageid].OriginalText, translationProfile.ProfileId, processor);
 
 
     }
@@ -720,9 +924,12 @@
         currentSourceLang = document.getElementById("SourceLanguageDropdown").value
         currentTargetLang = document.getElementById("TargetLanguageDropdown").value
 
-        //let translation =  postTranslationAPI(text,currentSourceLang, currentTargetLang,messageId,postTranslationProcesing)//.then((translation) => {
 
-        addStatementCard(text, "TRANSLATED: " + text, currentSourceLang, currentTargetLang, messageId, currentCustomerClass);
+
+
+        //let translation = postTranslationAPI(text, currentSourceLang, currentTargetLang, messageId, postTranslationProcesing)//.then((translation) => {
+
+        //addStatementCard(text, "TRANSLATED: " + text, currentSourceLang, currentTargetLang, messageId, currentCustomerClass);
       }
 
     }
@@ -758,10 +965,11 @@
 
         const raw = JSON.stringify({
           "Text": text,
-          "SourceLanguageCode": currentSourceLang,
-          "TargetLanguageCode": currentTargetLang
+          "SourceLanguageCode": awsTranslateMap[currentSourceLang],
+          "TargetLanguageCode": awsTranslateMap[currentTargetLang]
         });
 
+        console.log(`%craw: ${raw}`, "color:purple")
         const requestOptions = {
           method: "POST",
           headers: myHeaders,
@@ -817,20 +1025,27 @@
     }
 
     //Translate existing thread of a digital conversation
-    async function TranslateExistingConversation(customerMessages, agentMessages, workflowMessages) {
-      console.log(customerMessages);
+    async function TranslateExistingConversation(conversationObject) {
+
+      //get our current messages.
+      let customerMessages = conversationObject.participants.slice().find(p => p.purpose === 'customer').messages
+      let agentMessages = conversationObject.participants.slice().reverse().find(p => p.purpose === 'agent').messages
+      let workflowMessages = conversationObject.participants.slice().reverse().find(p => p.purpose === 'workflow').messages
+
+
+
+      console.log(customerMessages[0].messages);
       let workingList = [];
 
-
-      for (const message of customerMessages) {
+      //create a joint list
+      for (const message of customerMessages[0].messages) {
         messageIds.push(message.messageId);
         message.messageSender = "Customer";
         workingList.push(message);
 
-
       }
 
-      for (const message of agentMessages) {
+      for (const message of agentMessages[0].messages) {
 
         messageIds.push(message.messageId);
         message.messageSender = "Agent";
@@ -840,7 +1055,7 @@
 
       }
 
-      for (const message of workflowMessages) {
+      for (const message of workflowMessages[0].messages) {
 
         messageIds.push(message.messageId);
         message.messageSender = "Workflow";
@@ -850,37 +1065,98 @@
       }
 
       //sort and translate
+
       for (const message of workingList.sort((m1, m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0)) {
-        //if(!messageIds.includes(message.messageId))
-        //{
-        //messageIds.push(message.messageId);
+
         messageDetailList.push(message);
-        console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-        await timer(750);
-        await translateMessage(message.messageId);
+
+
+        //let sourceLangObject = agentLanguageObject;
+        //let targetLangObject = customerLanguageObject;
+        // always use the customer profile for historical translation to make sure everything is readable for the agent.
+        //let translationProfile = customerProfileObject;
+        // if (message.messageSender == 'Customer') {
+        let sourceLangObject = customerLanguageObject;
+        let targetLangObject = agentLanguageObject;
+        let translationProfile = customerProfileObject;
         //}
+
+        messageDetailListv2[message.messageId] = createMessageObject(message.messageId, message.messageTime, "", sourceLangObject.name, sourceLangObject.flag_id, "", targetLangObject.name, targetLangObject.flag_id, "ADDI", message.messageSender);
+
+
+
+        console.log(message);
+        console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+        //await timer(750);
+        await translateGenesysMessage(messageDetailListv2[message.messageId], translationProfile);
+        //await ADDI_translateMessage(message.messageId, message.messageSender, message.originalText, translationProfile.ProfileId, translateHistoricalADDIMessage);
+
       }
 
+
+      //await ADDI_translateMessage(message.messageId, message.messageSender, message.originalText, translationProfile.ProfileId, translateHistoricalADDIMessage);
     }
 
+    //called post translation by Addi, meant for historical messages that just need to be captured.
+    function translateHistoricalADDIMessage(resultObject) {
+      messageDetailListv2[resultObject.transaction_id].TranslatedText = resultObject.text;
+    }
+
+    //Called post translation by Addi, meant for new messages that need to be written to the scroll
+    function translateNewADDIMessage(resultObject) {
+      messageDetailListv2[resultObject.transaction_id].TranslatedText = resultObject.text;
+      console.log(messageDetailListv2[resultObject.transaction_id]);
+      addStatementCardbyObject(messageDetailListv2[resultObject.transaction_id], currentCustomerClass);
+    }
+
+    //===============
+    //New Message object.
+    function createMessageObject(messageid, Timestamp, OriginalText, OriginalLanguage, OriginalFlag, TranslatedText, TranslatedLanguage, TranslatedFlag, TranslationSource, SenderType) {
+      return {
+        messageid: messageid,
+        Timestamp: Timestamp,
+        OriginalText: OriginalText,
+        OriginalLanguage: OriginalLanguage,
+        OriginalFlag: OriginalFlag,
+        TranslatedFlag: TranslatedFlag,
+        TranslatedText: TranslatedText,
+        TranslatedLanguage: TranslatedLanguage,
+        TranslationSource: TranslationSource,
+        SenderType: SenderType
+      }
+    }
+
+    //language Object
+    function createLanguageObject(languageId, voiceLanguage, messageLanguage, languageDisplayName, languageCode, languageFlagCode) {
+      return {
+        languageId: languageId,
+        voiceLanguage: voiceLanguage,
+        messageLanguage: messageLanguage,
+        languageDisplayName: languageDisplayName,
+        languageCode: languageCode,
+        languageFlagCode: languageFlagCode
+      }
+    }
 
 
     //----------------    
     //Messaging Send Code
 
     //Sends a request for TTS to ADDI
-    function sendTranslatedMessage() {
+    function sendTranslatedMessage(text = '') {
 
       if (gc_mediaType == "MESSAGE") {
-        sendTranslatedMessageDigital();
+        sendTranslatedMessageDigital(text);
       }
       else {
         let messageText = document.getElementById("typedMessage").value;
 
-        document.getElementById("typedMessage").value = "";
-
-        //postTranslationAPI(messageText, "auto", lastSourceLang, "NONE", sendMessage);
-
+        if (text != '') {
+          messageText = text;
+        }
+        else {
+          document.getElementById("typedMessage").value = "";
+        }
 
         ADDI_sendTTSMessage(currentTransaction, "caller", messageText);
 
@@ -889,26 +1165,34 @@
     }
 
     //Chat send message.
-    function sendTranslatedMessageDigital() {
+    function sendTranslatedMessageDigital(text = '') {
+
       let messageText = document.getElementById("typedMessage").value;
+      if (text != '') {
+        messageText = text;
+      }
+      else {
+        document.getElementById("typedMessage").value = "";
+      }
 
-      document.getElementById("typedMessage").value = "";
 
-      //postTranslationAPI(messageText, "auto", lastSourceLang, "NONE", sendMessage);
-      sendMessage(messageText);
+
+
+
+      ADDI_translateMessage("", "agent", messageText, agentProfileObject.ProfileId, sendADDITranslatedMessage);
+
+
       //ADDI_sendTTSMessage(currentTransaction,"caller",messageText);
     }
 
-    //Sends message to conversation.
-    async function sendMessage(text) {
-      console.log(text)
-      let textToSend = text
-      if (typeof text == 'object') 
-        { textToSend = text.translatedText } 
-      else {
-        text = {originalText:text, translatedText:text}
-        textToSend = text.translatedText;
-      }
+
+
+    //Sends ADDI translated message.
+    async function sendADDITranslatedMessage(translatedObject) {
+      console.log(translatedObject)
+
+      let textToSend = translatedObject.text
+
 
       let body = { "textBody": textToSend }
       let opts = {
@@ -921,31 +1205,45 @@
       console.log(`postConversationsMessageCommunicationMessages success! data: ${JSON.stringify(data, null, 2)}`);
 
       messageDetailList.push({ "messageId": data.id, "messageTime": data.timestamp, "messageSender": "Agent" })
-      addStatementCard(text.originalText, text.translatedText, text.sourceLanguage, text.targetLanguage, data.id, currentAgentClass);
+      messageDetailListv2[data.id] = createMessageObject(data.id, data.timestamp, translatedObject.original_text, agentLanguage, agentLanguageObject.flag_id, translatedObject.text, customerLanguage, customerLanguageObject.flag_id, "ADDI", "Agent");
+      //addStatementCard(translatedObject.original_text, translatedObject.text, agentLanguageObject.name, customerLanguageObject.name, data.id, currentAgentClass);
+      addStatementCardbyObject(messageDetailListv2[data.id], currentAgentClass)
       //addStatementCard(text.originalText, text.translatedText, text.sourceLanguage, text.targetLanguage, data.id, currentAgentClass);
     }
-
 
 
     //---------------- 
     //Genesys Specific Setup
     function getCurrentConversationDetails() {
 
+      let customerMessages, workflowMessages, agentMessages;
 
       // Get conversation
       capi.getConversation(gc_conversationId)
         .then((data) => {
-          console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`, 'color: green');
-
+          //console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`, 'color: green');
+          gc_currentConversationObject = data;
           //get some agent data we will need
           let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
           gc_agentParticipantId = agentParticipant.id
+          gc_queueId = agentParticipant.queueId
+          getCurrentQueue(gc_queueId)
 
           let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
 
           if (customerAttributes.speaker_language) {
-            setSourceLanguage(customerAttributes.speaker_language);
+            if (customerAttributes.speaker_language == "default") {
+              customerLanguage = "german"
+            }
+            else {
+              customerLanguage = customerAttributes.speaker_language;
+            }
+
           }
+
+          updateLanguageSelections({ agent: agentLanguage, caller: customerLanguage });
+
+          //ADDI call with ID
           if (customerAttributes.ADDI_TransactionId) {
             currentTransaction = customerAttributes.ADDI_TransactionId;
             document.getElementById("span_transactionId").innerText = currentTransaction;
@@ -960,12 +1258,17 @@
             document.getElementById("footer").style.visibility = "visible";
             //document.getElementById("delayDiv").style.visibility = "hidden";
 
-            let customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
-            let agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
-            let workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
-            console.log(customerMessages[0].messages);
-            subscribeMessageEvents();
-            TranslateExistingConversation(customerMessages[0].messages, agentMessages[0].messages, workflowMessages[0].messages);
+            // customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
+            // agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
+            // workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
+
+            //console.log(customerMessages[0].messages);
+
+            //re-enable the subscriptions when the history is working!!!!!!!!!!!!!!!!!!!!!
+            //subscribeMessageEvents();
+
+
+
 
           }
           else if (agentParticipant.calls.length > 0) {
@@ -983,12 +1286,13 @@
           }
 
 
-          console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}`, 'color: green')
+          console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}.  The queue is ${gc_queueId}`, 'color: Blue')
           document.getElementById('span_communication').innerText = gc_agentCommunicationId;
           document.getElementById('span_participant').innerText = gc_agentParticipantId;
           document.getElementById('span_media').innerText = gc_mediaType;
 
           //let customerParticipant = data.participants.slice().reverse().find(p => p.purpose === 'customer');
+
 
 
 
@@ -999,22 +1303,54 @@
         });
     }
 
-    //---------------
-    //Test functions
-    function runTestEvents() {
-      for (const event in sampleMessages) {
-        parseAndDisplayEvent(sampleMessages[event])
-      }
-    }
+    function getCurrentQueue(id) {
 
-    function sendPing() {
-      if (transcriptionWebSocket.readyState === WebSocket.OPEN) {
-        console.log('sending pong...')
-        transcriptionWebSocket.send("pong");
-      }
-      else {
-        console.log('not sending ping, socket is closed.')
-      }
+
+
+      let opts = {
+        "pageNumber": 1, // Number | Page number
+        "pageSize": 1, // Number | Page size
+        "sortOrder": "asc", // String | Note: results are sorted by name.
+        //"name": "name_example", // String | Include only queues with the given name (leading and trailing asterisks allowed)
+        "id": [id], // [String] | Include only queues with the specified ID(s)
+        //"divisionId": ["divisionId_example"], // [String] | Include only queues in the specified division ID(s)
+        //"peerId": ["peerId_example"], // [String] | Include only queues with the specified peer ID(s)
+        //"cannedResponseLibraryId": "cannedResponseLibraryId_example", // String | Include only queues explicitly associated with the specified canned response library ID
+        //"hasPeer": true // Boolean | Include only queues with a peer ID
+      };
+
+      // Get list of queues.
+      rapi.getRoutingQueues(opts)
+        .then((data) => {
+          //console.log(`getRoutingQueues success! data: ${JSON.stringify(data, null, 2)}`);
+
+          let libraryId = data.entities[0].cannedResponseLibraries.libraryIds[0]; // String | Library ID
+          let opts = {
+            "pageNumber": 1, // Number | Page number
+            "pageSize": 25, // Number | Page size
+            //"expand": "expand_example" // String | Expand instructions for the return value.
+          };
+
+          // Gets a list of existing responses.
+          resapi.getResponsemanagementResponses(libraryId, opts)
+            .then((data) => {
+              //console.log(`getResponsemanagementResponses success! data: ${JSON.stringify(data, null, 2)}`);
+              let responseList = data.entities;
+              //console.log(responseList);
+              for (const response of responseList) {
+                addResponseCard(response.name, response.texts[0].content, response.libraries, response.id);
+              }
+            })
+            .catch((err) => {
+              console.log("There was a failure calling getResponsemanagementResponses");
+              console.error(err);
+            });
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getRoutingQueues");
+          console.error(err);
+        });
+
     }
 
 
@@ -1022,6 +1358,9 @@
     //-----------------
     //ADDI APIs
     //Get all active Transactions
+
+
+
     async function ADDI_getActiveTransactions(setTopToCurrent = false) {
 
       const requestOptions = {
@@ -1047,10 +1386,55 @@
         redirect: "follow"
       };
 
-      fetch("https://addi.smldev.com/addi/v1/languages", requestOptions)
+      fetch(`${ADDIURLHOST}/addi/v1/languages`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result)
+        })
+        .catch((error) => console.error(error));
+    }
+
+    //Get Supported profiles
+    async function ADDI_gettranslationProfiles() {
+      const requestOptions = {
+        method: "GET",
+        redirect: "follow"
+      };
+
+      fetch(`${ADDIURLHOST}/addi/v1/profiles`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          console.log(result);
+          return JSON.parse(result);
+        })
+        .catch((error) => console.error(error));
+    }
+
+    //Get Supported profiles
+    async function ADDI_setOurTranslationProfiles() {
+      const requestOptions = {
+        method: "GET",
+        redirect: "follow"
+      };
+
+      fetch(`${ADDIURLHOST}/addi/v1/profiles`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          console.log(result)
+          let profileList = JSON.parse(result);
+
+          Object.keys(profileList).forEach((key) => {
+            let profile = profileList[key];
+            if (profile.Source == agentLanguageObject.id && profile.Target == customerLanguageObject.id) {
+              agentProfileObject = profile;
+            }
+            if (profile.Source == customerLanguageObject.id && profile.Target == agentLanguageObject.id) {
+              customerProfileObject = profile;
+            }
+          })
+
+
+          console.log(`%cAgent Profile now: ${agentProfileObject.ProfileId} :: Customer Profile now: ${customerProfileObject.ProfileId}`, "color:Yellow");
         })
         .catch((error) => console.error(error));
     }
@@ -1085,7 +1469,6 @@
         .then((result) => {
           console.log(result)
           updateLanguageSelections(JSON.parse(result));
-          //addStatementCard("Active Languages",result,"en","123");
         })
         .catch((error) => console.error(error));
     }
@@ -1122,9 +1505,9 @@
 
     async function ADDI_sendTTSMessage(transactionId, party, text, translate = true, cancel_playing = false) {
       const myHeaders = new Headers();
-      
+
       console.log(`Translate Message ${text}`)
-      
+
       myHeaders.append("Content-Type", "application/json");
 
       const raw = JSON.stringify({
@@ -1148,6 +1531,36 @@
         .catch((error) => console.error(error));
     }
 
+    // sends a message for translation.
+    async function ADDI_translateMessage(transactionId, party, text, profile, resultProcessor) {
+      const myHeaders = new Headers();
+
+      console.log(`Translate Message ${text}`)
+
+      myHeaders.append("Content-Type", "application/json");
+
+      const raw = JSON.stringify({
+        "transaction_id": transactionId,
+        "party": party,
+        "text": text,
+        "profile": profile
+      });
+
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+      };
+
+      fetch(`${ADDIURLHOST}/addi/v1/translate`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+          console.log(result)
+          resultProcessor(JSON.parse(result));
+        })
+        .catch((error) => console.error(error));
+    }
 
     //Updates the language currently used by ADDI
     async function updateLanguages() {
@@ -1155,10 +1568,57 @@
       let currentSourceLang = document.getElementById("SourceLanguageDropdown").value
       let currentTargetLang = document.getElementById("TargetLanguageDropdown").value
 
-      ADDI_updateActiveTransactionLanguage(currentTargetLang, currentSourceLang)
+      if(gc_mediaType == "VOICE")
+      {
+        ADDI_updateActiveTransactionLanguage(currentTargetLang, currentSourceLang)
+      }
+      else
+      {
+        updateLanguageSelections({
+          agent: currentTargetLang,
+          caller: currentSourceLang
+        });
+      }
+      
     }
 
+    function drag(event) {
+      console.log(event)
+      event.dataTransfer.setData("text", event.target.getElementsByTagName('input')[0].value);
 
+      
+    }
+
+    function allowDrop(event) {
+      event.preventDefault();
+      console.log("preventing default")
+    }
+
+    function drop(event) {
+      event.preventDefault();
+      var data = event.dataTransfer.getData("text");
+      let messageText = replacePlaceHolders(data);
+
+
+
+      sendTranslatedMessage(messageText);
+      //console.log("dropped")
+    }
+
+    function insertMessage(messageElement) {
+      document.getElementById("typedMessage").value = messageElement.getElementsByTagName('input')[0].value
+      document.getElementById("typedMessage").value = replacePlaceHolders(document.getElementById("typedMessage").value)
+      let tabs = document.getElementById("textTab")
+      tabs.setAttribute("active-tab", "1-1")
+    }
+  
+    function replacePlaceHolders(text) {
+      let alias = myAlias;
+      if (myAlias && myAlias.length > 0) {alias = myAlias} else {alias = myName} 
+      text = text.replace(/{{\s*AGENT_NAME\s*}}/g, myName);
+      text = text.replace(/{{\s*AGENT_ALIAS\s*}}/g, myAlias)
+      return text;
+    }
   </script>
 
 
@@ -1243,33 +1703,67 @@
 
       <!-- Conversation Div is where we fill with messages -->
       <div id="conversation-panel" class="conversation-pane">
-        <div id="conversation" class="conversation-customer"></div>
+
+
+
+        <div id="conversation" class="conversation-customer" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
         <!--div id="conversation-agent" class="conversation-agent-hidden"></div-->
 
       </div>
 
       <!-- footer div is our messages submission -->
       <div class="textarea-pane" id="footer">
-        <div class="top-information"></div>
-        <div class="input-group">
-          <textarea id="typedMessage" dir="auto" placeholder="Enter message..." aria-label="Enter message..."
-            class="text-area-2" style="height: 60px;"></textarea>
+        <!--div class="top-information"></div-->
+        <gux-tabs class="example" id="textTab" active-tab="1-1">
+          <gux-tab-list slot="tab-list">
+            <gux-tab tab-id="1-1">
+              <span id="tabTitle1">Message</span>
+            </gux-tab>
+            <gux-tab tab-id="1-2"> Canned Response </gux-tab>
+
+          </gux-tab-list>
+          <gux-tab-panel tab-id="1-1">
+
+            <div class="input-group">
+              <textarea id="typedMessage" dir="auto" placeholder="Enter message..." aria-label="Enter message..."
+                class="text-area-2" style="height: 60px;"></textarea>
 
 
-          <div class="textarea-buttons">
+              <div class="textarea-buttons">
 
 
-            <button type="button" aria-label="Translate" class="translate-button2" onclick="sendTranslatedMessage()"
-              id="target-for-tooltip-or-popover-1" tabindex="0">
-              <gux-icon icon-name="custom/arrows-retweet-regular" decorative="true" hydrated=""></gux-icon>
-            </button>
+                <button type="button" aria-label="Translate" class="translate-button2" onclick="sendTranslatedMessage()"
+                  id="target-for-tooltip-or-popover-1" tabindex="0">
+                  <gux-icon icon-name="custom/arrows-retweet-regular" decorative="true" hydrated=""></gux-icon>
+                </button>
 
 
-          </div>
-        </div>
+              </div>
+            </div>
 
-        <div class="sms-footer"><span id="sendLanguage">German</span> to <span id="sendTranslateLanguage">English</span>
-        </div>
+            <!--div class="sms-footer"><span id="sendLanguage">German</span> to <span id="sendTranslateLanguage">English</span>
+        </div-->
+
+          </gux-tab-panel>
+          <gux-tab-panel tab-id="1-2">
+            <div class="input-group">
+
+              <div id="CannedResponseRow" class="row"></div>
+
+
+
+
+            </div>
+          </gux-tab-panel>
+
+          <gux-tab-panel tab-id="1-10">Tab content 10</gux-tab-panel>
+        </gux-tabs>
+
+
+
+
+
+
       </div>
     </div>
   </div>
