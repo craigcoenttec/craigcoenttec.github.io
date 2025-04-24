@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta name="robots" content="noindex" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title></title>
+    <meta name="Template" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+   
+    <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+</head>
+
+<body onload="start()">
+    <script>
+        'use strict' //Enables strict mode is JavaScript
+        let url = new URL(document.location.href)
+        let gc_region = url.searchParams.get('gc_region')
+        let gc_clientId = url.searchParams.get('gc_clientId')
+        let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+        let gc_conversationId = url.searchParams.get('gc_conversationId')
+        let userId
+        let myParticipantId, customerParticipantId
+
+        //Getting and setting the GC details from dynamic URL and session storage
+        gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
+        gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
+        gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
+        gc_conversationId ? sessionStorage.setItem('gc_conversationId', gc_conversationId) : gc_conversationId = sessionStorage.getItem('gc_conversationId')
+
+        let platformClient = require('platformClient')
+        const client = platformClient.ApiClient.instance
+        const uapi = new platformClient.UsersApi()
+        const napi = new platformClient.NotificationsApi()
+        const capi = new platformClient.ConversationsApi()
+
+        async function start() {
+            try {
+                client.setEnvironment(gc_region)
+                client.setPersistSettings(true, '_mm_')
+
+                console.log('%cLogging in to Genesys Cloud', 'color: green')
+                console.log('Region: ', gc_region)
+                console.log('ClientId: ', gc_clientId)
+                console.log('RedirectUrl: ', gc_redirectUrl)
+                console.log('ConversationId: ', gc_conversationId)
+                document.getElementById('region').innerHTML = gc_region
+                document.getElementById('clientId').innerHTML = gc_clientId
+                document.getElementById('redirectUrl').innerHTML = gc_redirectUrl
+                document.getElementById('conversationId').innerHTML = gc_conversationId
+
+                await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
+
+                //GET Current UserId
+                let user = await uapi.getUsersMe({})
+                console.log(user)
+                userId = user.id
+                document.getElementById('userId').innerHTML = userId
+
+                //Enter in additional starting code.
+                getCurrentConversationDetails()
+
+
+            } catch (err) {
+                console.log('Error: ', err)
+            }
+        } //End of start() function
+
+        function setParticipantData() {
+            let key = document.getElementById('Attribute Name').value
+            let value = document.getElementById('Attribute Value').value
+            let conversationId = gc_conversationId; // String | conversationId
+            let participantId = customerParticipantId; // String | participantId
+            let body = {attributes:{}}; // Object | Participant attributes
+            body.attributes[key] = value;
+            // Update the attributes on a conversation participant.
+            capi.patchConversationsCallParticipantAttributes(conversationId, participantId, body)
+                .then((data) => {
+                    console.log(`patchConversationsCallParticipantAttributes success! data: ${JSON.stringify(data, null, 2)}`);
+                })
+                .catch((err) => {
+                    console.log("There was a failure calling patchConversationsCallParticipantAttributes");
+                    console.error(err);
+                });
+        }
+
+        function getCurrentConversationDetails() {
+
+
+
+            // Get conversation
+            capi.getConversation(gc_conversationId)
+                .then((data) => {
+                    
+
+                    //get agent participant id
+                    let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
+                    myParticipantId = agentParticipant.id
+
+                    //get the customer participant
+                    let customerParticipant = data.participants.slice().find(p => p.purpose === 'customer');
+                    customerParticipantId = customerParticipant.id
+
+                })
+                .catch((err) => {
+                    console.log("%cThere was a failure calling getConversation", 'color: red');
+                    console.error(err);
+                });
+        }
+    </script>
+
+
+    <div class="container">
+        <h1>Simple Widget</h1>
+        <p>Simple widget example</p>
+
+        <p>Region: <span id="region"></span></p>
+        <p>ClientId: <span id="clientId"></span></p>
+        <p>RedirectUrl: <span id="redirectUrl"></span></p>
+        <p>ConversationId: <span id="conversationId"></span></p>
+        <p>UserId: <span id="userId"></span></p>
+        <input type="text" id="Attribute Name" placeholder="Key" />
+        <input type="text" id="Attribute Value" placeholder="Value" />
+        <button id="submitAttribute" onclick="setParticipantData()">Set Attribute</button>
+    </div>
+
+</body>
+
+</html>
