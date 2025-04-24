@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<!-- Created as an example by https://github.com/mcphee11 Version 2.1 -->
+<html>
+
+<head>
+  <meta name="robots" content="noindex" />
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title></title>
+  <meta name="Template" content="" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Genesys CSS https://spark.genesys.com/ Using the client version for improved load time... change region and version as necessary. -->
+  <link
+    href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css"
+    rel="stylesheet" />
+  <script type="module"
+    src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+  <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+</head>
+
+<body onload="start()">
+  <script>
+    'use strict' //Enables strict mode is JavaScript
+    let url = new URL(document.location.href)
+    let gc_region = url.searchParams.get('gc_region')
+    let gc_clientId = url.searchParams.get('gc_clientId')
+    let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+
+    //Getting and setting the GC details from dynamic URL and session storage
+    gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
+    gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
+    gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
+
+    let platformClient = require('platformClient')
+    const client = platformClient.ApiClient.instance
+    const uapi = new platformClient.UsersApi()
+    const wapi = new platformClient.TaskManagementApi();
+
+    async function start() {
+      createForm(jsonSchema);
+      try {
+        client.setEnvironment("mypurecloud.com")
+        client.setPersistSettings(true, '_mm_')
+
+
+
+        console.log('%cLogging in to Genesys Cloud', 'color: green')
+        //console.log(gc_clientId)
+        //await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
+        //await client.loginClientCredentialsGrant(clientId,clientSecret)
+        //GET Current UserId
+        //let user = await uapi.getUsersMe({})
+        //console.log(user)
+        //getSchemas();
+        //Enter in starting code.
+      } catch (err) {
+        console.log('Error: ', err)
+      }
+    } //End of start() function 
+
+    async function getSchemas() {
+
+
+      // Get a list of schemas.
+      wapi.getTaskmanagementWorkitemsSchemas()
+        .then((data) => {
+          console.log(`getTaskmanagementWorkitemsSchemas success! data: ${JSON.stringify(data, null, 2)}`);
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getTaskmanagementWorkitemsSchemas");
+          console.error(err);
+        });
+    }
+
+
+    async function createWorkItem() {
+      let body = {
+        "name": "Sample Item Name",
+        "priority": 10,
+        "dateDue": document.getElementById('dueDate').value + ":00.000Z",
+        "dateExpires": document.getElementById('expireDate').value + ":00.000Z",
+        "workbinId": "f9965df7-b73d-4876-ac34-d22c0f843367",
+        "typeId": "98e6dc15-a4db-47f9-a22d-a207786717f0",
+        "customFields": {
+          "caseid_identifier": document.getElementById('caseid_identifier').value,
+          "casenumber_integer": parseInt(document.getElementById('casenumber_integer').value),
+          "createddate_datetime": document.getElementById('createddate_datetime').value + ":00.000Z",
+          "isgovernment_checkbox": document.getElementById('isgovernment_checkbox').checked == true,
+          "servicearea_enum": document.getElementById('servicearea_enum').value,
+          "sitenumber_number": parseFloat(document.getElementById('sitenumber_number').value),
+          "origin_tag": [document.getElementById('origin_tag').value],
+          "notes_longtext": document.getElementById('notes_longtext').value
+        }
+      }; // Object | Workitem
+
+      // Create a workitem
+      wapi.postTaskmanagementWorkitems(body)
+        .then((data) => {
+          console.log(`postTaskmanagementWorkitems success! data: ${JSON.stringify(data, null, 2)}`);
+        })
+        .catch((err) => {
+          console.log("There was a failure calling postTaskmanagementWorkitems");
+          console.error(err);
+        });
+    }
+
+    const jsonSchema = {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "title": "SandcastleCX - Sample Schema",
+      "description": "A sample schema for Sandcastle demonstration purposes.",
+      "properties": {
+        "caseid_identifier": {
+          "title": "CaseID",
+          "description": "Case ID",
+          "minLength": 0,
+          "maxLength": 100,
+          "allOf": [
+            {
+              "$ref": "#/definitions/identifier"
+            }
+          ]
+        },
+        "casenumber_integer": {
+          "title": "CaseNumber",
+          "description": "Case Number",
+          "minimum": 0,
+          "maximum": 1000,
+          "allOf": [
+            {
+              "$ref": "#/definitions/integer"
+            }
+          ]
+        },
+        "createddate_datetime": {
+          "title": "CreatedDate",
+          "description": "Date of Creation",
+          "allOf": [
+            {
+              "$ref": "#/definitions/datetime"
+            }
+          ]
+        },
+        "isgovernment_checkbox": {
+          "title": "isGovernment",
+          "description": "boolean for government",
+          "allOf": [
+            {
+              "$ref": "#/definitions/checkbox"
+            }
+          ]
+        },
+        "servicearea_enum": {
+          "title": "ServiceArea",
+          "description": "Service Area Dropdown",
+          "enum": [
+            "north",
+            "south",
+            "east",
+            "west"
+          ],
+          "_enumProperties": {
+            "north": {
+              "title": "North",
+              "_disabled": false
+            },
+            "south": {
+              "title": "South",
+              "_disabled": false
+            },
+            "east": {
+              "title": "East",
+              "_disabled": false
+            },
+            "west": {
+              "title": "West",
+              "_disabled": false
+            }
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/enum"
+            }
+          ]
+        },
+        "sitenumber_number": {
+          "title": "SiteNumber",
+          "description": "Site Number",
+          "minimum": 0,
+          "maximum": 2000000,
+          "allOf": [
+            {
+              "$ref": "#/definitions/number"
+            }
+          ]
+        },
+        "origin_tag": {
+          "title": "Origin",
+          "description": "Origin Tags",
+          "items": {
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "minItems": 0,
+          "maxItems": 10,
+          "allOf": [
+            {
+              "$ref": "#/definitions/tag"
+            }
+          ],
+          "uniqueItems": true
+        },
+        "notes_longtext": {
+          "title": "notes",
+          "description": "General Notes Field",
+          "minLength": 0,
+          "maxLength": 1000,
+          "allOf": [
+            {
+              "$ref": "#/definitions/longtext"
+            }
+          ]
+        }
+      },
+      "definitions": {
+        "text": {
+          "title": "Text",
+          "description": "A single line string",
+          "type": "string",
+          "selfUri": "/api/v2/dataextensions/coretypes/text"
+        },
+        "longtext": {
+          "title": "Long Text",
+          "description": "A multi-line string",
+          "type": "string",
+          "selfUri": "/api/v2/dataextensions/coretypes/longtext"
+        },
+        "url": {
+          "title": "URL",
+          "description": "A single-line string containing a URL",
+          "type": "string",
+          "selfUri": "/api/v2/dataextensions/coretypes/url"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "description": "A single line string identifier",
+          "type": "string",
+          "selfUri": "/api/v2/dataextensions/coretypes/identifier"
+        },
+        "enum": {
+          "title": "Enum",
+          "description": "A unique list of strings",
+          "type": "string",
+          "selfUri": "/api/v2/dataextensions/coretypes/enum"
+        },
+        "date": {
+          "title": "Date",
+          "description": "An ISO-8601 date with format YYYY-MM-DD",
+          "type": "string",
+          "pattern": "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$",
+          "selfUri": "/api/v2/dataextensions/coretypes/date"
+        },
+        "datetime": {
+          "title": "Date Time",
+          "description": "An ISO-8601 GMT date with time. Format: YYYY-MM-DDTHH:mm:ss.sssZ",
+          "type": "string",
+          "pattern": "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3])\\:([0-5][0-9])\\:([0-5][0-9])\\.\\d{3}Z$",
+          "selfUri": "/api/v2/dataextensions/coretypes/datetime"
+        },
+        "integer": {
+          "title": "Integer",
+          "description": "An integer",
+          "type": "integer",
+          "selfUri": "/api/v2/dataextensions/coretypes/integer"
+        },
+        "number": {
+          "title": "Number",
+          "description": "A decimal number",
+          "type": "number",
+          "selfUri": "/api/v2/dataextensions/coretypes/number"
+        },
+        "checkbox": {
+          "title": "Checkbox",
+          "description": "Represents a selection toggle that can be in one of three states: true, false, or null",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "selfUri": "/api/v2/dataextensions/coretypes/checkbox"
+        },
+        "tag": {
+          "title": "Tag",
+          "description": "Represents a tag string value. Tags must be associated with an array and added to the items list.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[\\S]+$"
+          },
+          "selfUri": "/api/v2/dataextensions/coretypes/tag"
+        }
+      }
+    }
+
+
+
+    function createForm(schema) {
+      const form = document.getElementById('dynamicForm');
+      const formSchema = document.getElementById('dynamicFormSchema');
+      form.innerHTML = ''; // Clear existing form content
+      formSchema.innerHTML = ''; // Clear existing form content
+
+      //Due date
+      let dueDate = document.createElement('input');
+      dueDate.setAttribute('type', 'datetime-local');
+      dueDate.setAttribute('id', 'dueDate');
+      dueDate.setAttribute('name', 'Due Date');
+      let label = document.createElement('label');
+      label.setAttribute('for', 'dueDate');
+      label.textContent = 'Due Date: ';
+      form.appendChild(label);
+      form.appendChild(dueDate);
+      form.appendChild(document.createElement('br'));
+      form.appendChild(document.createElement('br'));
+
+      //Expire Date
+      let expireDate = document.createElement('input');
+      expireDate.setAttribute('type', 'datetime-local');
+      expireDate.setAttribute('id', 'expireDate');
+      expireDate.setAttribute('name', 'Expire Date');
+      label = document.createElement('label');
+      label.setAttribute('for', 'expireDate');
+      label.textContent = 'Expire Date: ';
+      form.appendChild(label);
+      form.appendChild(expireDate);
+      form.appendChild(document.createElement('br'));
+      form.appendChild(document.createElement('br'));
+
+
+
+
+      // Schema
+      for (const key in schema.properties) {
+        const property = schema.properties[key];
+        const label = document.createElement('label');
+        label.setAttribute('for', key);
+        label.setAttribute('slot','label');
+        label.textContent = property.title + ':';
+
+        let input,field, df, tf;
+
+
+
+        // switch based on reference
+
+        switch (property.allOf[0].$ref) {
+          case '#/definitions/identifier':
+          case '#/definitions/text':
+          case '#/definitions/longtext':
+            field = document.createElement('gux-form-field-text-like')
+            input = document.createElement('input');
+            input.setAttribute('type', 'text');
+            input.setAttribute('id', key);
+            input.setAttribute('name', key);
+            input.setAttribute('slot','input');
+            if (property.maxLength) input.setAttribute('maxlength', property.maxLength);
+            break;
+          case '#/definitions/integer':
+          field = document.createElement('gux-form-field-text-like')
+            input = document.createElement('input');
+            input.setAttribute('type', 'number');
+            input.setAttribute('id', key);
+            input.setAttribute('name', key);
+            input.setAttribute('slot','input');
+            if (property.minimum) input.setAttribute('min', property.minimum);
+            if (property.maximum) input.setAttribute('max', property.maximum);
+            break;
+          case '#/definitions/datetime':
+            field = document.createElement('div')
+            input = document.createElement('div');
+            df = document.createElement('gux-datepicker');
+            df.setAttribute('format', 'yyyy-mm-dd');
+            df.setAttribute('id', key);
+            df.setAttribute('name', key);
+            tf = document.createElement('gux-time-picker');
+            tf.setAttribute('step', '1');
+            tf.setAttribute('clock-type','12h');
+            input.appendChild(df);
+            input.appendChild(tf);
+            //input.setAttribute('slot','input');
+            break;
+          case '#/definitions/checkbox':
+          field = document.createElement('gux-form-field-checkbox')
+            input = document.createElement('input');
+
+            input.setAttribute('type', 'checkbox');
+            input.setAttribute('id', key);
+            input.setAttribute('name', key);
+            input.setAttribute('slot','input');
+            break;
+          case '#/definitions/enum':
+          field = document.createElement('gux-form-field-select')
+            input = document.createElement('select');
+            input.setAttribute('id', key);
+            input.setAttribute('name', key);
+            input.setAttribute('slot','input');
+            property.enum.forEach(optionValue => {
+              const option = document.createElement('option');
+              option.setAttribute('value', optionValue);
+              option.textContent = property._enumProperties[optionValue].title;
+              input.appendChild(option);
+            });
+            break;
+          case '#/definitions/number':
+          field = document.createElement('gux-form-field-number')
+            input = document.createElement('input');
+            input.setAttribute('type', 'number');
+            input.setAttribute('id', key);
+            input.setAttribute('name', key);
+            input.setAttribute('slot','input');
+            if (property.minimum) input.setAttribute('min', property.minimum);
+            if (property.maximum) input.setAttribute('max', property.maximum);
+            break;
+          case '#/definitions/tag':
+          field = document.createElement('gux-form-field-text-like')
+            input = document.createElement('input');
+            input.setAttribute('type', 'text');
+            input.setAttribute('id', key);
+            input.setAttribute('name', key);
+            break;
+          default:
+          field = document.createElement('gux-form-field-text-like')
+            input = document.createElement('input');
+            input.setAttribute('type', 'text');
+            input.setAttribute('id', key);
+            input.setAttribute('name', key);
+            input.setAttribute('slot','input');
+        }
+        field.appendChild(input);
+        field.appendChild(label);
+        formSchema.appendChild(field);
+        
+        formSchema.appendChild(document.createElement('br'));
+        formSchema.appendChild(document.createElement('br'));
+      }
+
+      const submitButton = document.createElement('input');
+      submitButton.setAttribute('type', 'submit');
+      submitButton.setAttribute('value', 'Submit');
+      submitButton.setAttribute('onClick', 'createWorkItem()')
+      form.appendChild(submitButton);
+    }
+
+
+    
+
+  </script>
+
+<fieldset>
+  <legend>Work Item Values</legend>
+  <div id="dynamicForm"></div>
+  </fieldset>
+<fieldset>
+  <legend>Schema</legend>
+  <div id="dynamicFormSchema"></div>
+  </fieldset>
+
+  <gux-form-beta>
+    <form>
+      <header>
+        <gux-form-heading><h1>Form Heading</h1></gux-form-heading>
+        <gux-form-description
+          ><span>
+            This is a simple paragraph to accompany the form header.
+          </span></gux-form-description
+        >
+      </header>
+      <fieldset>
+        <legend>
+          <gux-form-fieldset-heading
+            ><h2>Form Fieldset Header</h2>
+          </gux-form-fieldset-heading>
+          <gux-form-description
+            ><span>
+              This is a simple paragraph to accompany the fieldset header.
+            </span></gux-form-description
+          >
+        </legend>
+        <gux-form-field-text-like label-position="above">
+          <input slot="input" type="text" name="lp-3" />
+          <label slot="label">Fieldset Form field label</label>
+        </gux-form-field-text-like>
+  
+        <gux-form-field-phone label-position="above">
+          <gux-phone-input-beta></gux-phone-input-beta>
+          <label slot="label">Fieldset Form field label</label>
+        </gux-form-field-phone>
+  
+        <gux-form-field-textarea label-position="above">
+          <textarea slot="input" name="textarea"></textarea>
+          <label slot="label">Fieldset Form field label</label>
+        </gux-form-field-textarea>
+      </fieldset>
+  
+      <gux-form-field-text-like label-position="above">
+        <input slot="input" type="text" name="lp-3" />
+        <label slot="label">Fieldset Form field label</label>
+      </gux-form-field-text-like>
+  
+      <gux-form-footer placement="page-desktop">
+        <footer>
+          <gux-button accent="primary">Primary</gux-button>
+          <gux-button accent="secondary">Secondary</gux-button>
+        </footer>
+      </gux-form-footer>
+    </form>
+  </gux-form-beta>
+
+</body>
+
+</html>
