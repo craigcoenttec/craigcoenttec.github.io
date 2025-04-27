@@ -68,8 +68,8 @@
         console.log(gc_clientId)
         await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
         //GET Current UserId
-        let user = await uapi.getUsersMe({})
-        //console.log(user)
+        let user = await uapi.getUsersMe({expand:"authorization"})
+        console.log(user)
         //await getWorkItemInfo();
         Promise.all([
           getWorkBins(),
@@ -172,10 +172,10 @@
         }
 
         if(document.getElementById('emailSelectorField').value == "flow"){
-          body['flowId'] = document.getElementById('queueSelection').value;
+          body['flowId'] = document.getElementById('flowSelection').value;
         }
           else {
-            body['queueId'] = document.getElementById('flowSelection').value;
+            body['queueId'] = document.getElementById('queueSelection').value;
           }
 
 
@@ -1209,12 +1209,12 @@
       let itemPriority = document.createElement('gux-form-field-number')
       let itemPriorityInput = document.createElement('input');
       itemPriorityInput.setAttribute('type', 'number');
-      itemPriorityInput.setAttribute('id', 'itemPriority');
-      itemPriorityInput.setAttribute('name', 'itemPriority');
+      itemPriorityInput.setAttribute('id', 'emailPriority');
+      itemPriorityInput.setAttribute('name', 'emailPriority');
       itemPriorityInput.setAttribute('slot', 'input');
       itemPriorityInput.setAttribute('min', '0');
       itemPriorityInput.setAttribute('max', '9999999999');
-      itemPriorityInput.setAttribute('placeholder', 'Enter Item Priority');
+      itemPriorityInput.setAttribute('placeholder', 'Enter Email Priority');
       itemPriorityInput.setAttribute('required', 'true');
       let itemPriorityLabel = document.createElement('label');
       itemPriorityLabel.setAttribute('for', 'itemPriority');
@@ -1245,8 +1245,21 @@
       selectorfield.appendChild(flowItem);
       form.appendChild(selectorfield);
 
+      selectorfield.addEventListener('change', function () {
+        const selectedValue = selectorfield.value;
+        if (selectedValue === 'queue') {
+          document.getElementById('queueField').style.display = 'block';
+          document.getElementById('flowField').style.display = 'none';
+        } else if (selectedValue === 'flow') {
+          document.getElementById('queueField').style.display = 'none';
+          document.getElementById('flowField').style.display = 'block';
+        }
+      });
+      
+
       //Queue
       let queueField = document.createElement('gux-form-field-select')
+      queueField.setAttribute('id', 'queueField');
       let queueInput = document.createElement('select');
       queueInput.setAttribute('id', 'queueSelection');
       queueInput.setAttribute('name', 'queueSelection');
@@ -1269,6 +1282,7 @@
 
       //Flow
       let flowField = document.createElement('gux-form-field-select')
+      flowField.setAttribute('id', 'flowField');
       let flowInput = document.createElement('select');
       flowInput.setAttribute('id', 'flowSelection');
       flowInput.setAttribute('name', 'flowSelection');
@@ -1329,7 +1343,7 @@
       document.getElementById('dynamicEmailFormButton').appendChild(document.createElement('br'));
       document.getElementById('dynamicEmailFormButton').appendChild(buttonDiv);
 
-
+      
 
     }
 
