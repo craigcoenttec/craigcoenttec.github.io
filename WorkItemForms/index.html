@@ -32,12 +32,14 @@
     let gc_clientId = url.searchParams.get('gc_clientId')
     let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
 
-
+    let schemas = {}
+    let selectedSchema
 
     let workbins = []
     let queues = []
     let workTypes = []
     let flows = []
+    let lastConversationId = null
     const copyButtonLabel = "Copy JSON";
     //let schemas = []
 
@@ -51,6 +53,8 @@
     const client = platformClient.ApiClient.instance
     const uapi = new platformClient.UsersApi()
     const wapi = new platformClient.TaskManagementApi();
+    const rapi = new platformClient.RoutingApi();
+    const aapi = new platformClient.ArchitectApi();
 
     async function start() {
 
@@ -71,6 +75,8 @@
           getWorkBins(),
           getWorkTypes(),
           getSchemas(),
+          getQueues(),
+          getFlows()
         ]).then(() => {
           console.log('all promises resolved');
           console.log('workbins: ', workbins);
@@ -103,6 +109,8 @@
       wapi.postTaskmanagementWorkitems(body)
         .then((data) => {
           console.log(`postTaskmanagementWorkitems success! data: ${JSON.stringify(data, null, 2)}`);
+          lastConversationId = data.id
+          displayConversationIdWork();
         })
         .catch((err) => {
           console.log("There was a failure calling postTaskmanagementWorkitems");
@@ -127,9 +135,55 @@
         resolve(body);
       });
     }
-    
-    let schemas = {}
-    let selectedSchema
+
+
+    async function createEmailBody(CustomAttributes) {
+      return new Promise((resolve) => {
+
+        let body = {
+          
+          "name": document.getElementById('itemName').value,
+          "priority": document.getElementById('itemPriority').value,
+          "dateDue": `${document.getElementById('dueDate').value}T${document.getElementById('dueTime').value}:00.000Z`,
+          "dateExpires": `${document.getElementById('expireDate').value}T${document.getElementById('expireTime').value}:00.000Z`,
+          "workbinId": document.getElementById('workBinSelection').value,
+          "typeId": document.getElementById('workTypeSelection').value,
+          "customFields": CustomAttributes
+        }; // Object | Workitem
+
+        body = {
+         //"queueId": "",
+          //"flowId": "",
+          "provider": "Portal App",
+          //"skillIds": [
+          //  ""
+          //],
+          //"languageId": "",
+          "priority": parseInt(document.getElementById('emailPriority').value),
+          "attributes": CustomAttributes,
+         //"toAddress": "",
+         // "toName": "",
+          //"fromAddress": "",
+          "fromName": document.getElementById('emailRemoteName').value,
+          "subject": document.getElementById('emailSubject').value,
+          "direction": "INBOUND"//,
+          //"externalContactId": "",
+          //"utilizationLabel": ""
+        }
+
+        if(document.getElementById('emailSelectorField').value == "flow"){
+          body['flowId'] = document.getElementById('queueSelection').value;
+        }
+          else {
+            body['queueId'] = document.getElementById('flowSelection').value;
+          }
+
+
+        resolve(body);
+      });
+    }
+
+
 
     async function getSchemas() {
 
@@ -138,7 +192,7 @@
         wapi.getTaskmanagementWorkitemsSchemas()
           .then((data) => {
             console.log(`getTaskmanagementWorkitemsSchemas success! data: ${JSON.stringify(data, null, 2)}`);
-             schemas = data;
+            schemas = data;
             selectedSchema = schemas.entities[0];
             resolve();
           })
@@ -190,6 +244,76 @@
           });
 
 
+      });
+    }
+
+    async function getQueues() {
+      return new Promise((resolve) => {
+
+        let opts = {
+          "pageNumber": 1, // Number | Page number
+          "pageSize": 200, // Number | Page size
+          "sortOrder": "asc", // String | Note: results are sorted by name.
+          //"name": "name_example", // String | Include only queues with the given name (leading and trailing asterisks allowed)
+          //"id": ["id_example"], // [String] | Include only queues with the specified ID(s)
+          //"divisionId": ["divisionId_example"], // [String] | Include only queues in the specified division ID(s)
+          //"peerId": ["peerId_example"], // [String] | Include only queues with the specified peer ID(s)
+          //"cannedResponseLibraryId": "cannedResponseLibraryId_example", // String | Include only queues explicitly associated with the specified canned response library ID
+          //"hasPeer": true // Boolean | Include only queues with a peer ID
+        };
+
+        // Get list of queues.
+        rapi.getRoutingQueues(opts)
+          .then((data) => {
+            console.log(`getRoutingQueues success! data: ${JSON.stringify(data, null, 2)}`);
+            queues = data.entities;
+            resolve(queues);
+          })
+          .catch((err) => {
+            console.log("There was a failure calling getRoutingQueues");
+            console.error(err);
+          });
+      });
+    }
+
+    async function getFlows() {
+
+      return new Promise((resolve) => {
+
+        let opts = {
+          "type": ["inboundemail"], // [String] | Type
+          "pageNumber": 1, // Number | Page number
+          "pageSize": 100, // Number | Page size
+          "sortBy": "name", // String | Sort by
+          "sortOrder": "asc", // String | Sort order
+          //"id": ["id_example"], // [String] | ID
+          //"name": "name_example", // String | Name
+          //"description": "description_example", // String | Description
+          //"nameOrDescription": "nameOrDescription_example", // String | Name or description
+          //"publishVersionId": "publishVersionId_example", // String | Publish version ID
+          //"editableBy": "editableBy_example", // String | Editable by
+          //"lockedBy": "lockedBy_example", // String | Locked by
+          //"lockedByClientId": "lockedByClientId_example", // String | Locked by client ID
+          //"secure": "secure_example", // String | Secure
+          //"deleted": false, // Boolean | Include deleted
+          //"includeSchemas": false, // Boolean | Include variable schemas
+          //"publishedAfter": 2015-01-01T12:00:00-0600, 2015-01-01T18:00:00Z, 2015-01-01T12:00:00.000-0600, 2015-01-01T18:00:00.000Z, 2015-01-01, // String | Published after
+          //"publishedBefore": 2015-01-01T12:00:00-0600, 2015-01-01T18:00:00Z, 2015-01-01T12:00:00.000-0600, 2015-01-01T18:00:00.000Z, 2015-01-01, // String | Published before
+          //"divisionId": ["divisionId_example"] // [String] | division ID(s)
+        };
+
+        // Get a pageable list of flows, filtered by query parameters
+        aapi.getFlows(opts)
+          .then((data) => {
+            console.log(`getFlows success! data: ${JSON.stringify(data, null, 2)}`);
+            flows = data.entities;
+            resolve(flows);
+          })
+          .catch((err) => {
+            console.log("There was a failure calling getFlows");
+            console.error(err);
+            resolve();
+          });
       });
     }
 
@@ -825,7 +949,12 @@
 
     }
 
+    async function displayConversationIdWork() {
 
+      const conversationIdDisplay = document.getElementById('conversationIdDisplay');
+      conversationIdDisplay.textContent = `${lastConversationId}`;
+      conversationIdDisplay.parentElement.style.visibility = 'visible';
+    }
 
     function createWorkItemForm() {
       const form = document.getElementById('dynamicForm');
@@ -1014,6 +1143,14 @@
       buttonDiv.appendChild(submitButton);
       buttonDiv.appendChild(requestButton);
 
+      let resultCopyArea = document.createElement('gux-copy-to-clipboard');
+      let conversationIdDisplay = document.createElement('div');
+      conversationIdDisplay.setAttribute('id', 'conversationIdDisplay');
+      conversationIdDisplay.setAttribute('slot', 'content');
+      resultCopyArea.appendChild(conversationIdDisplay);
+      resultCopyArea.style.visibility = 'hidden';
+      buttonDiv.appendChild(resultCopyArea);
+
 
       form.appendChild(buttonDiv);
 
@@ -1025,7 +1162,7 @@
       form.innerHTML = ''; // Clear existing form content
       formSchema.innerHTML = ''; // Clear existing form content
 
-      
+
 
       //subject
       let itemName = document.createElement('gux-form-field-text-like')
@@ -1047,8 +1184,8 @@
       //form.appendChild(document.createElement('br'));
       form.appendChild(document.createElement('br'));
 
-       //subject
-       itemName = document.createElement('gux-form-field-text-like')
+      //remoteName
+      itemName = document.createElement('gux-form-field-text-like')
       itemNameInput = document.createElement('input');
       itemNameInput.setAttribute('type', 'text');
       itemNameInput.setAttribute('id', 'emailRemoteName');
@@ -1057,7 +1194,7 @@
       itemNameInput.setAttribute('maxlength', '100');
       itemNameInput.setAttribute('placeholder', 'Enter remote name');
       itemNameInput.setAttribute('required', 'true');
-       itemNameLabel = document.createElement('label');
+      itemNameLabel = document.createElement('label');
       itemNameLabel.setAttribute('for', 'emailRemoteName');
       itemNameLabel.setAttribute('slot', 'label');
       itemNameLabel.textContent = 'Email remote name: ';
@@ -1088,6 +1225,25 @@
       form.appendChild(itemPriority);
       //form.appendChild(document.createElement('br'));
       form.appendChild(document.createElement('br'));
+
+      //selector
+      let selectorfield = document.createElement('gux-segmented-control-beta')
+      selectorfield.setAttribute('id', 'emailSelectorField');
+      let queueItem = document.createElement('gux-segmented-control-item');
+      queueItem.setAttribute('value', 'queue');
+      let queueDiv = document.createElement('div')
+      queueDiv.setAttribute('slot', 'text');
+      queueDiv.innerText = 'Queue';
+      queueItem.appendChild(queueDiv);
+      let flowItem = document.createElement('gux-segmented-control-item');
+      flowItem.setAttribute('value', 'flow');
+      let flowDiv = document.createElement('div')
+      flowDiv.setAttribute('slot', 'text');
+      flowDiv.innerText = 'Flow';
+      flowItem.appendChild(flowDiv);
+      selectorfield.appendChild(queueItem);
+      selectorfield.appendChild(flowItem);
+      form.appendChild(selectorfield);
 
       //Queue
       let queueField = document.createElement('gux-form-field-select')
@@ -1145,14 +1301,41 @@
       submitButton.innerText = 'Create Email';
       let requestButton = document.createElement('gux-button');
       requestButton.setAttribute('accent', 'secondary');
-      requestButton.setAttribute('onClick', 'showRequest()')
+      requestButton.setAttribute('onClick', 'showRequestEmail()')
       requestButton.innerText = 'Show Request';
       buttonDiv.appendChild(submitButton);
       buttonDiv.appendChild(requestButton);
 
+      let resultCopyArea = document.createElement('gux-copy-to-clipboard');
+      let conversationIdDisplay = document.createElement('div');
+      conversationIdDisplay.setAttribute('id', 'conversationIdDisplay');
+      conversationIdDisplay.setAttribute('slot', 'content');
+      resultCopyArea.appendChild(conversationIdDisplay);
+      buttonDiv.appendChild(resultCopyArea);
 
       form.appendChild(buttonDiv);
 
+      createKeyValuePairInput(formSchema);
+      //formSchema.appendChild(document.createElement('br'));
+
+      buttonDiv = document.createElement('div');
+      buttonDiv.setAttribute('class', 'buttonDiv');
+      let createButton = document.createElement('gux-button');
+      createButton.setAttribute('accent', 'primary');
+      createButton.setAttribute('onClick', 'createKeyValuePairInput()')
+      createButton.innerText = '+ Add Attribute';
+
+      buttonDiv.appendChild(createButton);
+      document.getElementById('dynamicEmailFormButton').appendChild(document.createElement('br'));
+      document.getElementById('dynamicEmailFormButton').appendChild(buttonDiv);
+
+
+
+    }
+
+    function deletePair(element) {
+      const parent = element.parentElement;
+      parent.parentElement.removeChild(parent);
     }
 
     function UpdateSchema() {
@@ -1343,6 +1526,35 @@
 
     }
 
+    function createCustomAttributesEmail() {
+      return new Promise((resolve) => {
+
+        let customAttributes = {};
+
+        // Schema
+        [...document.getElementById('dynamicEmailFormSchema').children].forEach((element) => {
+          //console.log(element);
+          if (element.classList.contains('KVPClass')) {
+            let keyElement = element.querySelector('input[name="key"]');
+            let key = keyElement.value;
+
+            let valueElement = element.querySelector('input[name="value"]');
+            let value = valueElement.value
+
+            if (key && key.length > 0) {
+              customAttributes[key] = value;
+            }
+          }
+
+        });
+        console.log(customAttributes)
+        resolve(customAttributes);
+      });
+
+
+
+    }
+
 
     async function showRequest() {
 
@@ -1350,6 +1562,19 @@
       //console.log(CustomAttributes)
 
       let body = await createWorkItemBody(CustomAttributes)
+      populateRequest(body);
+
+      let modal = document.getElementById("Modal").showModal();
+
+    }
+
+    async function showRequestEmail() {
+
+      let CustomAttributes = await createCustomAttributesEmail()
+      //console.log(CustomAttributes)
+
+      let body = await createEmailBody(CustomAttributes)
+      //let body = await createCustomAttributesEmail();
       populateRequest(body);
 
       let modal = document.getElementById("Modal").showModal();
@@ -1391,6 +1616,52 @@
         button.innerText = copyButtonLabel;
       }, 700);
     }
+
+    async function createKeyValuePairInput(parentElement = document.getElementById('dynamicEmailFormSchema')) {
+      let kvpDiv = document.createElement('div');
+      kvpDiv.setAttribute('class', 'KVPClass');
+      let key = document.createElement('gux-form-field-text-like')
+      key.setAttribute('label-position', 'screenreader');
+      let keyInput = document.createElement('input');
+      keyInput.setAttribute('type', 'text');
+      keyInput.setAttribute('id', 'key');
+      keyInput.setAttribute('name', 'key');
+      keyInput.setAttribute('slot', 'input');
+      keyInput.setAttribute('maxlength', '100');
+      keyInput.setAttribute('placeholder', 'Enter Key');
+
+
+
+      let value = document.createElement('gux-form-field-text-like')
+      let valueInput = document.createElement('input');
+      valueInput.setAttribute('type', 'text');
+      valueInput.setAttribute('id', 'value');
+      valueInput.setAttribute('name', 'value');
+      valueInput.setAttribute('slot', 'input');
+      valueInput.setAttribute('maxlength', '100');
+      valueInput.setAttribute('placeholder', 'Enter Value');
+
+      let createButton = document.createElement('gux-button');
+      createButton.setAttribute('class', 'removeButton');
+      createButton.setAttribute('accent', 'danger');
+      createButton.setAttribute('onClick', 'deletePair(this)')
+      createButton.innerText = 'Remove';
+
+
+
+      key.appendChild(keyInput);
+      value.appendChild(valueInput);
+      kvpDiv.appendChild(key);
+      kvpDiv.appendChild(value);
+      kvpDiv.appendChild(createButton);
+      kvpDiv.appendChild(document.createElement('br'));
+      parentElement.appendChild(kvpDiv);
+
+
+
+
+    }
+
   </script>
 
 
@@ -1428,26 +1699,19 @@
       </div>
 
 
-      <gux-modal id="Modal" size="small">
-        <div slot="content" class="debug-panel">
 
-          <div>
-            <div id="json-div" class="rawDisplay">
-              <pre id="jsonDisplay"></pre>
-            </div>
-          </div>
-        </div>
-      </gux-modal>
     </gux-tab-panel>
     <gux-tab-panel tab-id="6-2">
       <div class="panel-container">
         <fieldset>
           <legend>Email Values</legend>
           <div id="dynamicEmailForm"></div>
+
         </fieldset>
         <fieldset>
           <legend>Attributes</legend>
           <div id="dynamicEmailFormSchema"></div>
+          <div id="dynamicEmailFormButton"></div>
         </fieldset>
       </div>
     </gux-tab-panel>
@@ -1465,7 +1729,16 @@
 
 
 
+  <gux-modal id="Modal" size="small">
+    <div slot="content" class="debug-panel">
 
+      <div>
+        <div id="json-div" class="rawDisplay">
+          <pre id="jsonDisplay"></pre>
+        </div>
+      </div>
+    </div>
+  </gux-modal>
 
 
 
@@ -1497,7 +1770,17 @@
   }
 
   .buttonDiv {
+    display: flex;
+    gap: 10px;
+  }
 
-    gap: 5px;
+  .KVPClass {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .removeButton {
+    margin-top: 18px;
   }
 </style>
