@@ -55,6 +55,7 @@
     const wapi = new platformClient.TaskManagementApi();
     const rapi = new platformClient.RoutingApi();
     const aapi = new platformClient.ArchitectApi();
+    const capi = new platformClient.ConversationsApi();
 
     async function start() {
 
@@ -94,7 +95,7 @@
 
 
 
-
+//Work Items
     async function createWorkItem() {
 
       let CustomAttributes = await createCustomAttributesWorkItem()
@@ -183,6 +184,24 @@
       });
     }
 
+    
+    
+    async function createEmail(){
+
+      let ca = await createCustomAttributesEmail()
+      let body = await createEmailBody(ca)
+      populateRequest(body);
+
+        // Create an email conversation
+        capi.postConversationsEmails(body)
+        .then((data) => {
+            console.log(`postConversationsEmails success! data: ${JSON.stringify(data, null, 2)}`);
+        })
+        .catch((err) => {
+            console.log("There was a failure calling postConversationsEmails");
+            console.error(err);
+        });
+    }
 
 
     async function getSchemas() {
@@ -1311,7 +1330,7 @@
       buttonDiv.setAttribute('class', 'buttonDiv');
       const submitButton = document.createElement('gux-button');
       submitButton.setAttribute('accent', 'primary');
-      submitButton.setAttribute('onClick', 'createWorkItem()')
+      submitButton.setAttribute('onClick', 'createEmail()')
       submitButton.innerText = 'Create Email';
       let requestButton = document.createElement('gux-button');
       requestButton.setAttribute('accent', 'secondary');
