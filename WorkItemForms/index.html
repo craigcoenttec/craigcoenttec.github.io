@@ -41,6 +41,7 @@
     let flows = []
     let lastConversationId = null
     let lastConversationQuery = null
+    let lastConversationJson = {}
     const copyButtonLabel = "Copy JSON";
     //let schemas = []
 
@@ -198,6 +199,8 @@
       capi.postConversationsEmails(body)
         .then((data) => {
           console.log(`postConversationsEmails success! data: ${JSON.stringify(data, null, 2)}`);
+          lastConversationId = data.id
+          displayConversationIdEmail();
         })
         .catch((err) => {
           console.log("There was a failure calling postConversationsEmails");
@@ -977,6 +980,13 @@
       conversationIdDisplay.parentElement.style.visibility = 'visible';
     }
 
+    async function displayConversationIdEmail() {
+
+      const conversationIdDisplay = document.getElementById('emailIdDisplay');
+      conversationIdDisplay.textContent = `${lastConversationId}`;
+      conversationIdDisplay.parentElement.style.visibility = 'visible';
+    }
+
     function createWorkItemForm() {
       const form = document.getElementById('dynamicForm');
       const formSchema = document.getElementById('dynamicFormSchema');
@@ -1343,7 +1353,7 @@
 
       let resultCopyArea = document.createElement('gux-copy-to-clipboard');
       let conversationIdDisplay = document.createElement('div');
-      conversationIdDisplay.setAttribute('id', 'conversationIdDisplay');
+      conversationIdDisplay.setAttribute('id', 'emailIdDisplay');
       conversationIdDisplay.setAttribute('slot', 'content');
       resultCopyArea.appendChild(conversationIdDisplay);
       buttonDiv.appendChild(resultCopyArea);
@@ -1615,6 +1625,20 @@
       let modal = document.getElementById("Modal").showModal();
 
     }
+
+    async function showRequestConv() {
+
+      let convBody = lastConversationJson
+      //console.log(CustomAttributes)
+
+      //let body = await createEmailBody(CustomAttributes)
+      //let body = await createCustomAttributesEmail();
+      populateRequest(convBody);
+
+      let modal = document.getElementById("Modal").showModal();
+
+    }
+
     function populateRequest(jsonBody) {
       let codeblock = document.createElement("code");
       codeblock.setAttribute("class", "language-json");
@@ -1779,7 +1803,17 @@
       //form.appendChild(document.createElement('br'));
       form.appendChild(document.createElement('br'));
 
-      // schemas
+      let buttonDiv = document.createElement('div');
+      buttonDiv.setAttribute('class', 'buttonDiv');
+      let submitButton = document.createElement('gux-button');
+      submitButton.setAttribute('accent', 'primary');
+      submitButton.setAttribute('onClick', 'queryConversation()')
+      submitButton.innerText = 'Query Conversation';
+      form.appendChild(submitButton);
+      form.appendChild(document.createElement('br'));
+      form.appendChild(document.createElement('br'));
+
+      // conversations
       let schemafield = document.createElement('gux-form-field-select')
       let schemainput = document.createElement('select');
       schemainput.setAttribute('id', 'conversationSelection');
@@ -1806,9 +1840,24 @@
       schemainput.addEventListener('change', function () {
         //selectedSchema = schemas.entities.find(schema => schema.id === schemainput.value);
         createParticipantTable(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value).participants);
+        lastConversationJson = lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value);
         //console.log(JSON.stringify(selectedSchema, null, 2));
         ;
       });
+
+      buttonDiv = document.createElement('div');
+      buttonDiv.setAttribute('class', 'buttonDiv');
+      submitButton = document.createElement('gux-button');
+      submitButton.setAttribute('accent', 'primary');
+      submitButton.setAttribute('onClick', 'getActiveConversations()')
+      submitButton.innerText = 'Refresh Active Conversations';
+      let requestButton = document.createElement('gux-button');
+      requestButton.setAttribute('accent', 'secondary');
+      requestButton.setAttribute('onClick', 'showRequestConv()')
+      requestButton.innerText = 'Show Conversation';
+      buttonDiv.appendChild(submitButton);
+      buttonDiv.appendChild(requestButton);
+      form.appendChild(buttonDiv);
 
     }
 
@@ -1995,7 +2044,7 @@
 
       for (const participant of participantArray) {
         console.log()
-        
+
         //row.insertCell().innerHTML = participant.startTime;
         //row.insertCell().innerHTML = participant.endTime;
 
@@ -2007,7 +2056,7 @@
         for (const session of participant.sessions) {
 
           row = table.insertRow();
-        row.insertCell().innerHTML = participant.participantName || participant.purpose;
+          row.insertCell().innerHTML = participant.participantName || participant.purpose;
           row.insertCell().innerHTML = session.mediaType;
           row.insertCell().innerHTML = session.sessionId;
         }
