@@ -40,6 +40,7 @@
     let workTypes = []
     let flows = []
     let lastConversationId = null
+    let lastConversationQuery = null
     const copyButtonLabel = "Copy JSON";
     //let schemas = []
 
@@ -69,7 +70,7 @@
         console.log(gc_clientId)
         await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
         //GET Current UserId
-        let user = await uapi.getUsersMe({expand:"authorization"})
+        let user = await uapi.getUsersMe({ expand: "authorization" })
         console.log(user)
         //await getWorkItemInfo();
         Promise.all([
@@ -85,6 +86,7 @@
           console.log('schemas: ', schemas);
           createWorkItemForm();
           createEmailForm();
+          getActiveConversations();
         })
         //createForm();
         //Enter in starting code.
@@ -95,7 +97,7 @@
 
 
 
-//Work Items
+    //Work Items
     async function createWorkItem() {
 
       let CustomAttributes = await createCustomAttributesWorkItem()
@@ -142,7 +144,7 @@
       return new Promise((resolve) => {
 
         let body = {
-          
+
           "name": document.getElementById('itemName').value,
           "priority": document.getElementById('itemPriority').value,
           "dateDue": `${document.getElementById('dueDate').value}T${document.getElementById('dueTime').value}:00.000Z`,
@@ -153,7 +155,7 @@
         }; // Object | Workitem
 
         body = {
-         //"queueId": "",
+          //"queueId": "",
           //"flowId": "",
           "provider": "Portal App",
           //"skillIds": [
@@ -162,8 +164,8 @@
           //"languageId": "",
           "priority": parseInt(document.getElementById('emailPriority').value),
           "attributes": CustomAttributes,
-         //"toAddress": "",
-         // "toName": "",
+          //"toAddress": "",
+          // "toName": "",
           //"fromAddress": "",
           "fromName": document.getElementById('emailRemoteName').value,
           "subject": document.getElementById('emailSubject').value,
@@ -172,34 +174,34 @@
           //"utilizationLabel": ""
         }
 
-        if(document.getElementById('emailSelectorField').value == "flow"){
+        if (document.getElementById('emailSelectorField').value == "flow") {
           body['flowId'] = document.getElementById('flowSelection').value;
         }
-          else {
-            body['queueId'] = document.getElementById('queueSelection').value;
-          }
+        else {
+          body['queueId'] = document.getElementById('queueSelection').value;
+        }
 
 
         resolve(body);
       });
     }
 
-    
-    
-    async function createEmail(){
+
+
+    async function createEmail() {
 
       let ca = await createCustomAttributesEmail()
       let body = await createEmailBody(ca)
       populateRequest(body);
 
-        // Create an email conversation
-        capi.postConversationsEmails(body)
+      // Create an email conversation
+      capi.postConversationsEmails(body)
         .then((data) => {
-            console.log(`postConversationsEmails success! data: ${JSON.stringify(data, null, 2)}`);
+          console.log(`postConversationsEmails success! data: ${JSON.stringify(data, null, 2)}`);
         })
         .catch((err) => {
-            console.log("There was a failure calling postConversationsEmails");
-            console.error(err);
+          console.log("There was a failure calling postConversationsEmails");
+          console.error(err);
         });
     }
 
@@ -1274,7 +1276,7 @@
           document.getElementById('flowField').style.display = 'block';
         }
       });
-      
+
 
       //Queue
       let queueField = document.createElement('gux-form-field-select')
@@ -1362,7 +1364,7 @@
       document.getElementById('dynamicEmailFormButton').appendChild(document.createElement('br'));
       document.getElementById('dynamicEmailFormButton').appendChild(buttonDiv);
 
-      
+
 
     }
 
@@ -1695,6 +1697,441 @@
 
     }
 
+
+
+    //conversation work
+
+    function getActiveConversations(pageSize = 25, daysBack = 28) {
+
+      let startDate = new Date(Date.now() - (daysBack * 24 * 60 * 60 * 1000));
+      let endDate = new Date(Date.now() + 1000);
+      let interval = `${startDate.toISOString()}/${endDate.toISOString()}`;
+      console.log(interval)
+      let body = {
+        "interval": interval,
+        "conversationFilters": [
+          {
+            "type": "and",
+            "clauses": [
+              {
+                "predicates": [
+                  {
+                    "dimension": "conversationEnd",
+                    "operator": "notExists",
+                    "type": "dimension"
+                  }
+                ],
+                "type": "and"
+              }
+            ]
+          }
+        ],
+        "segmentFilters": [],
+        "order": "desc",
+        "orderBy": "conversationStart",
+        "paging": {
+          "pageSize": pageSize
+        }
+      }
+
+
+      // Query for conversation details
+      capi.postAnalyticsConversationsDetailsQuery(body)
+        .then((data) => {
+          console.log(`postAnalyticsConversationsDetailsQuery success! data: ${JSON.stringify(data, null, 2)}`);
+          lastConversationQuery = data;
+          //createParticipantTable(data.conversations[0].participants);
+          createConversationControls(data);
+
+        })
+        .catch((err) => {
+          console.log("There was a failure calling postAnalyticsConversationsDetailsQuery");
+          console.error(err);
+        });
+
+    }
+
+    function createConversationControls(data) {
+      const form = document.getElementById('conversationControls');
+      //const formSchema = document.getElementById('dynamicEmailFormSchema');
+      form.innerHTML = ''; // Clear existing form content
+      //formSchema.innerHTML = ''; // Clear existing form content
+
+
+
+      //subject
+      let itemName = document.createElement('gux-form-field-text-like')
+      let itemNameInput = document.createElement('input');
+      itemNameInput.setAttribute('type', 'text');
+      itemNameInput.setAttribute('id', 'AdHocConversation');
+      itemNameInput.setAttribute('name', 'AdHocConversation');
+      itemNameInput.setAttribute('slot', 'input');
+      itemNameInput.setAttribute('maxlength', '100');
+      itemNameInput.setAttribute('placeholder', 'Enter Conversation ID');
+      itemNameInput.setAttribute('required', 'true');
+      let itemNameLabel = document.createElement('label');
+      itemNameLabel.setAttribute('for', 'AdHocConversation');
+      itemNameLabel.setAttribute('slot', 'label');
+      itemNameLabel.textContent = 'AdHoc Conversation ID: ';
+      itemName.appendChild(itemNameInput);
+      itemName.appendChild(itemNameLabel);
+      form.appendChild(itemName);
+      //form.appendChild(document.createElement('br'));
+      form.appendChild(document.createElement('br'));
+
+      // schemas
+      let schemafield = document.createElement('gux-form-field-select')
+      let schemainput = document.createElement('select');
+      schemainput.setAttribute('id', 'conversationSelection');
+      schemainput.setAttribute('name', 'conversationSelection');
+      schemainput.setAttribute('slot', 'input');
+      lastConversationQuery.conversations.forEach(optionValue => {
+        const option = document.createElement('option');
+        option.setAttribute('value', optionValue.conversationId);
+        option.textContent = optionValue.conversationId;
+        schemainput.appendChild(option);
+      });
+      let label = document.createElement('label');
+      label.setAttribute('for', 'conversationSelection');
+      label.setAttribute('slot', 'label');
+      label.textContent = 'Recent Active Conversations: ';
+      schemafield.appendChild(schemainput);
+      schemafield.appendChild(label);
+      form.appendChild(schemafield);
+      form.appendChild(document.createElement('br'));
+      //form.appendChild(document.createElement('br'));
+
+      createParticipantTable(lastConversationQuery.conversations[0].participants);
+      // set up a listner for changes to schema
+      schemainput.addEventListener('change', function () {
+        //selectedSchema = schemas.entities.find(schema => schema.id === schemainput.value);
+        createParticipantTable(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value).participants);
+        //console.log(JSON.stringify(selectedSchema, null, 2));
+        ;
+      });
+
+    }
+
+
+    function createParticipantTable(participantArray) {
+
+
+      var table, row, guxTable;
+      var update = false;
+      document.getElementById('participant-div').innerHTML = "";
+
+
+
+      table = document.createElement("table");
+      table.setAttribute('id', 'participantTable');
+      guxTable = document.createElement("gux-table");
+      guxTable.setAttribute('id', 'sortable-table')
+      guxTable.setAttribute('resizable-columns', '');
+      guxTable.setAttribute('compact', '');
+      table.setAttribute('slot', 'data');
+      document.getElementById("participant-div").appendChild(guxTable).appendChild(table);
+
+
+      //Create a table in the view.s
+
+
+      for (const participant of participantArray) {
+        console.log()
+        row = table.insertRow();
+        row.insertCell().innerHTML = participant.participantName || participant.purpose;
+        //row.insertCell().innerHTML = participant.startTime;
+        //row.insertCell().innerHTML = participant.endTime;
+
+        row.insertCell().innerHTML = participant.purpose;
+        //row.insertCell().innerHTML = participant.participantType;
+        //row.insertCell().innerHTML = participant.ani;
+        //row.insertCell().innerHTML = participant.aniName;
+        //row.insertCell().innerHTML = participant.dnis;
+        row.insertCell().innerHTML = participant.participantId;
+
+      }
+
+
+
+
+
+
+
+      //Add our table header
+      if (update == false) {
+        var headerRow = table.createTHead().insertRow();
+
+
+        //Time
+        let th = document.createElement("th");
+        let text = document.createTextNode("Name");
+        th.setAttribute('data-column-name', 'name');
+        th.setAttribute('aria-sort', 'ascending');
+        th.appendChild(document.createElement('gux-sort-control'));
+        th.appendChild(text);
+
+        headerRow.appendChild(th);
+
+        //Participant
+        th = document.createElement("th");
+        text = document.createTextNode("Start Time");
+        th.setAttribute('data-column-name', 'startTime');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        //headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("End Time");
+        th.setAttribute('data-column-name', 'endTime');
+        th.setAttribute('aria-sort', 'ascending');
+        th.appendChild(document.createElement('gux-sort-control'));
+        th.appendChild(text);
+
+        //headerRow.appendChild(th);
+
+        //Participant
+        th = document.createElement("th");
+        text = document.createTextNode("Purpose");
+        th.setAttribute('data-column-name', 'purpose');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        //Participant Type
+        th = document.createElement("th");
+        text = document.createTextNode("Participant Type");
+        th.setAttribute('data-column-name', 'participantType');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        //  headerRow.appendChild(th);
+
+        //Event ID
+        th = document.createElement("th");
+        text = document.createTextNode("ANI");
+        th.setAttribute('data-column-name', 'ani');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        //headerRow.appendChild(th);
+
+
+        //Detail
+        th = document.createElement("th");
+        text = document.createTextNode("ANI Name");
+        th.setAttribute('data-column-name', 'Ani Name');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        //headerRow.appendChild(th);
+
+        //Source
+        th = document.createElement("th");
+        text = document.createTextNode("DNIS");
+        th.setAttribute('data-column-name', 'dnis');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        // headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("Participant ID");
+        th.setAttribute('data-column-name', 'participantID');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+
+      }
+
+      table.addEventListener('guxsortchanged',
+        (event) => {
+          const { columnName, sortDirection } = event.detail;
+
+          const columns = Array.from(table.querySelectorAll('thead tr th')).forEach((column) => column.removeAttribute('aria-sort'));
+          const column = table.querySelector(`thead tr th[data-column-name='` + columnName + `']`);
+          column.setAttribute('aria-sort', sortDirection);
+
+          const tableBody = table.querySelector('tbody');
+
+          switch (sortDirection) {
+            case 'ascending':
+              [...tableBody.children].sort(ascending).forEach(node => tableBody.appendChild(node));
+              break;
+            case 'descending':
+              [...tableBody.children].sort(ascending).reverse().forEach(node => tableBody.appendChild(node));
+              break;
+            default:
+              [...tableBody.children].sort(shuffle).forEach(node => tableBody.appendChild(node));
+              break;
+          }
+
+
+        });
+
+      createSessionTable(participantArray);
+
+      //console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
+
+    }
+
+    function createSessionTable(participantArray) {
+
+
+      var table, row, guxTable;
+      var update = false;
+      document.getElementById('session-div').innerHTML = "";
+
+
+
+      table = document.createElement("table");
+      table.setAttribute('id', 'sessionTable');
+      guxTable = document.createElement("gux-table");
+      guxTable.setAttribute('id', 'sortable-table')
+      guxTable.setAttribute('resizable-columns', '');
+      guxTable.setAttribute('compact', '');
+      table.setAttribute('slot', 'data');
+      document.getElementById("session-div").appendChild(guxTable).appendChild(table);
+
+
+      //Create a table in the view.s
+
+
+      for (const participant of participantArray) {
+        console.log()
+        
+        //row.insertCell().innerHTML = participant.startTime;
+        //row.insertCell().innerHTML = participant.endTime;
+
+        //row.insertCell().innerHTML = participant.purpose;
+        //row.insertCell().innerHTML = participant.participantType;
+        //row.insertCell().innerHTML = participant.ani;
+        //row.insertCell().innerHTML = participant.aniName;
+        //row.insertCell().innerHTML = participant.dnis;
+        for (const session of participant.sessions) {
+
+          row = table.insertRow();
+        row.insertCell().innerHTML = participant.participantName || participant.purpose;
+          row.insertCell().innerHTML = session.mediaType;
+          row.insertCell().innerHTML = session.sessionId;
+        }
+
+      }
+
+
+
+
+
+
+
+      //Add our table header
+      if (update == false) {
+        var headerRow = table.createTHead().insertRow();
+
+
+        //Time
+        let th = document.createElement("th");
+        let text = document.createTextNode("Name");
+        th.setAttribute('data-column-name', 'name');
+        th.setAttribute('aria-sort', 'ascending');
+        th.appendChild(document.createElement('gux-sort-control'));
+        th.appendChild(text);
+
+        headerRow.appendChild(th);
+
+        //Participant
+        th = document.createElement("th");
+        text = document.createTextNode("Start Time");
+        th.setAttribute('data-column-name', 'startTime');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        //headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("End Time");
+        th.setAttribute('data-column-name', 'endTime');
+        th.setAttribute('aria-sort', 'ascending');
+        th.appendChild(document.createElement('gux-sort-control'));
+        th.appendChild(text);
+
+        //headerRow.appendChild(th);
+
+        //Participant
+        th = document.createElement("th");
+        text = document.createTextNode("Media Type");
+        th.setAttribute('data-column-name', 'mediaType');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+        //Participant Type
+        th = document.createElement("th");
+        text = document.createTextNode("Participant Type");
+        th.setAttribute('data-column-name', 'participantType');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        //  headerRow.appendChild(th);
+
+        //Event ID
+        th = document.createElement("th");
+        text = document.createTextNode("ANI");
+        th.setAttribute('data-column-name', 'ani');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        //headerRow.appendChild(th);
+
+
+        //Detail
+        th = document.createElement("th");
+        text = document.createTextNode("ANI Name");
+        th.setAttribute('data-column-name', 'Ani Name');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        //headerRow.appendChild(th);
+
+        //Source
+        th = document.createElement("th");
+        text = document.createTextNode("DNIS");
+        th.setAttribute('data-column-name', 'dnis');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        // headerRow.appendChild(th);
+
+        th = document.createElement("th");
+        text = document.createTextNode("Session ID");
+        th.setAttribute('data-column-name', 'sessionID');
+        th.appendChild(text);
+        th.appendChild(document.createElement('gux-sort-control'));
+        headerRow.appendChild(th);
+
+
+      }
+
+      table.addEventListener('guxsortchanged',
+        (event) => {
+          const { columnName, sortDirection } = event.detail;
+
+          const columns = Array.from(table.querySelectorAll('thead tr th')).forEach((column) => column.removeAttribute('aria-sort'));
+          const column = table.querySelector(`thead tr th[data-column-name='` + columnName + `']`);
+          column.setAttribute('aria-sort', sortDirection);
+
+          const tableBody = table.querySelector('tbody');
+
+          switch (sortDirection) {
+            case 'ascending':
+              [...tableBody.children].sort(ascending).forEach(node => tableBody.appendChild(node));
+              break;
+            case 'descending':
+              [...tableBody.children].sort(ascending).reverse().forEach(node => tableBody.appendChild(node));
+              break;
+            default:
+              [...tableBody.children].sort(shuffle).forEach(node => tableBody.appendChild(node));
+              break;
+          }
+
+
+        });
+
+      //console.log(JSON.stringify(directoryJSON.map(e => e.ContactJSON)));
+
+    }
+
   </script>
 
 
@@ -1750,10 +2187,32 @@
     </gux-tab-panel>
 
     <gux-tab-panel tab-id="6-3">
-      <div class="participant-panel">
-        coming soon
+      <div class="panel-container">
+        <fieldset>
+          <legend>Conversations</legend>
+          <div id="conversationControls"></div>
 
+        </fieldset>
+
+        <fieldset>
+          <legend>Participants</legend>
+          <div class="participant-panel">
+            <div id="participant-div"></div>
+
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Sessions</legend>
+          <div class="session-panel">
+            <div id="session-div"></div>
+
+          </div>
+        </fieldset>
       </div>
+
+
+
+
     </gux-tab-panel>
 
 
