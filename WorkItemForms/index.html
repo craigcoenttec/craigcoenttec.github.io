@@ -41,6 +41,7 @@
     let flows = []
     let lastConversationId = null
     let lastConversationQuery = null
+    let lastWorkItemQuery = null
     let lastConversationJson = {}
     const copyButtonLabel = "Copy JSON";
     //let schemas = []
@@ -72,23 +73,32 @@
         await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
         //GET Current UserId
         let user = await uapi.getUsersMe({ expand: "authorization" })
-        console.log(user)
+        let workItemAuthed = await checkAccess(user);
+        //console.log(user)
         //await getWorkItemInfo();
-        Promise.all([
-          getWorkBins(),
-          getWorkTypes(),
-          getSchemas(),
+        let setupArray = [
+          
           getQueues(),
           getFlows()
-        ]).then(() => {
+        ]
+        
+        if (workItemAuthed) {
+          setupArray.push(getWorkBins());
+          setupArray.push(getWorkTypes());
+          setupArray.push(getSchemas());
+        }
+        
+        
+        Promise.all(setupArray).then(() => {
           console.log('all promises resolved');
-          console.log('workbins: ', workbins);
-          console.log('workTypes: ', workTypes);
-          console.log('schemas: ', schemas);
-          createWorkItemForm();
+          
+          if (workItemAuthed) {createWorkItemForm();} else document.getElementById('dynamicForm').innerText= 'You do not have access to create Work Items';
+          createWorkItemUpdateControls();
           createEmailForm();
           getActiveConversations();
         })
+
+       
         //createForm();
         //Enter in starting code.
       } catch (err) {
@@ -97,6 +107,28 @@
     } //End of start() function 
 
 
+    async function checkAccess(user) {
+      //Check if the user has access to the API
+      return new Promise((resolve) => {
+        let hasAccess = false;
+        if (user && user.authorization && user.authorization.permissions) {
+          const permissions = user.authorization.permissions;
+          console.log('User permissions: ', permissions);
+          // Check if the user has the required permission
+          let filteredWorkList = permissions.filter(permission => permission.includes('workitems:'));
+          hasAccess = filteredWorkList.length > 0;
+        } else {
+          console.log('User does not have authorization information');
+        }
+        if (hasAccess) {
+          console.log('User has access to the API');
+          resolve(true);
+        } else {
+          console.log('User does not have access to the API');
+          resolve(false);
+        }
+      });
+    }
 
     //Work Items
     async function createWorkItem() {
@@ -144,21 +176,12 @@
     async function createEmailBody(CustomAttributes) {
       return new Promise((resolve) => {
 
+
+
         let body = {
-
-          "name": document.getElementById('itemName').value,
-          "priority": document.getElementById('itemPriority').value,
-          "dateDue": `${document.getElementById('dueDate').value}T${document.getElementById('dueTime').value}:00.000Z`,
-          "dateExpires": `${document.getElementById('expireDate').value}T${document.getElementById('expireTime').value}:00.000Z`,
-          "workbinId": document.getElementById('workBinSelection').value,
-          "typeId": document.getElementById('workTypeSelection').value,
-          "customFields": CustomAttributes
-        }; // Object | Workitem
-
-        body = {
           //"queueId": "",
           //"flowId": "",
-          "provider": "Portal App",
+          "provider": document.getElementById('provider').value,
           //"skillIds": [
           //  ""
           //],
@@ -349,628 +372,7 @@
         getSchemas(),
       ]);
 
-      /*  workbins = [
-         {
-           "id": "12ccb84f-9c9e-4c9e-9fb9-261dfb1bbfc4",
-           "name": "Workbin 1",
-           "division": {
-             "id": "b3c5f7a5-9439-4572-ba4c-ae168ed2ef29",
-             "selfUri": "/api/v2/authorization/divisions/b3c5f7a5-9439-4572-ba4c-ae168ed2ef29"
-           },
-           "dateCreated": "2022-11-18T18:16:08.555Z",
-           "dateModified": "2022-11-18T18:16:08.555Z",
-           "modifiedBy": {
-             "id": "8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac",
-             "selfUri": "/api/v2/users/8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac"
-           },
-           "selfUri": "/api/v2/taskmanagement/workbins/12ccb84f-9c9e-4c9e-9fb9-261dfb1bbfc4"
-         },
-         {
-           "id": "01b0ccfa-0ef3-4568-8c27-e2dca354ec54",
-           "name": "Medical Waste",
-           "division": {
-             "id": "98c0531c-34a5-438e-95e6-c3d93324f733",
-             "selfUri": "/api/v2/authorization/divisions/98c0531c-34a5-438e-95e6-c3d93324f733"
-           },
-           "description": "Sample Medical Waste Workbin for Stericycle",
-           "dateCreated": "2025-02-17T17:53:31.181Z",
-           "dateModified": "2025-02-17T17:53:31.181Z",
-           "modifiedBy": {
-             "id": "8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac",
-             "selfUri": "/api/v2/users/8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac"
-           },
-           "selfUri": "/api/v2/taskmanagement/workbins/01b0ccfa-0ef3-4568-8c27-e2dca354ec54"
-         }
-       ] */
-
-
-      /*  workTypes = [
-         {
-           "id": "951eb227-8ac5-447e-9847-572151e8178a",
-           "name": "WorkType 1",
-           "division": {
-             "id": "b3c5f7a5-9439-4572-ba4c-ae168ed2ef29",
-             "selfUri": "/api/v2/authorization/divisions/b3c5f7a5-9439-4572-ba4c-ae168ed2ef29"
-           },
-           "description": "This is a Test Worktype",
-           "dateCreated": "2022-11-18T18:16:11.777Z",
-           "dateModified": "2023-04-18T19:51:56.150Z",
-           "defaultWorkbin": {
-             "id": "12ccb84f-9c9e-4c9e-9fb9-261dfb1bbfc4",
-             "name": "Workbin 1",
-             "selfUri": "/api/v2/taskmanagement/workbins/12ccb84f-9c9e-4c9e-9fb9-261dfb1bbfc4"
-           },
-           "defaultStatus": {
-             "id": "56f1bafe-7c19-44f3-b029-10324ee64349",
-             "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a/statuses/56f1bafe-7c19-44f3-b029-10324ee64349"
-           },
-           "statuses": [
-             {
-               "id": "56f1bafe-7c19-44f3-b029-10324ee64349",
-               "name": "Open",
-               "category": "Open",
-               "destinationStatuses": [],
-               "defaultDestinationStatus": {
-                 "id": "a1bb02ab-4642-408e-8cd9-06ae45460a45",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a/statuses/a1bb02ab-4642-408e-8cd9-06ae45460a45"
-               },
-               "statusTransitionDelaySeconds": 300,
-               "worktype": {
-                 "id": "951eb227-8ac5-447e-9847-572151e8178a",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a"
-               },
-               "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a/statuses/56f1bafe-7c19-44f3-b029-10324ee64349"
-             },
-             {
-               "id": "1cd46550-acdf-4148-9ef4-c1e81d77bd53",
-               "name": "Closed",
-               "category": "Closed",
-               "destinationStatuses": [],
-               "worktype": {
-                 "id": "951eb227-8ac5-447e-9847-572151e8178a",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a"
-               },
-               "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a/statuses/1cd46550-acdf-4148-9ef4-c1e81d77bd53"
-             },
-             {
-               "id": "a1bb02ab-4642-408e-8cd9-06ae45460a45",
-               "name": "Sending SMS",
-               "category": "InProgress",
-               "destinationStatuses": [],
-               "description": "",
-               "worktype": {
-                 "id": "951eb227-8ac5-447e-9847-572151e8178a",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a"
-               },
-               "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a/statuses/a1bb02ab-4642-408e-8cd9-06ae45460a45"
-             },
-             {
-               "id": "f558e13e-6894-4e2a-b4b1-c2364178b3c2",
-               "name": "Sending SMS x2",
-               "category": "InProgress",
-               "destinationStatuses": [],
-               "description": "",
-               "worktype": {
-                 "id": "951eb227-8ac5-447e-9847-572151e8178a",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a"
-               },
-               "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a/statuses/f558e13e-6894-4e2a-b4b1-c2364178b3c2"
-             }
-           ],
-           "defaultDurationSeconds": 1296000,
-           "defaultExpirationSeconds": 7762708,
-           "defaultDueDurationSeconds": 258,
-           "defaultPriority": 0,
-           "defaultLanguage": {
-             "id": "689c54eb-5849-4375-9f51-a83b6a6ddc23",
-             "selfUri": "/api/v2/routing/languages/689c54eb-5849-4375-9f51-a83b6a6ddc23"
-           },
-           "defaultTtlSeconds": 31536000,
-           "modifiedBy": {
-             "id": "8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac",
-             "selfUri": "/api/v2/users/8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac"
-           },
-           "defaultQueue": {
-             "id": "fca4fec9-9188-4b00-a089-0c0190524a15",
-             "selfUri": "/api/v2/routing/queues/fca4fec9-9188-4b00-a089-0c0190524a15"
-           },
-           "defaultSkills": [],
-           "assignmentEnabled": true,
-           "schema": {},
-           "flow": {},
-           "selfUri": "/api/v2/taskmanagement/worktypes/951eb227-8ac5-447e-9847-572151e8178a"
-         },
-         {
-           "id": "63746c1c-d21e-4e77-95fc-c522febcc28b",
-           "name": "Pharmaceutical Waste",
-           "division": {
-             "id": "98c0531c-34a5-438e-95e6-c3d93324f733",
-             "selfUri": "/api/v2/authorization/divisions/98c0531c-34a5-438e-95e6-c3d93324f733"
-           },
-           "description": "Sample Pharmaceutical Waste Worktype",
-           "dateCreated": "2025-02-17T17:54:37.938Z",
-           "dateModified": "2025-03-10T14:34:32.886Z",
-           "defaultWorkbin": {
-             "id": "01b0ccfa-0ef3-4568-8c27-e2dca354ec54",
-             "name": "Medical Waste",
-             "selfUri": "/api/v2/taskmanagement/workbins/01b0ccfa-0ef3-4568-8c27-e2dca354ec54"
-           },
-           "defaultStatus": {
-             "id": "ea5d038a-b916-4faf-ae5b-449de0456e24",
-             "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/ea5d038a-b916-4faf-ae5b-449de0456e24"
-           },
-           "statuses": [
-             {
-               "id": "ea5d038a-b916-4faf-ae5b-449de0456e24",
-               "name": "Open",
-               "category": "Open",
-               "destinationStatuses": [],
-               "worktype": {
-                 "id": "63746c1c-d21e-4e77-95fc-c522febcc28b",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b"
-               },
-               "autoTerminateWorkitem": null,
-               "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/ea5d038a-b916-4faf-ae5b-449de0456e24"
-             },
-             {
-               "id": "decb86d2-a195-4659-b564-8ccedf711e3a",
-               "name": "Closed",
-               "category": "Closed",
-               "destinationStatuses": [],
-               "worktype": {
-                 "id": "63746c1c-d21e-4e77-95fc-c522febcc28b",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b"
-               },
-               "autoTerminateWorkitem": null,
-               "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/decb86d2-a195-4659-b564-8ccedf711e3a"
-             },
-             {
-               "id": "f2906466-95b2-44a2-a3cd-ba75d7f58080",
-               "name": "Created",
-               "category": "Open",
-               "destinationStatuses": [],
-               "description": "",
-               "defaultDestinationStatus": {
-                 "id": "8a02018f-b5e2-4e6b-bdaf-d40d6c924c5b",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/8a02018f-b5e2-4e6b-bdaf-d40d6c924c5b"
-               },
-               "statusTransitionDelaySeconds": 86400,
-               "worktype": {
-                 "id": "63746c1c-d21e-4e77-95fc-c522febcc28b",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b"
-               },
-               "autoTerminateWorkitem": null,
-               "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/f2906466-95b2-44a2-a3cd-ba75d7f58080"
-             },
-             {
-               "id": "7df00345-4759-48b3-8e19-5017c74cfee2",
-               "name": "Processing Case",
-               "category": "InProgress",
-               "destinationStatuses": [],
-               "description": "",
-               "worktype": {
-                 "id": "63746c1c-d21e-4e77-95fc-c522febcc28b",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b"
-               },
-               "autoTerminateWorkitem": null,
-               "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/7df00345-4759-48b3-8e19-5017c74cfee2"
-             },
-             {
-               "id": "8a02018f-b5e2-4e6b-bdaf-d40d6c924c5b",
-               "name": "Peter's Status",
-               "category": "Open",
-               "destinationStatuses": [
-                 {
-                   "id": "ea5d038a-b916-4faf-ae5b-449de0456e24",
-                   "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/ea5d038a-b916-4faf-ae5b-449de0456e24"
-                 },
-                 {
-                   "id": "f2906466-95b2-44a2-a3cd-ba75d7f58080",
-                   "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/f2906466-95b2-44a2-a3cd-ba75d7f58080"
-                 },
-                 {
-                   "id": "decb86d2-a195-4659-b564-8ccedf711e3a",
-                   "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/decb86d2-a195-4659-b564-8ccedf711e3a"
-                 }
-               ],
-               "description": "",
-               "worktype": {
-                 "id": "63746c1c-d21e-4e77-95fc-c522febcc28b",
-                 "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b"
-               },
-               "autoTerminateWorkitem": null,
-               "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b/statuses/8a02018f-b5e2-4e6b-bdaf-d40d6c924c5b"
-             }
-           ],
-           "defaultDurationSeconds": 604800,
-           "defaultExpirationSeconds": 5097600,
-           "defaultDueDurationSeconds": 1296000,
-           "defaultPriority": 0,
-           "defaultLanguage": {},
-           "defaultTtlSeconds": 5184000,
-           "modifiedBy": {
-             "id": "8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac",
-             "selfUri": "/api/v2/users/8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac"
-           },
-           "defaultQueue": {
-             "id": "2cda8eb4-a53b-439f-98c3-0c2508c87e5c",
-             "selfUri": "/api/v2/routing/queues/2cda8eb4-a53b-439f-98c3-0c2508c87e5c"
-           },
-           "defaultSkills": [],
-           "assignmentEnabled": false,
-           "schema": {
-             "id": "64427c59-e721-48af-8914-e20954624ecc",
-             "selfUri": "/api/v2/taskmanagement/workitems/schemas/64427c59-e721-48af-8914-e20954624ecc"
-           },
-           "serviceLevelTarget": 100,
-           "ruleSettings": {
-             "flowRulesEnabled": true
-           },
-           "flow": {
-             "id": "96487adb-ec13-48f1-af4c-96db6d64b4bd",
-             "selfUri": "/api/v2/flows/96487adb-ec13-48f1-af4c-96db6d64b4bd"
-           },
-           "defaultScript": {
-             "id": "042f5bd8-db49-4307-9ed8-33d42eb8502c",
-             "selfUri": "/api/v2/scripts/042f5bd8-db49-4307-9ed8-33d42eb8502c"
-           },
-           "selfUri": "/api/v2/taskmanagement/worktypes/63746c1c-d21e-4e77-95fc-c522febcc28b"
-         }
-       ]
-  */
-
-      // Get a list of schemas.
-      /* schemas = {
-        "total": 2,
-        "entities": [
-          {
-            "id": "64427c59-e721-48af-8914-e20954624ecc",
-            "name": "Sample Schema - Stericycle",
-            "version": 1,
-            "appliesTo": [
-              "WORKITEM"
-            ],
-            "enabled": true,
-            "deleted": false,
-            "createdBy": {
-              "id": "8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac",
-              "selfUri": "/api/v2/users/8ce2f903-78e6-4b50-b7aa-e1aa7e7c39ac"
-            },
-            "dateCreated": "2025-02-17T17:51:35Z",
-            "jsonSchema": {
-              "$schema": "http://json-schema.org/draft-04/schema#",
-              "title": "Sample Schema - Stericycle",
-              "description": "This is a sample schema for modeling the Stericycle Objects",
-              "properties": {
-                "accountid_identifier": {
-                  "title": "AccountID",
-                  "description": "This is the AccountID that came from Salesforce.",
-                  "minLength": 0,
-                  "maxLength": 100,
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/identifier"
-                    }
-                  ]
-                },
-                "caseid_identifier": {
-                  "title": "CaseID",
-                  "description": "This is the CaseID that came from Salesforce.",
-                  "minLength": 0,
-                  "maxLength": 100,
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/identifier"
-                    }
-                  ]
-                },
-                "createddate_datetime": {
-                  "title": "CreatedDate",
-                  "description": "This is the Created Date field",
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/datetime"
-                    }
-                  ]
-                },
-                "casenumber_integer": {
-                  "title": "CaseNumber",
-                  "description": "This is the Case Number value from Salesforce",
-                  "minimum": 0,
-                  "maximum": 1000,
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/integer"
-                    }
-                  ]
-                },
-                "sitenumber_number": {
-                  "title": "SiteNumber",
-                  "description": "This is the Site Number field from Salesforce",
-                  "minimum": 0,
-                  "maximum": 1000000,
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/number"
-                    }
-                  ]
-                },
-                "servicearea_enum": {
-                  "title": "ServiceArea",
-                  "description": "This is the Service Area Field",
-                  "enum": [
-                    "west_coast",
-                    "midwest",
-                    "east_coast",
-                    "south"
-                  ],
-                  "_enumProperties": {
-                    "west_coast": {
-                      "title": "West Coast",
-                      "_disabled": false
-                    },
-                    "midwest": {
-                      "title": "Midwest",
-                      "_disabled": false
-                    },
-                    "east_coast": {
-                      "title": "East Coast",
-                      "_disabled": false
-                    },
-                    "south": {
-                      "title": "South",
-                      "_disabled": false
-                    }
-                  },
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/enum"
-                    }
-                  ]
-                },
-                "isgovernment_checkbox": {
-                  "title": "isGovernment",
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/checkbox"
-                    }
-                  ]
-                }
-              },
-              "definitions": {
-                "text": {
-                  "title": "Text",
-                  "description": "A single line string",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/text"
-                },
-                "longtext": {
-                  "title": "Long Text",
-                  "description": "A multi-line string",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/longtext"
-                },
-                "url": {
-                  "title": "URL",
-                  "description": "A single-line string containing a URL",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/url"
-                },
-                "identifier": {
-                  "title": "Identifier",
-                  "description": "A single line string identifier",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/identifier"
-                },
-                "enum": {
-                  "title": "Enum",
-                  "description": "A unique list of strings",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/enum"
-                },
-                "date": {
-                  "title": "Date",
-                  "description": "An ISO-8601 date with format YYYY-MM-DD",
-                  "type": "string",
-                  "pattern": "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$",
-                  "selfUri": "/api/v2/dataextensions/coretypes/date"
-                },
-                "datetime": {
-                  "title": "Date Time",
-                  "description": "An ISO-8601 GMT date with time. Format: YYYY-MM-DDTHH:mm:ss.sssZ",
-                  "type": "string",
-                  "pattern": "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3])\\:([0-5][0-9])\\:([0-5][0-9])\\.\\d{3}Z$",
-                  "selfUri": "/api/v2/dataextensions/coretypes/datetime"
-                },
-                "integer": {
-                  "title": "Integer",
-                  "description": "An integer",
-                  "type": "integer",
-                  "selfUri": "/api/v2/dataextensions/coretypes/integer"
-                },
-                "number": {
-                  "title": "Number",
-                  "description": "A decimal number",
-                  "type": "number",
-                  "selfUri": "/api/v2/dataextensions/coretypes/number"
-                },
-                "checkbox": {
-                  "title": "Checkbox",
-                  "description": "Represents a selection toggle that can be in one of three states: true, false, or null",
-                  "type": [
-                    "boolean",
-                    "null"
-                  ],
-                  "selfUri": "/api/v2/dataextensions/coretypes/checkbox"
-                },
-                "tag": {
-                  "title": "Tag",
-                  "description": "Represents a tag string value. Tags must be associated with an array and added to the items list.",
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "pattern": "^[\\S]+$"
-                  },
-                  "selfUri": "/api/v2/dataextensions/coretypes/tag"
-                }
-              }
-            },
-            "selfUri": "/api/v2/taskmanagement/workitems/schemas/64427c59-e721-48af-8914-e20954624ecc"
-          },
-          {
-            "id": "945466e0-c2df-4e52-a037-466ec9cb30fe",
-            "name": "Sample Simple Schema",
-            "version": 1,
-            "appliesTo": [
-              "WORKITEM"
-            ],
-            "enabled": true,
-            "deleted": false,
-            "createdBy": {
-              "id": "f1804415-bca9-4eb7-ad5a-521fca8d6128",
-              "selfUri": "/api/v2/users/f1804415-bca9-4eb7-ad5a-521fca8d6128"
-            },
-            "dateCreated": "2025-04-25T14:14:06Z",
-            "jsonSchema": {
-              "$schema": "http://json-schema.org/draft-04/schema#",
-              "title": "Sample Simple Schema",
-              "description": "",
-              "properties": {
-                "case_url_url": {
-                  "title": "Case URL",
-                  "minLength": 0,
-                  "maxLength": 200,
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/url"
-                    }
-                  ]
-                },
-                "case_description_text": {
-                  "title": "Case Description",
-                  "minLength": 0,
-                  "maxLength": 100,
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/text"
-                    }
-                  ]
-                },
-                "case_status_enum": {
-                  "title": "Case Status",
-                  "enum": [
-                    "open",
-                    "closed",
-                    "pending"
-                  ],
-                  "_enumProperties": {
-                    "open": {
-                      "title": "Open",
-                      "_disabled": false
-                    },
-                    "closed": {
-                      "title": "Closed",
-                      "_disabled": false
-                    },
-                    "pending": {
-                      "title": "Pending",
-                      "_disabled": false
-                    }
-                  },
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/enum"
-                    }
-                  ]
-                }
-              },
-              "definitions": {
-                "text": {
-                  "title": "Text",
-                  "description": "A single line string",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/text"
-                },
-                "longtext": {
-                  "title": "Long Text",
-                  "description": "A multi-line string",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/longtext"
-                },
-                "url": {
-                  "title": "URL",
-                  "description": "A single-line string containing a URL",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/url"
-                },
-                "identifier": {
-                  "title": "Identifier",
-                  "description": "A single line string identifier",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/identifier"
-                },
-                "enum": {
-                  "title": "Enum",
-                  "description": "A unique list of strings",
-                  "type": "string",
-                  "selfUri": "/api/v2/dataextensions/coretypes/enum"
-                },
-                "date": {
-                  "title": "Date",
-                  "description": "An ISO-8601 date with format YYYY-MM-DD",
-                  "type": "string",
-                  "pattern": "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$",
-                  "selfUri": "/api/v2/dataextensions/coretypes/date"
-                },
-                "datetime": {
-                  "title": "Date Time",
-                  "description": "An ISO-8601 GMT date with time. Format: YYYY-MM-DDTHH:mm:ss.sssZ",
-                  "type": "string",
-                  "pattern": "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])T(0[0-9]|1[0-9]|2[0-3])\\:([0-5][0-9])\\:([0-5][0-9])\\.\\d{3}Z$",
-                  "selfUri": "/api/v2/dataextensions/coretypes/datetime"
-                },
-                "integer": {
-                  "title": "Integer",
-                  "description": "An integer",
-                  "type": "integer",
-                  "selfUri": "/api/v2/dataextensions/coretypes/integer"
-                },
-                "number": {
-                  "title": "Number",
-                  "description": "A decimal number",
-                  "type": "number",
-                  "selfUri": "/api/v2/dataextensions/coretypes/number"
-                },
-                "checkbox": {
-                  "title": "Checkbox",
-                  "description": "Represents a selection toggle that can be in one of three states: true, false, or null",
-                  "type": [
-                    "boolean",
-                    "null"
-                  ],
-                  "selfUri": "/api/v2/dataextensions/coretypes/checkbox"
-                },
-                "tag": {
-                  "title": "Tag",
-                  "description": "Represents a tag string value. Tags must be associated with an array and added to the items list.",
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "pattern": "^[\\S]+$"
-                  },
-                  "selfUri": "/api/v2/dataextensions/coretypes/tag"
-                }
-              }
-            },
-            "selfUri": "/api/v2/taskmanagement/workitems/schemas/945466e0-c2df-4e52-a037-466ec9cb30fe"
-          }
-        ]
-      }
-      selectedSchema = schemas.entities[0]; */
-
-      ;
-
-
+      
     }
 
     async function displayConversationIdWork() {
@@ -1182,8 +584,10 @@
       resultCopyArea.style.visibility = 'hidden';
       buttonDiv.appendChild(resultCopyArea);
 
+      let footer = document.getElementById('dynamicFormButton');
+      footer.appendChild(buttonDiv)
 
-      form.appendChild(buttonDiv);
+      //form.appendChild(buttonDiv);
 
     }
 
@@ -1215,6 +619,26 @@
       //form.appendChild(document.createElement('br'));
       form.appendChild(document.createElement('br'));
 
+      //Provider
+      itemName = document.createElement('gux-form-field-text-like')
+      itemNameInput = document.createElement('input');
+      itemNameInput.setAttribute('type', 'text');
+      itemNameInput.setAttribute('id', 'provider');
+      itemNameInput.setAttribute('name', 'provider');
+      itemNameInput.setAttribute('slot', 'input');
+      itemNameInput.setAttribute('maxlength', '100');
+      itemNameInput.setAttribute('value', 'PORTAL APP');
+      itemNameInput.setAttribute('required', 'true');
+      itemNameLabel = document.createElement('label');
+      itemNameLabel.setAttribute('for', 'provider');
+      itemNameLabel.setAttribute('slot', 'label');
+      itemNameLabel.textContent = 'Provider: ';
+      itemName.appendChild(itemNameInput);
+      itemName.appendChild(itemNameLabel);
+      form.appendChild(itemName);
+      //form.appendChild(document.createElement('br'));
+      form.appendChild(document.createElement('br'));
+
       //remoteName
       itemName = document.createElement('gux-form-field-text-like')
       itemNameInput = document.createElement('input');
@@ -1228,7 +652,7 @@
       itemNameLabel = document.createElement('label');
       itemNameLabel.setAttribute('for', 'emailRemoteName');
       itemNameLabel.setAttribute('slot', 'label');
-      itemNameLabel.textContent = 'Email remote name: ';
+      itemNameLabel.textContent = 'From Name: ';
       itemName.appendChild(itemNameInput);
       itemName.appendChild(itemNameLabel);
       form.appendChild(itemName);
@@ -1358,7 +782,12 @@
       resultCopyArea.appendChild(conversationIdDisplay);
       buttonDiv.appendChild(resultCopyArea);
 
-      form.appendChild(buttonDiv);
+
+
+      let footer = document.getElementById('dynamicEmailFooter');
+      footer.appendChild(buttonDiv)
+
+      //form.appendChild(buttonDiv);
 
       createKeyValuePairInput(formSchema);
       //formSchema.appendChild(document.createElement('br'));
@@ -1721,7 +1150,92 @@
 
     }
 
+    async function createWorkItemUpdateControls(data) {
+      const form = document.getElementById('workitemModifyControls');
+      //const formSchema = document.getElementById('dynamicEmailFormSchema');
+      form.innerHTML = ''; // Clear existing form content
+      //formSchema.innerHTML = ''; // Clear existing form content
 
+
+
+      //subject
+      let itemName = document.createElement('gux-form-field-text-like')
+      let itemNameInput = document.createElement('input');
+      itemNameInput.setAttribute('type', 'text');
+      itemNameInput.setAttribute('id', 'AdHocWorkItem');
+      itemNameInput.setAttribute('name', 'AdHocWorkItem');
+      itemNameInput.setAttribute('slot', 'input');
+      itemNameInput.setAttribute('maxlength', '100');
+      itemNameInput.setAttribute('placeholder', 'Enter Work Item ID');
+      itemNameInput.setAttribute('required', 'true');
+      let itemNameLabel = document.createElement('label');
+      itemNameLabel.setAttribute('for', 'AdHocWorkItem');
+      itemNameLabel.setAttribute('slot', 'label');
+      itemNameLabel.textContent = 'AdHoc Work Item ID: ';
+      itemName.appendChild(itemNameInput);
+      itemName.appendChild(itemNameLabel);
+      form.appendChild(itemName);
+      //form.appendChild(document.createElement('br'));
+      form.appendChild(document.createElement('br'));
+
+      let buttonDiv = document.createElement('div');
+      buttonDiv.setAttribute('class', 'buttonDiv');
+      let submitButton = document.createElement('gux-button');
+      submitButton.setAttribute('accent', 'primary');
+      submitButton.setAttribute('onClick', 'queryWorkItem()')
+      submitButton.innerText = 'Query Work Item';
+      submitButton.setAttribute('enabled', 'false');
+      form.appendChild(submitButton);
+      form.appendChild(document.createElement('br'));
+      form.appendChild(document.createElement('br'));
+
+      // conversations
+      let schemafield = document.createElement('gux-form-field-select')
+      let schemainput = document.createElement('select');
+      schemainput.setAttribute('id', 'workItemSelection');
+      schemainput.setAttribute('name', 'workItemSelection');
+      schemainput.setAttribute('slot', 'input');
+      lastWorkItemQuery.tasks.forEach(optionValue => {
+        const option = document.createElement('option');
+        option.setAttribute('value', optionValue.conversationId);
+        option.textContent = optionValue.conversationId;
+        schemainput.appendChild(option);
+      });
+      let label = document.createElement('label');
+      label.setAttribute('for', 'workItemSelection');
+      label.setAttribute('slot', 'label');
+      label.textContent = 'Recent Active WorkItems: ';
+      schemafield.appendChild(schemainput);
+      schemafield.appendChild(label);
+      form.appendChild(schemafield);
+      form.appendChild(document.createElement('br'));
+      //form.appendChild(document.createElement('br'));
+
+      //createParticipantTable(lastConversationQuery.conversations[0].participants);
+      // set up a listner for changes to schema
+      schemainput.addEventListener('change', function () {
+        //selectedSchema = schemas.entities.find(schema => schema.id === schemainput.value);
+        createParticipantTable(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value).participants);
+        lastConversationJson = lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value);
+        //console.log(JSON.stringify(selectedSchema, null, 2));
+        ;
+      });
+
+      buttonDiv = document.createElement('div');
+      buttonDiv.setAttribute('class', 'buttonDiv');
+      submitButton = document.createElement('gux-button');
+      submitButton.setAttribute('accent', 'primary');
+      submitButton.setAttribute('onClick', 'getActiveWorkItems()')
+      submitButton.innerText = 'Refresh Active Conversations';
+      let requestButton = document.createElement('gux-button');
+      requestButton.setAttribute('accent', 'secondary');
+      requestButton.setAttribute('onClick', 'showRequestWorkItem()')
+      requestButton.innerText = 'Show Work Item';
+      buttonDiv.appendChild(submitButton);
+      buttonDiv.appendChild(requestButton);
+      form.appendChild(buttonDiv);
+
+    }
 
     //conversation work
 
@@ -2187,16 +1701,20 @@
   <gux-tabs class="log-Tabs">
     <gux-tab-list slot="tab-list">
       <gux-tab tab-id="6-1">
-        <gux-icon icon-name="agent" decorative="true"></gux-icon>
+        <gux-icon icon-name="fa/regular-diagram-project-gear" decorative="true"></gux-icon>
         Work Items
       </gux-tab>
+      <gux-tab tab-id="6-4">
+        <gux-icon icon-name="fa/bolt-regular" decorative="true"></gux-icon>
+        Work Item Mod
+      </gux-tab>
       <gux-tab tab-id="6-2">
-        <gux-icon icon-name="user-directory" decorative="true"></gux-icon>
+        <gux-icon icon-name="fa/envelope-regular" decorative="true"></gux-icon>
         Email Object
       </gux-tab>
 
       <gux-tab tab-id="6-3">
-        <gux-icon icon-name="fa/align-justify-regular" decorative="true"></gux-icon>
+        <gux-icon icon-name="fa/people-group-regular" decorative="true"></gux-icon>
         Participants
       </gux-tab>
 
@@ -2206,32 +1724,50 @@
 
 
     <gux-tab-panel tab-id="6-1">
-      <div class="panel-container">
-        <fieldset>
-          <legend>Work Item Values</legend>
-          <div id="dynamicForm"></div>
-        </fieldset>
-        <fieldset>
-          <legend>Schema</legend>
-          <div id="dynamicFormSchema"></div>
-        </fieldset>
+      <!--div class="panel-container"-->
+      <div class="sabody">
+        <div class="form-container">
+          <fieldset>
+            <legend>Work Item Values</legend>
+            <div id="dynamicForm"></div>
+          </fieldset>
+          <fieldset>
+            <legend>Schema</legend>
+            <div id="dynamicFormSchema"></div>
+          </fieldset>
+        </div>
+        <div class="submit-container" id="dynamicFormButton"></div>
       </div>
 
 
 
     </gux-tab-panel>
-    <gux-tab-panel tab-id="6-2">
+    <gux-tab-panel tab-id="6-4">
+
       <div class="panel-container">
         <fieldset>
-          <legend>Email Values</legend>
-          <div id="dynamicEmailForm"></div>
+          <legend>Work Item Updates</legend>
+          <div id="workitemModifyControls"></div>
 
         </fieldset>
-        <fieldset>
-          <legend>Attributes</legend>
-          <div id="dynamicEmailFormSchema"></div>
-          <div id="dynamicEmailFormButton"></div>
-        </fieldset>
+      </div>
+
+    </gux-tab-panel>
+    <gux-tab-panel tab-id="6-2">
+      <div class="sabody">
+        <div class="form-container">
+          <fieldset>
+            <legend>Email Values</legend>
+            <div id="dynamicEmailForm"></div>
+
+          </fieldset>
+          <fieldset>
+            <legend>Attributes</legend>
+            <div id="dynamicEmailFormSchema"></div>
+            <div id="dynamicEmailFormButton"></div>
+          </fieldset>
+        </div>
+        <div class="submit-container" id="dynamicEmailFooter"></div>
       </div>
     </gux-tab-panel>
 
@@ -2241,6 +1777,13 @@
           <legend>Conversations</legend>
           <div id="conversationControls"></div>
 
+        </fieldset>
+        <fieldset>
+          <legend>Conversation Detail</legend>
+          <div class="cd-panel">
+            <div id="cd-div"></div>
+
+          </div>
         </fieldset>
 
         <fieldset>
@@ -2323,5 +1866,30 @@
 
   .removeButton {
     margin-top: 18px;
+  }
+
+  .sabody {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 92vh;
+    width: 100%
+  }
+
+  .form-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 50px;
+    /* Adjust this value based on the height of the submit container */
+    width: 100%
+  }
+
+  .submit-container {
+    position: sticky;
+    bottom: 0;
+    background-color: white;
+    padding-top: 10px;
+    text-align: center;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
   }
 </style>
