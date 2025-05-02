@@ -18,6 +18,7 @@
   <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
   <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <script src="https://sdk-cdn.mypurecloud.com/client-apps/2.0.0/purecloud-client-app-sdk.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
   <!-- and it's easy to individually load additional languages -->
@@ -59,6 +60,8 @@
     const rapi = new platformClient.RoutingApi();
     const aapi = new platformClient.ArchitectApi();
     const capi = new platformClient.ConversationsApi();
+    let ClientApp = window.purecloud.apps.ClientApp;
+    let myClientApp = null;
 
     async function start() {
 
@@ -66,7 +69,9 @@
         client.setEnvironment(gc_region)
         client.setPersistSettings(true, '_mm_')
 
-
+        myClientApp = new ClientApp({
+          pcEnvironment: gc_region
+        });
 
         console.log('%cLogging in to Genesys Cloud', 'color: green')
         console.log(gc_clientId)
@@ -77,28 +82,28 @@
         //console.log(user)
         //await getWorkItemInfo();
         let setupArray = [
-          
+
           getQueues(),
           getFlows()
         ]
-        
+
         if (workItemAuthed) {
           setupArray.push(getWorkBins());
           setupArray.push(getWorkTypes());
           setupArray.push(getSchemas());
         }
-        
-        
+
+
         Promise.all(setupArray).then(() => {
           console.log('all promises resolved');
-          
-          if (workItemAuthed) {createWorkItemForm();} else document.getElementById('dynamicForm').innerText= 'You do not have access to create Work Items';
+
+          if (workItemAuthed) { createWorkItemForm(); } else document.getElementById('dynamicForm').innerText = 'You do not have access to create Work Items';
           createWorkItemUpdateControls();
           createEmailForm();
           getActiveConversations();
         })
 
-       
+
         //createForm();
         //Enter in starting code.
       } catch (err) {
@@ -372,7 +377,7 @@
         getSchemas(),
       ]);
 
-      
+
     }
 
     async function displayConversationIdWork() {
@@ -1348,11 +1353,12 @@
       form.appendChild(schemafield);
       form.appendChild(document.createElement('br'));
       //form.appendChild(document.createElement('br'));
-
+      createConversationDetails(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value));
       createParticipantTable(lastConversationQuery.conversations[0].participants);
       // set up a listner for changes to schema
       schemainput.addEventListener('change', function () {
         //selectedSchema = schemas.entities.find(schema => schema.id === schemainput.value);
+        createConversationDetails(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value));
         createParticipantTable(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value).participants);
         lastConversationJson = lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value);
         //console.log(JSON.stringify(selectedSchema, null, 2));
@@ -1375,7 +1381,30 @@
 
     }
 
+    function createConversationDetails(conversation) {
 
+
+      // Get a conversation by id
+      capi.getConversation(conversation.conversationId)
+        .then((data) => {
+          console.log(`getConversation success! data: ${JSON.stringify(data, null, 2)}`);
+          var table, row, guxTable;
+          var update = false;
+          //document.getElementById('cd-div').innerHTML = "";
+
+          document.getElementById('startTime').innerText = conversation.conversationStart;
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getConversation");
+          console.error(err);
+        });
+
+
+
+
+
+
+    }
     function createParticipantTable(participantArray) {
 
 
@@ -1695,6 +1724,9 @@
 
     }
 
+    function navigateToDetails() {
+      myClientApp.conversations.showInteractionDetails(document.getElementById('conversationSelection').value);
+    }
   </script>
 
 
@@ -1781,7 +1813,14 @@
         <fieldset>
           <legend>Conversation Detail</legend>
           <div class="cd-panel">
-            <div id="cd-div"></div>
+            <div id="cd-div">
+              Media Type: <span id="mediaType"></span><br>
+              From: <span id="from"></span><br>
+              To: <span id="to"></span><br>
+              Start Time: <span id="startTime"></span><br>
+              End Time: <span id="endTime"></span><br>
+              <gux-button accent="inline" onclick="navigateToDetails()"> Interaction Details </gux-button>
+            </div>
 
           </div>
         </fieldset>
