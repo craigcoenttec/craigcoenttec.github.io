@@ -48,7 +48,7 @@
     let gc_currentConversationObject;
 
     let translateToken = url.searchParams.get('translateToken')
-    let version = "0.0.0.3"
+    let version = "0.0.0.4"
     let mySendTimer
     let currentSourceLang = "auto"
     let lastSourceLang = "en"
@@ -174,7 +174,7 @@
             subscribeMessageEvents();
 
 
-          }, 2000);
+          }, 2250);
         }
       })
 
@@ -911,7 +911,7 @@
       messageDetailListv2[message.messageid].OriginalText = messageResult.normalizedMessage.text;
       //console.log(messageDetailListv2)
       //getTranslation(message.normalizedMessage.text, messageId);
-      ADDI_translateMessage(message.messageid, message.messageSender, messageDetailListv2[message.messageid].OriginalText, translationProfile.ProfileId, processor);
+      ADDI_translateMessage(gc_conversationId, message.messageid, message.messageSender, messageDetailListv2[message.messageid].OriginalText, translationProfile.ProfileId, processor);
 
 
     }
@@ -1099,14 +1099,14 @@
 
     //called post translation by Addi, meant for historical messages that just need to be captured.
     function translateHistoricalADDIMessage(resultObject) {
-      messageDetailListv2[resultObject.transaction_id].TranslatedText = resultObject.text;
+      messageDetailListv2[resultObject.messageId].TranslatedText = resultObject.text;
     }
 
     //Called post translation by Addi, meant for new messages that need to be written to the scroll
     function translateNewADDIMessage(resultObject) {
-      messageDetailListv2[resultObject.transaction_id].TranslatedText = resultObject.text;
-      console.log(messageDetailListv2[resultObject.transaction_id]);
-      addStatementCardbyObject(messageDetailListv2[resultObject.transaction_id], currentCustomerClass);
+      messageDetailListv2[resultObject.messageId].TranslatedText = resultObject.text;
+      console.log(messageDetailListv2[resultObject.messageId]);
+      addStatementCardbyObject(messageDetailListv2[resultObject.messageId], currentCustomerClass);
     }
 
     //===============
@@ -1122,7 +1122,8 @@
         TranslatedText: TranslatedText,
         TranslatedLanguage: TranslatedLanguage,
         TranslationSource: TranslationSource,
-        SenderType: SenderType
+        SenderType: SenderType,
+        messageSender: SenderType
       }
     }
 
@@ -1179,7 +1180,7 @@
 
 
 
-      ADDI_translateMessage("", "agent", messageText, agentProfileObject.ProfileId, sendADDITranslatedMessage);
+      ADDI_translateMessage(gc_conversationId, "", "agent", messageText, agentProfileObject.ProfileId, sendADDITranslatedMessage);
 
 
       //ADDI_sendTTSMessage(currentTransaction,"caller",messageText);
@@ -1540,7 +1541,7 @@
     }
 
     // sends a message for translation.
-    async function ADDI_translateMessage(transactionId, party, text, profile, resultProcessor) {
+    async function ADDI_translateMessage(transactionId, messageId, party, text, profile, resultProcessor) {
       const myHeaders = new Headers();
 
       console.log(`Translate Message ${text}`)
@@ -1564,8 +1565,11 @@
       fetch(`${ADDIURLHOST}/addi/v1/translate`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
-          console.log(result)
-          resultProcessor(JSON.parse(result));
+          //console.log(result)
+          let jsonResult = JSON.parse(result);
+          jsonResult.messageId = messageId;
+          console.log(JSON.stringify(jsonResult, null, 2))
+          resultProcessor(jsonResult);
         })
         .catch((error) => console.error(error));
     }
