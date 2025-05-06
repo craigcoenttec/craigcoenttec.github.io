@@ -1391,8 +1391,48 @@
           var table, row, guxTable;
           var update = false;
           //document.getElementById('cd-div').innerHTML = "";
+          //document.getElementById('mediaType').innerText = window.parent.location
+          document.getElementById('startTime').innerText = data.startTime;
+          document.getElementById('address').innerText = data.address;
+          
+          let MediaTypes = {calls:false, emails:false, messages:false, callbacks:false}
+          let mediaString = "";
+          for (const participant of data.participants) {
+            if (participant.callbacks.length > 0) {
+              MediaTypes.callbacks = true;
+            }
+            if (participant.calls.length > 0) {
+              MediaTypes.calls = true;
+            }
+            if (participant.emails.length > 0) {
+              MediaTypes.emails = true;
+            }
+            if (participant.messages.length > 0) {
+              MediaTypes.messages = true;
+            }
+           
+          }
+          if (MediaTypes.calls) {
+            mediaString += "Calls ";
+            document.getElementById('DNIS').innerText = data.participants[0].dnis;
+          }
+          if (MediaTypes.emails) {
+            mediaString += "Emails ";
+            document.getElementById('DNIS').innerText = ""
+          }
+          if (MediaTypes.messages) {
+            mediaString += "Messages ";
+            document.getElementById('DNIS').innerText = ""
+          }
+          if (MediaTypes.callbacks) {
+            mediaString += "Callbacks ";
+            document.getElementById('DNIS').innerText = ""
+          } 
+          
+          document.getElementById('mediaType').innerText = mediaString;
+          
 
-          document.getElementById('startTime').innerText = conversation.conversationStart;
+
         })
         .catch((err) => {
           console.log("There was a failure calling getConversation");
@@ -1815,8 +1855,8 @@
           <div class="cd-panel">
             <div id="cd-div">
               Media Type: <span id="mediaType"></span><br>
-              From: <span id="from"></span><br>
-              To: <span id="to"></span><br>
+              From: <span id="address"></span><br>
+              To: <span id="DNIS"></span><br>
               Start Time: <span id="startTime"></span><br>
               End Time: <span id="endTime"></span><br>
               <gux-button accent="inline" onclick="navigateToDetails()"> Interaction Details </gux-button>
