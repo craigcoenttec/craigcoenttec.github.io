@@ -94,6 +94,7 @@
     let transcriptionWebSocket = null;
     let pingInterval = null;
 
+    let currentMessageSocket = null;
 
 
     //Getting and setting the GC details from dynamic URL and session storage
@@ -171,7 +172,7 @@
 
             })
 
-            subscribeMessageEvents();
+            subscribeMessageEvents(true);
 
 
           }, 2250);
@@ -193,12 +194,12 @@
 
     //---------------- 
     //Subscription Code - Chat Messages
-    async function subscribeMessageEvents() {
+    async function subscribeMessageEvents(replaceStorage=false) {
 
       try {
         //Need to store wss as only can have 15 per agent. Also bad practice to create multiple
         let messagesTopic = `v2.users.${userId}.conversations.messages`
-        if (sessionStorage.getItem('gc_channelid')) {
+        if (replaceStorage == false && sessionStorage.getItem('gc_channelid')) {
           console.log('channelid already exists...')
           var channelid = sessionStorage.getItem('gc_channelid')
 
@@ -221,12 +222,14 @@
       //Create websocket for events
       try {
         let socket = new WebSocket(`wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
+        currentMessageSocket = socket;
 
         socket.onmessage = async function (event) {
           let details = JSON.parse(event.data)
 
           gc_conversationId ? console.log('wss conversationId: ', gc_conversationId) : null
           details?.eventBody?.message === 'WebSocket Heartbeat' ? console.log('%c%s Heartbeat', 'color: red', '❤️') : console.log(details)
+         // details?.eventBody?.message === 'pong' ? console.log('%c%s PONG!', 'color: orange', '📜') : console.log(details)
           //if Message notification
           if (details.topicName.includes('messages')) {
             console.log('Messaging Notification: ', details)
@@ -258,6 +261,24 @@
               });
             }
           }
+          
+        }
+        socket.onclose = async function (event) {
+
+          console.log('%c%s Socket Closed.  Reopening', 'color: red', '📜');
+          clearInterval(pingInterval);
+          subscribeMessageEvents(true);
+        }
+        socket.onerror = async function (event) {
+
+          console.log(`%cError Event with channel: ${event}`, 'color: red');
+
+        }
+        socket.onopen = async function (event) {
+          //pingInterval = setInterval(() => { 
+            //console.log("SENDING!!!!!!!!!!!!!!!!")
+            //currentMessageSocket.send({message:"ping"}) }
+         // , 5000);
         }
         console.log(`Waiting for events on wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
       } catch (err) {
@@ -265,6 +286,8 @@
       }
 
     }
+
+    
 
     //Transcription Subscription - Native Voice Transcription (NOT USED CURRENTLY)
     async function subscribeLiveTranscripton(conversationId) {
@@ -1441,7 +1464,7 @@
             document.getElementById("warning").innerText = "Warning: No translation profiles found for the selected languages.  Please check your ADDI configuration.";
             document.getElementById("warning").style.visibility = "visible";
             setTimeout(() => { document.getElementById("warning").style.visibility = "hidden"; }, 5000);
-          
+
           }
           console.log(`%cAgent Profile now: ${agentProfileObject.ProfileId} :: Customer Profile now: ${customerProfileObject.ProfileId}`, "color:Yellow");
         })
@@ -1580,25 +1603,23 @@
       let currentSourceLang = document.getElementById("SourceLanguageDropdown").value
       let currentTargetLang = document.getElementById("TargetLanguageDropdown").value
 
-      if(gc_mediaType == "VOICE")
-      {
+      if (gc_mediaType == "VOICE") {
         ADDI_updateActiveTransactionLanguage(currentTargetLang, currentSourceLang)
       }
-      else
-      {
+      else {
         updateLanguageSelections({
           agent: currentTargetLang,
           caller: currentSourceLang
         });
       }
-      
+
     }
 
     function drag(event) {
       console.log(event)
       event.dataTransfer.setData("text", event.target.getElementsByTagName('input')[0].value);
 
-      
+
     }
 
     function allowDrop(event) {
@@ -1623,10 +1644,10 @@
       let tabs = document.getElementById("textTab")
       tabs.setAttribute("active-tab", "1-1")
     }
-  
+
     function replacePlaceHolders(text) {
       let alias = myAlias;
-      if (myAlias && myAlias.length > 0) {alias = myAlias} else {alias = myName} 
+      if (myAlias && myAlias.length > 0) { alias = myAlias } else { alias = myName }
       text = text.replace(/{{\s*AGENT_NAME\s*}}/g, myName);
       text = text.replace(/{{\s*AGENT_ALIAS\s*}}/g, myAlias)
       return text;
@@ -1682,7 +1703,7 @@
             <gux-button accent="primary" onclick="updateLanguages()">Update</gux-button>
 
           </div>
-          <div id="warning" style="visibility: hidden;"></div> 
+          <div id="warning" style="visibility: hidden;"></div>
 
           <!--  <div id = "delayDiv" style="width:20%;padding:5px">
           
