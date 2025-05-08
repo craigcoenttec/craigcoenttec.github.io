@@ -4,7 +4,7 @@
 const deploymentId = 'de9be94e-2637-4149-8daa-4f15649d0d66' //Your WebMessenger DeploymentId
 const hexColor = '#0D6EFD' //Color theme
 
-function toggleMessenger(wasIframe=false) {
+function toggleMessenger(wasIframe = false) {
   Genesys(
     'command',
     'Messenger.open',
@@ -20,24 +20,26 @@ function toggleMessenger(wasIframe=false) {
             case: document.getElementById('case').value//,
             //queueName: document.getElementById('queue').value,
           },
-          
+
         },
       })
-      if (wasIframe){
+      if (wasIframe) {
         Genesys("command", "MessagingService.sendMessage", {
-            message: "Form completed"})
-             
+          message: "Form completed"
+        })
+
       }
-      else{
-      Genesys("command", "MessagingService.sendMessage", {
-    message: "Form completed by " + document.getElementById('fname').value})
+      else {
+        Genesys("command", "MessagingService.sendMessage", {
+          message: "Form completed by " + document.getElementById('fname').value
+        })
       }
     },
     function (o) {
       Genesys('command', 'Messenger.close')
     }
   )
-  
+
 }
 
 function closeLauncher() {
@@ -50,43 +52,53 @@ function openLauncher() {
   let session = JSON.parse(localStorage.getItem(`_${deploymentId}:gcmcsessionActive`))
   let input = document.getElementById('input')
   console.log(session?.value)
- //if (session?.value) {
-    console.log('Opening Widget...')
-    Genesys(
-      'command',
-      'Messenger.open',
-      {},
-      function (o) {
-        closeLauncher()
-      },
-      function (o) {
-        Genesys('command', 'Messenger.close')
-      }
-    )
- // } else {
- //   console.log('showing...')
+  //if (session?.value) {
+  console.log('Opening Widget...')
+  Genesys(
+    'command',
+    'Messenger.open',
+    {},
+    function (o) {
+      closeLauncher()
+    },
+    function (o) {
+      Genesys('command', 'Messenger.close')
+    }
+  )
+  // } else {
+  //   console.log('showing...')
   //  input.hidden = false
   //  closeLauncher()
-   
+
   //}
 }
 
-function showForm()
-{
-	input.hidden = false;
+function showForm() {
+  input.hidden = false;
   form.hidden = false;
+  svform.hidden = true;
   iFrame.hidden = true;
-   Genesys('command', 'Messenger.close')
+  title.innerText = 'Please give us some info!'
+  Genesys('command', 'Messenger.close')
+}
+function showSurvey() {
+  input.hidden = false;
+  form.hidden = true;
+  svform.hidden = false;
+  iFrame.hidden = true;
+    title.innerText = 'Please Take this survey!'
+  //Genesys('command', 'Messenger.close')
 }
 
-function showFrame(url)
-{
-	input.hidden = false;
+function showFrame(url) {
+  input.hidden = false;
   form.hidden = true;
+  svform.hidden = true;
   iFramewin.src = url;
   iFrame.hidden = false;
-  
-   Genesys('command', 'Messenger.close')
+  header.hidden = false;
+  svheader.hidden = true;
+  Genesys('command', 'Messenger.close')
 }
 
 
@@ -246,7 +258,148 @@ form.appendChild(submit)
 input.appendChild(form)
 
 
-let iFrame  = document.createElement('div')
+
+
+//survey
+//Create Input Form
+//let svinput = document.createElement('div')
+let svheader = document.createElement('div')
+let svtitle = document.createElement('p')
+let svminButton = document.createElement('button')
+
+let svform = document.createElement('div')
+let svfnameL = document.createElement('label')
+let svfnameI = document.createElement('input')
+let svlnameL = document.createElement('label')
+let svlnameI = document.createElement('input')
+let svemailL = document.createElement('label')
+let svemailI = document.createElement('input')
+let svcaseL = document.createElement('label')
+let svcaseI = document.createElement('input')
+let svqueueL = document.createElement('label')
+let svqueueS = document.createElement('select')
+let svoption1 = document.createElement('option')
+let svoption2 = document.createElement('option')
+let svoption3 = document.createElement('option')
+let svsubmit = document.createElement('button')
+
+//svinput.id = 'input'
+//svinput.hidden = true
+//svinput.style = `box-shadow: rgba(0, 0, 0, 0.2) 0px 3px 5px -2px, rgba(0, 0, 0, 0.14) 0px 1px 4px 2px, rgba(0, 0, 0, 0.12) 0px 1px 4px 1px;
+      //position: fixed !important;
+      //bottom: 30px !important;
+      //width: 408px;
+      //height: 648px;
+      //right: 30px !important;
+      //background-color: white;
+      //z-index: 99999;`
+      svheader.style = `display: inline-flex;
+      background-color: ${hexColor};
+      color: white;
+      font-size: 1.33929rem;
+      line-height: 2.6;
+      font-weight: 400;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';
+      width: 100%;
+      height: 60px;`
+      svtitle.style = `margin: 0;
+      padding-left: 25px;`
+      svtitle.innerText = 'Please Take this survey!'
+      svminButton.style = `position: absolute;
+      width: 50px;
+      right: 8px;
+      top: 15px;
+      cursor: pointer;
+      filter: invert(1);
+      border: 0;
+      background-color: transparent`
+      svminButton.onclick = function () {
+  closeLauncher()
+}
+svminButton.tabIndex = 0
+svminButton.ariaLabel = 'Minimize the Messenger'
+svminButton.innerHTML = `<svg id="svgid" viewBox="0 0 24 24" style="width: 26px; height: 26px;">
+<title>window-minimize</title>
+<path d="M19 13H5v-2h14v2z"></path>
+</svg>`
+//svheader.appendChild(svtitle)
+//svheader.appendChild(svminButton)
+//input.appendChild(svheader)
+
+svform.style = `padding: 25px;`
+svform.id = 'theForm'
+svfnameL.innerText = 'First Name'
+svfnameL.style = `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';`
+svfnameI.id = 'fname'
+svfnameI.style = `      width: 100%; padding: 12px 20px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;`
+svfnameI.placeholder = 'Your first name..'
+svlnameL.innerText = 'Last Name'
+svlnameL.style = `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';`
+svlnameI.id = 'lname'
+svlnameI.style = `      width: 100%; padding: 12px 20px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;`
+svlnameI.placeholder = 'Your last name..'
+svemailL.innerText = 'Was this a great interaction?'
+svemailL.style = `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';`
+svemailI.id = 'email'
+svemailI.style = `      width: 100%; padding: 12px 20px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;`
+svemailI.placeholder = 'Your email address..'
+svcaseL.innerText = 'Case'
+svcaseL.style = `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';`
+svcaseI.id = 'case'
+svcaseI.style = `      width: 100%; padding: 12px 20px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;`
+svcaseI.placeholder = 'Optional case number..'
+svqueueL.innerText = 'Queue'
+svqueueL.style = `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';`
+svqueueS.id = 'queue'
+svqueueS.style = `    width: 100%;
+padding: 12px 20px;
+margin: 8px 0;
+display: inline-block;
+border: 1px solid #ccc;
+border-radius: 4px;
+box-sizing: border-box;`
+svoption1.value = 'sales'
+svoption1.innerText = 'Sales'
+svoption2.value = 'support'
+svoption2.innerText = 'Support'
+svoption3.value = 'general'
+svoption3.innerText = 'General'
+svsubmit.style = `width: 100%;
+background-color: ${hexColor};
+color: white;
+padding: 14px 20px;
+margin: 100px 0 0 0;
+border: none;
+border-radius: 4px;
+cursor: pointer;`
+svsubmit.innerText = 'Submit'
+svsubmit.onclick = function () {
+  toggleMessenger()
+}
+
+//queueS.appendChild(option1)
+//queueS.appendChild(option2)
+//queueS.appendChild(option3)
+svform.appendChild(svfnameL)
+svform.appendChild(svfnameI)
+svform.appendChild(svlnameL)
+svform.appendChild(svlnameI)
+svform.appendChild(svemailL)
+svform.appendChild(svemailI)
+svform.appendChild(svcaseL)
+svform.appendChild(svcaseI)
+svform.appendChild(svqueueL)
+svform.appendChild(svqueueS)
+svform.appendChild(svsubmit)
+input.appendChild(svform)
+
+//survey end
+
+
+
+
+
+let iFrame = document.createElement('div')
 let iFramewin = document.createElement('iframe')
 iFrame.style = `padding: 25px;height: 490px;`
 iFramewin.style = `
@@ -297,23 +450,43 @@ function sizeChanged() {
 }
 
 let screenSize = ''
-window.addEventListener('resize',sizeChanged)
+window.addEventListener('resize', sizeChanged)
 sizeChanged()
 
 
 Genesys("subscribe", "MessagingService.messagesReceived", function (o) {
-            try {
-                if (o.data.messages[0].text === 'Info Form') {
-                    console.log('iFrame popup detected')
-                    showForm();
-                }
-                else if (o.data.messages[0].text.startsWith('iFrame::')) {
-                	console.log('iFrame popup detected')
-                    
-                    showFrame(o.data.messages[0].text.replace("iFrame::",""));
-                }
-            } catch (err) {
-                console.error(err)
-            }
-        });
+  try {
+    if (o.data.messages[0].text === 'Info Form') {
+      console.log('iFrame popup detected')
+      showForm();
+    }
+    else if (o.data.messages[0].text.startsWith('iFrame::')) {
+      console.log('iFrame popup detected')
+
+      showFrame(o.data.messages[0].text.replace("iFrame::", ""));
+    }
+  } catch (err) {
+    console.error(err)
+  }
+});
+
+Genesys("subscribe", "MessagingService.conversationDisconnected", function ({ data }) {
+  console.log(data);
+  showForm();
+});
+
+Genesys("subscribe", "MessagingService.readOnlyConversation", function({data}){
+  console.log(data);
+});
+
+Genesys("subscribe", "MessagingService.conversationReset", function({data}){
+  console.log(data);
+});
+
+Genesys("subscribe", "MessagingService.conversationCleared", function({data}){
+  console.log(data);
+  showSurvey();
+});
+
+Genesys("subscribe", "MessagingService.sessionCleared", function() {console.log("Session cleared")});
 
