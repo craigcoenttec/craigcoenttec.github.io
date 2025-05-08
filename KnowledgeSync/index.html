@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<!-- Created as an example by https://github.com/mcphee11 Version 2.1 -->
+<html>
+
+<head>
+    <meta name="robots" content="noindex" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title></title>
+    <meta name="Template" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Genesys CSS https://spark.genesys.com/ Using the client version for improved load time... change region and version as necessary. -->
+    <link
+        href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css"
+        rel="stylesheet" />
+    <script type="module"
+        src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"></script>
+    <!-- Genesys SDK info https://developer.genesys.cloud/  In PROD set a version -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+</head>
+
+<body onload="start()">
+    <script>
+        'use strict' //Enables strict mode is JavaScript
+        let url = new URL(document.location.href)
+        let gc_region = url.searchParams.get('gc_region')
+        let gc_clientId = url.searchParams.get('gc_clientId')
+        let gc_redirectUrl = url.searchParams.get('gc_redirectUrl')
+        let gc_conversationId = url.searchParams.get('gc_conversationId')
+        let userId
+        let sourceKnowledgeBaseId = "013c3a4c-1630-4d85-a844-52d34056e880"
+        let targetKnowledgeBaseId = "28be9749-72f8-464d-9d1f-56e11fa67755"
+        let sourceArticles, targetArticles
+
+        //Getting and setting the GC details from dynamic URL and session storage
+        gc_region ? sessionStorage.setItem('gc_region', gc_region) : gc_region = sessionStorage.getItem('gc_region')
+        gc_clientId ? sessionStorage.setItem('gc_clientId', gc_clientId) : gc_clientId = sessionStorage.getItem('gc_clientId')
+        gc_redirectUrl ? sessionStorage.setItem('gc_redirectUrl', gc_redirectUrl) : gc_redirectUrl = sessionStorage.getItem('gc_redirectUrl')
+        gc_conversationId ? sessionStorage.setItem('gc_conversationId', gc_conversationId) : gc_conversationId = sessionStorage.getItem('gc_conversationId')
+
+        let platformClient = require('platformClient')
+        const client = platformClient.ApiClient.instance
+        const uapi = new platformClient.UsersApi()
+        const napi = new platformClient.NotificationsApi()
+        const capi = new platformClient.ConversationsApi()
+        const kapi = new platformClient.KnowledgeApi()
+
+        async function start() {
+            try {
+                client.setEnvironment(gc_region)
+                client.setPersistSettings(true, '_mm_')
+
+                console.log('%cLogging in to Genesys Cloud', 'color: green')
+                await client.loginImplicitGrant(gc_clientId, gc_redirectUrl, {})
+
+                //GET Current UserId
+                let user = await uapi.getUsersMe({})
+                console.log(user)
+                userId = user.id
+
+            } catch (err) {
+                console.log('Error: ', err)
+            }
+        } //End of start() function
+
+        function addRow(knowledgeArticle, ) {
+            let table = document.getElementById('knowledgeTable')
+
+            
+
+            let row = table.insertRow(1)
+            let cell1 = row.insertCell(0)
+            let cell2 = row.insertCell(1)
+            let cell3 = row.insertCell(2)
+            let cell4 = row.insertCell(3)
+            let cell5 = row.insertCell(4)
+            let cell6 = row.insertCell(5)
+            let cell7 = row.insertCell(6)
+            let cell8 = row.insertCell(7)
+            let cell9 = row.insertCell(8)
+            let cell10 = row.insertCell(9)
+            let cell11 = row.insertCell(10)
+            let cell12 = row.insertCell(11)
+
+            cell1.innerHTML = '<gux-row-select></gux-row-select>'
+            cell2.innerHTML = knowledgeArticle.title
+            cell3.innerHTML = knowledgeArticle.id
+            cell4.innerHTML = knowledgeArticle.dateModified
+            cell5.innerHTML = 'Target ID'
+            cell6.innerHTML = 'Target Modify'
+            cell7.innerHTML = '<gux-toggle label="Sync"></gux-toggle>'
+            cell8.innerHTML = 'Source Category'
+            cell9.innerHTML = 'Target Category'
+            cell10.innerHTML = knowledgeArticle.state
+            cell11.innerHTML = 'Target Published'
+            cell12.innerHTML = 'Action'
+        }
+
+        function processArticles() {
+            let table = document.getElementById('knowledgeTable')
+            let tbody = table.getElementsByTagName('tbody')[0]
+            tbody.innerHTML = '' // Clear existing rows
+
+            sourceArticles.forEach(article => {
+                addRow(article)
+            })
+            targetArticles.forEach(article => {
+                addRow(article)
+            })
+        }
+
+        function getArticles(kbid = "013c3a4c-1630-4d85-a844-52d34056e880") {
+
+            let knowledgeBaseId = kbid; // String | Knowledge base ID
+            let opts = {
+                //"before": "before_example", // String | The cursor that points to the start of the set of entities that has been returned.
+                //"after": "after_example", // String | The cursor that points to the end of the set of entities that has been returned.
+                "pageSize": "200", // String | Number of entities to return. Maximum of 200.
+                //"interval": "interval_example", // String | Retrieves the documents modified in specified date and time range. If the after and before cursor parameters are within this interval, it would return valid data, otherwise it throws an error.The dates in the interval are represented in ISO-8601 format: YYYY-MM-DDThh:mm:ssZ/YYYY-MM-DDThh:mm:ssZ
+                //"documentId": ["documentId_example"], // [String] | Retrieves the specified documents, comma separated values expected.
+                //"categoryId": ["categoryId_example"], // [String] | If specified, retrieves documents associated with category ids, comma separated values expected.
+                //"includeSubcategories": true, // Boolean | Works along with 'categoryId' query parameter. If specified, retrieves documents associated with category ids and its children categories.
+                //"includeDrafts": true, // Boolean | If includeDrafts is true, Documents in the draft state are also returned in the response.
+                //"labelIds": ["labelIds_example"], // [String] | If specified, retrieves documents associated with label ids, comma separated values expected.
+                //"expand": ["expand_example"], // [String] | The specified entity attributes will be filled. Comma separated values expected.
+                //"externalIds": ["externalIds_example"] // [String] | If specified, retrieves documents associated with external ids, comma separated values expected.
+            };
+
+            // Get documents.
+            kapi.getKnowledgeKnowledgebaseDocuments(knowledgeBaseId, opts)
+                .then((data) => {
+                    console.log(`getKnowledgeKnowledgebaseDocuments success! data: ${JSON.stringify(data, null, 2)}`);
+                    sourceArticles = data.entities
+                    kapi.getKnowledgeKnowledgebaseDocuments(targetKnowledgeBaseId, opts)
+                        .then((data) => {
+                            console.log(`getKnowledgeKnowledgebaseDocuments success! data: ${JSON.stringify(data, null, 2)}`);
+                            targetArticles = data.entities
+                            processArticles()
+                        })
+                        .catch((err) => {
+                            console.log("There was a failure calling getKnowledgeKnowledgebaseDocuments");
+                            console.error(err);
+                        });
+                    
+                })
+                .catch((err) => {
+                    console.log("There was a failure calling getKnowledgeKnowledgebaseDocuments");
+                    console.error(err);
+                });
+        }
+
+    </script>
+
+    <h2>Knowledge Sync</h2>
+
+    <gux-table-toolbar>
+        <div slot="search-and-filter">
+            <gux-form-field-search label-position="screenreader">
+                <input slot="input" type="search" name="a-3" placeholder="Enter search" />
+                <label slot="label">Toolbar Search</label>
+            </gux-form-field-search>
+            <gux-table-toolbar-custom-action>
+                <span slot="text">Filter</span>
+                <gux-icon slot="icon" icon-name="filter" decorative></gux-icon>
+            </gux-table-toolbar-custom-action>
+        </div>
+
+        <div slot="contextual-actions">
+            <gux-table-toolbar-action action="delete"></gux-table-toolbar-action>
+        </div>
+
+        <div slot="permanent-actions">
+            <gux-table-toolbar-action action="export"></gux-table-toolbar-action>
+            <gux-table-toolbar-action onclick = "getArticles()" action="refresh"></gux-table-toolbar-action>
+            <gux-table-toolbar-action action="revert"></gux-table-toolbar-action>
+            <gux-table-toolbar-action action="import"></gux-table-toolbar-action>
+        </div>
+
+        <div slot="menu-actions">
+            <gux-table-toolbar-action action="export"></gux-table-toolbar-action>
+            <gux-table-toolbar-action action="refresh"></gux-table-toolbar-action>
+        </div>
+
+        <gux-table-toolbar-custom-action onclick="addRow()" slot="primary-action" accent="primary">
+            <span slot="text">Add</span>
+            <gux-icon slot="icon" icon-name="add" decorative></gux-icon>
+        </gux-table-toolbar-custom-action>
+    </gux-table-toolbar>
+
+
+    <gux-table >
+        <table id='knowledgeTable' slot="data">
+            <thead>
+                <tr>
+                    <th>
+                        <gux-table-select-menu>
+                            <gux-all-row-select></gux-all-row-select>
+                            <gux-list slot="select-menu-options">
+                                <gux-list-item onclick="notify(event)">
+                                    All on page
+                                </gux-list-item>
+                                <gux-list-item onclick="notify(event)"> None </gux-list-item>
+                                <gux-list-item onclick="notify(event)">
+                                    Bring selected to top
+                                </gux-list-item>
+                            </gux-list>
+                        </gux-table-select-menu>
+                    </th>
+                    <th>Title</th>
+                    <th>Source ID</th>
+                    <th>Source Modify</th>
+                    <th>Target ID</th>
+                    <th>Target Modfiy</th>
+                    <th>Sync</th>
+                    <th>Source Category</th>
+                    <th>Target Category</th>
+                    <th>Source Published</th>
+                    <th>Target Published</th>
+                    <th data-cell-action>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+    </gux-table>
+</body>
+<style>
+.not-used {
+    -custom-noop: noop;
+  }
+
+  .gux-sticky-cell {
+    position: sticky;
+    inset-inline-start: 0;
+    z-index: 1;
+  }
+
+  .gux-sticky-cell-2 {
+    position: sticky;
+    inset-inline-start: 89px;
+    z-index: 1;
+  }
+
+  .gux-sticky-cell-header-style {
+    background-color: var(--gse-ui-dataTableItems-header-fixedBackgroundColor);
+  }
+</style>
+</html>
