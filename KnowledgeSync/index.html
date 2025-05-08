@@ -63,10 +63,10 @@
             }
         } //End of start() function
 
-        function addRow(knowledgeArticle, ) {
+        function addRow(knowledgeArticle,) {
             let table = document.getElementById('knowledgeTable')
 
-            
+
 
             let row = table.insertRow(1)
             let cell1 = row.insertCell(0)
@@ -86,14 +86,36 @@
             cell2.innerHTML = knowledgeArticle.title
             cell3.innerHTML = knowledgeArticle.id
             cell4.innerHTML = knowledgeArticle.dateModified
-            cell5.innerHTML = 'Target ID'
-            cell6.innerHTML = 'Target Modify'
-            cell7.innerHTML = '<gux-toggle label="Sync"></gux-toggle>'
-            cell8.innerHTML = 'Source Category'
-            cell9.innerHTML = 'Target Category'
+            cell5.innerHTML = knowledgeArticle.targetId
+            cell6.innerHTML = knowledgeArticle.targetModify
+
+            cell7.innerHTML = `<gux-toggle label="Sync" ${knowledgeArticle.targetId ? 'checked' : ''}></gux-toggle>`
+
+
+            cell8.innerHTML = knowledgeArticle.category ? knowledgeArticle.category : ''
+            cell9.innerHTML = knowledgeArticle.targetCategory
             cell10.innerHTML = knowledgeArticle.state
-            cell11.innerHTML = 'Target Published'
-            cell12.innerHTML = 'Action'
+            cell11.innerHTML = knowledgeArticle.targetState
+            cell12.innerHTML = '<gux-button accent="tertiary" onclick="sync(this)">Sync Now</gux-button>'
+            row.setAttribute("id", knowledgeArticle.id)
+
+        }
+
+        function findRemovedArticles() {
+            for (let i = 0; i < targetArticles.length; i++) {
+                let article = targetArticles[i];
+                let found = sourceArticles.find(o => o.id === article.externalId);
+                if (!found) {
+                    console.log('Article not found in source:', article.externalId);
+                    deleteArticle(article.id)
+                    // Optionally, you can remove the article from the targetArticles array
+                    // targetArticles.splice(i, 1);
+                }
+            }
+        }
+
+        function syncAll() {
+            //add sync logic
         }
 
         function processArticles() {
@@ -102,11 +124,42 @@
             tbody.innerHTML = '' // Clear existing rows
 
             sourceArticles.forEach(article => {
+
+                let relatedObj = targetArticles.find(o => o.externalId === article.id);
+                if (relatedObj) {
+                    article.targetId = relatedObj.id
+                    article.targetModify = relatedObj.dateModified
+                    article.targetCategory = relatedObj.category || ''
+                    article.targetState = relatedObj.state
+                } else {
+                    article.targetId = ''
+                    article.targetModify = ''
+                    article.targetCategory = ''
+                    article.targetState = ''
+                }
                 addRow(article)
             })
-            targetArticles.forEach(article => {
-                addRow(article)
-            })
+            //targetArticles.forEach(article => {
+            // addRow(article)
+            //})
+        }
+
+        function sync(e) {
+            let row = e.parentNode.parentNode
+            let articleId = row.id
+            let article = sourceArticles.find(o => o.id === articleId);
+            if (article) {
+                console.log('Syncing article:', article)
+                if (article.targetId) {
+                    updateArticle(article.id, article.targetId)
+                }
+                else {
+                    createArticle(article.id)
+                }
+
+            } else {
+                console.log('Article not found:', articleId)
+            }
         }
 
         function getArticles(kbid = "013c3a4c-1630-4d85-a844-52d34056e880") {
@@ -141,7 +194,7 @@
                             console.log("There was a failure calling getKnowledgeKnowledgebaseDocuments");
                             console.error(err);
                         });
-                    
+
                 })
                 .catch((err) => {
                     console.log("There was a failure calling getKnowledgeKnowledgebaseDocuments");
@@ -149,6 +202,185 @@
                 });
         }
 
+        function createArticle(sourceId) {
+            let knowledgeBaseId = targetKnowledgeBaseId; // String | Knowledge base ID
+            let newDocId, sourceVariations
+            //let documentId = sourceId; // String | Globally unique identifier for the document.
+            let sourceArticle = sourceArticles.find(o => o.id === sourceId);
+            let body = {
+                title: sourceArticle.title,
+                visible: true,
+                externalId: sourceArticle.id,
+                externalUrl: sourceArticle.selfUri
+            }; // Object | 
+
+
+            kapi.postKnowledgeKnowledgebaseDocuments(knowledgeBaseId, body)
+                .then((data) => {
+                    console.log(`postKnowledgeKnowledgebaseDocuments success! data: ${JSON.stringify(data, null, 2)}`);
+                    newDocId = data.id
+                    let knowledgeBaseId = sourceKnowledgeBaseId; // String | Globally unique identifier for the knowledge base.
+                    let documentId = sourceId; // String | Globally unique identifier for the document.
+
+                    let opts = {
+                        //"before": "before_example", // String | The cursor that points to the start of the set of entities that has been returned.
+                        //"after": "after_example", // String | The cursor that points to the end of the set of entities that has been returned.
+                        //"pageSize": "pageSize_example", // String | Number of entities to return. Maximum of 200.
+                        //"documentState": "documentState_example", // String | The state of the document.
+                        // "expand": ["expand_example"] // [String] | The specified entity attributes will be filled. Comma separated values expected.
+                    };
+
+                    // Get variation for a document.
+                    kapi.getKnowledgeKnowledgebaseDocumentVariations(knowledgeBaseId, documentId, opts)
+                        .then((data) => {
+                            console.log(`getKnowledgeKnowledgebaseDocumentVariations success! data: ${JSON.stringify(data, null, 2)}`);
+                            sourceVariations = data.entities
+
+                            let knowledgeBaseId = targetKnowledgeBaseId; // String | Globally unique identifier for the knowledge base.
+                            let documentId = newDocId; // String | Globally unique identifier for the document.
+                            let body = {
+                                priority: 1,
+                                contexts: [],
+                                name: "Default",
+                                body: sourceVariations[0].body,
+                            }; // Object | 
+
+                            // Create a variation for a document.
+                            kapi.postKnowledgeKnowledgebaseDocumentVariations(knowledgeBaseId, documentId, body)
+                                .then((data) => {
+                                    console.log(`postKnowledgeKnowledgebaseDocumentVariations success! data: ${JSON.stringify(data, null, 2)}`);
+                                    let knowledgeBaseId = targetKnowledgeBaseId; // String | Globally unique identifier for the knowledge base.
+                                    let documentId = newDocId; // String | Globally unique identifier for the document.
+                                    let body = {}; // Object | 
+
+                                    // Creates or restores a document version.
+                                    kapi.postKnowledgeKnowledgebaseDocumentVersions(knowledgeBaseId, documentId, body)
+                                        .then((data) => {
+                                            console.log(`postKnowledgeKnowledgebaseDocumentVersions success! data: ${JSON.stringify(data, null, 2)}`);
+                                        })
+                                        .catch((err) => {
+                                            console.log("There was a failure calling postKnowledgeKnowledgebaseDocumentVersions");
+                                            console.error(err);
+                                        });
+                                })
+                                .catch((err) => {
+                                    console.log("There was a failure calling postKnowledgeKnowledgebaseDocumentVariations");
+                                    console.error(err);
+                                });
+                            // Create document.
+
+                        })
+                        .catch((err) => {
+                            console.log("There was a failure calling getKnowledgeKnowledgebaseDocumentVariations");
+                            console.error(err);
+                        });
+
+                    // Create a variation for a document.
+
+                })
+                .catch((err) => {
+                    console.log("There was a failure calling postKnowledgeKnowledgebaseDocuments");
+                    console.error(err);
+                });
+
+
+            // Get variations for a document.
+
+        }
+
+        function updateArticle(sourceId, targetId) {
+            //let knowledgeBaseId = targetKnowledgeBaseId; // String | Knowledge base ID
+            let sourceVariations
+            //let documentId = sourceId; // String | Globally unique identifier for the document.
+            let sourceArticle = sourceArticles.find(o => o.id === sourceId);
+            let knowledgeBaseId = sourceKnowledgeBaseId; // String | Globally unique identifier for the knowledge base.
+            let documentId = sourceId; // String | Globally unique identifier for the document.
+
+            let opts = {
+                //"before": "before_example", // String | The cursor that points to the start of the set of entities that has been returned.
+                //"after": "after_example", // String | The cursor that points to the end of the set of entities that has been returned.
+                //"pageSize": "pageSize_example", // String | Number of entities to return. Maximum of 200.
+                //"documentState": "documentState_example", // String | The state of the document.
+                // "expand": ["expand_example"] // [String] | The specified entity attributes will be filled. Comma separated values expected.
+            };
+
+            // Get variation for a document.
+            kapi.getKnowledgeKnowledgebaseDocumentVariations(knowledgeBaseId, documentId, opts)
+                .then((data) => {
+                    console.log(`getKnowledgeKnowledgebaseDocumentVariations success! data: ${JSON.stringify(data, null, 2)}`);
+                    sourceVariations = data.entities
+
+                    let knowledgeBaseId = targetKnowledgeBaseId; // String | Globally unique identifier for the knowledge base.
+                    let documentId = targetId; // String | Globally unique identifier for the document.
+                    // Object | 
+
+                    // Create a variation for a document.
+                    kapi.getKnowledgeKnowledgebaseDocumentVariations(knowledgeBaseId, documentId, opts)
+                        .then((data) => {
+                            console.log(`postKnowledgeKnowledgebaseDocumentVariations success! data: ${JSON.stringify(data, null, 2)}`);
+
+                            let knowledgeBaseId = targetKnowledgeBaseId; // String | Globally unique identifier for the knowledge base.
+                            let documentId = targetId; // String | Globally unique identifier for the document.
+                            let documentVariationId = data.entities[0].id; // String | Globally unique identifier for the document.
+                            let body = {
+                                priority: 1,
+                                contexts: [],
+                                name: "Default",
+                                body: sourceVariations[0].body,
+                            };; // Object | 
+                            kapi.patchKnowledgeKnowledgebaseDocumentVariation(documentVariationId, documentId, knowledgeBaseId, body)
+                                .then((data) => {
+                                    console.log(`patchKnowledgeKnowledgebaseDocumentVariation success! data: ${JSON.stringify(data, null, 2)}`);
+                                    kapi.postKnowledgeKnowledgebaseDocumentVersions(knowledgeBaseId, documentId, body)
+                                        .then((data) => {
+                                            console.log(`postKnowledgeKnowledgebaseDocumentVersions success! data: ${JSON.stringify(data, null, 2)}`);
+                                        })
+                                        .catch((err) => {
+                                            console.log("There was a failure calling postKnowledgeKnowledgebaseDocumentVersions");
+                                            console.error(err);
+                                        });
+                                })
+                                .catch((err) => {
+                                    console.log("There was a failure calling patchKnowledgeKnowledgebaseDocumentVariation");
+                                    console.error(err);
+                                });
+                            // Creates or restores a document version.
+
+                        })
+                        .catch((err) => {
+                            console.log("There was a failure calling postKnowledgeKnowledgebaseDocumentVariations");
+                            console.error(err);
+                        });
+                    // Create document.
+
+                })
+                .catch((err) => {
+                    console.log("There was a failure calling getKnowledgeKnowledgebaseDocumentVariations");
+                    console.error(err);
+                });
+
+
+
+
+            // Update a variation for a document.
+
+        }
+
+        function deleteArticle(targetId) {
+            let knowledgeBaseId = targetKnowledgeBaseId; // String | Knowledge base ID.
+            let documentId = targetId; // String | Document ID.
+
+            // Delete document.
+            kapi.deleteKnowledgeKnowledgebaseDocument(knowledgeBaseId, documentId)
+                .then(() => {
+                    console.log("deleteKnowledgeKnowledgebaseDocument returned successfully.");
+                })
+                .catch((err) => {
+                    console.log("There was a failure calling deleteKnowledgeKnowledgebaseDocument");
+                    console.error(err);
+                });
+
+        }
     </script>
 
     <h2>Knowledge Sync</h2>
@@ -166,14 +398,14 @@
         </div>
 
         <div slot="contextual-actions">
-            <gux-table-toolbar-action action="delete"></gux-table-toolbar-action>
+            <gux-table-toolbar-action action="delete" onclick="findRemovedArticles()"></gux-table-toolbar-action>
         </div>
 
         <div slot="permanent-actions">
             <gux-table-toolbar-action action="export"></gux-table-toolbar-action>
-            <gux-table-toolbar-action onclick = "getArticles()" action="refresh"></gux-table-toolbar-action>
+            <gux-table-toolbar-action onclick="getArticles()" action="refresh"></gux-table-toolbar-action>
             <gux-table-toolbar-action action="revert"></gux-table-toolbar-action>
-            <gux-table-toolbar-action action="import"></gux-table-toolbar-action>
+            <gux-table-toolbar-action action="import" onclick="syncAll()"></gux-table-toolbar-action>
         </div>
 
         <div slot="menu-actions">
@@ -188,7 +420,7 @@
     </gux-table-toolbar>
 
 
-    <gux-table >
+    <gux-table>
         <table id='knowledgeTable' slot="data">
             <thead>
                 <tr>
@@ -226,24 +458,25 @@
     </gux-table>
 </body>
 <style>
-.not-used {
-    -custom-noop: noop;
-  }
+    .not-used {
+        -custom-noop: noop;
+    }
 
-  .gux-sticky-cell {
-    position: sticky;
-    inset-inline-start: 0;
-    z-index: 1;
-  }
+    .gux-sticky-cell {
+        position: sticky;
+        inset-inline-start: 0;
+        z-index: 1;
+    }
 
-  .gux-sticky-cell-2 {
-    position: sticky;
-    inset-inline-start: 89px;
-    z-index: 1;
-  }
+    .gux-sticky-cell-2 {
+        position: sticky;
+        inset-inline-start: 89px;
+        z-index: 1;
+    }
 
-  .gux-sticky-cell-header-style {
-    background-color: var(--gse-ui-dataTableItems-header-fixedBackgroundColor);
-  }
+    .gux-sticky-cell-header-style {
+        background-color: var(--gse-ui-dataTableItems-header-fixedBackgroundColor);
+    }
 </style>
+
 </html>
