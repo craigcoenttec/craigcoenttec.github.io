@@ -152,13 +152,14 @@
       }
 
       //Get our info about this conversation.
-      getCurrentConversationDetails();
+     await getCurrentConversationDetails();
 
 
-      timer(1000).then(() => {
+      //timer(1000).then(() => {
         if (gc_mediaType == "MESSAGE") {
-
-          TranslateExistingConversation(gc_currentConversationObject);
+          //console.log("Starting waitexisting")
+          await TranslateExistingConversation(gc_currentConversationObject);
+          //console.log("donewaitingexisting")
           setTimeout(() => {
             console.log("running later")
             console.log(JSON.stringify(messageDetailListv2, null, 2));
@@ -177,7 +178,7 @@
 
           }, 2250);
         }
-      })
+     // })
 
 
 
@@ -194,7 +195,7 @@
 
     //---------------- 
     //Subscription Code - Chat Messages
-    async function subscribeMessageEvents(replaceStorage=false) {
+    async function subscribeMessageEvents(replaceStorage = false) {
 
       try {
         //Need to store wss as only can have 15 per agent. Also bad practice to create multiple
@@ -229,7 +230,7 @@
 
           gc_conversationId ? console.log('wss conversationId: ', gc_conversationId) : null
           details?.eventBody?.message === 'WebSocket Heartbeat' ? console.log('%c%s Heartbeat', 'color: red', '❤️') : console.log(details)
-         // details?.eventBody?.message === 'pong' ? console.log('%c%s PONG!', 'color: orange', '📜') : console.log(details)
+          // details?.eventBody?.message === 'pong' ? console.log('%c%s PONG!', 'color: orange', '📜') : console.log(details)
           //if Message notification
           if (details.topicName.includes('messages')) {
             console.log('Messaging Notification: ', details)
@@ -261,7 +262,7 @@
               });
             }
           }
-          
+
         }
         socket.onclose = async function (event) {
 
@@ -276,9 +277,9 @@
         }
         socket.onopen = async function (event) {
           //pingInterval = setInterval(() => { 
-            //console.log("SENDING!!!!!!!!!!!!!!!!")
-            //currentMessageSocket.send({message:"ping"}) }
-         // , 5000);
+          //console.log("SENDING!!!!!!!!!!!!!!!!")
+          //currentMessageSocket.send({message:"ping"}) }
+          // , 5000);
         }
         console.log(`Waiting for events on wss://streaming.${gc_region}/channels/${sessionStorage.getItem('gc_channelid')}`)
       } catch (err) {
@@ -287,7 +288,7 @@
 
     }
 
-    
+
 
     //Transcription Subscription - Native Voice Transcription (NOT USED CURRENTLY)
     async function subscribeLiveTranscripton(conversationId) {
@@ -1049,74 +1050,74 @@
 
     //Translate existing thread of a digital conversation
     async function TranslateExistingConversation(conversationObject) {
-
-      //get our current messages.
-      let customerMessages = conversationObject.participants.slice().find(p => p.purpose === 'customer').messages
-      let agentMessages = conversationObject.participants.slice().reverse().find(p => p.purpose === 'agent').messages
-      let workflowMessages = conversationObject.participants.slice().reverse().find(p => p.purpose === 'workflow').messages
-
-
-
-      console.log(customerMessages[0].messages);
-      let workingList = [];
-
-      //create a joint list
-      for (const message of customerMessages[0].messages) {
-        messageIds.push(message.messageId);
-        message.messageSender = "Customer";
-        workingList.push(message);
-
-      }
-
-      for (const message of agentMessages[0].messages) {
-
-        messageIds.push(message.messageId);
-        message.messageSender = "Agent";
-        workingList.push(message);
+      return new Promise((resolve) => {
+        //get our current messages.
+        let customerMessages = conversationObject.participants.slice().find(p => p.purpose === 'customer').messages
+        let agentMessages = conversationObject.participants.slice().reverse().find(p => p.purpose === 'agent').messages
+        let workflowMessages = conversationObject.participants.slice().reverse().find(p => p.purpose === 'workflow').messages
 
 
 
-      }
+        console.log(customerMessages[0].messages);
+        let workingList = [];
 
-      for (const message of workflowMessages[0].messages) {
+        //create a joint list
+        for (const message of customerMessages[0].messages) {
+          messageIds.push(message.messageId);
+          message.messageSender = "Customer";
+          workingList.push(message);
 
-        messageIds.push(message.messageId);
-        message.messageSender = "Workflow";
-        workingList.push(message);
+        }
 
+        for (const message of agentMessages[0].messages) {
 
-      }
-
-      //sort and translate
-
-      for (const message of workingList.sort((m1, m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0)) {
-
-        messageDetailList.push(message);
-
-
-        //let sourceLangObject = agentLanguageObject;
-        //let targetLangObject = customerLanguageObject;
-        // always use the customer profile for historical translation to make sure everything is readable for the agent.
-        //let translationProfile = customerProfileObject;
-        // if (message.messageSender == 'Customer') {
-        let sourceLangObject = customerLanguageObject;
-        let targetLangObject = agentLanguageObject;
-        let translationProfile = customerProfileObject;
-        //}
-
-        messageDetailListv2[message.messageId] = createMessageObject(message.messageId, message.messageTime, "", sourceLangObject.name, sourceLangObject.flag_id, "", targetLangObject.name, targetLangObject.flag_id, "ADDI", message.messageSender);
+          messageIds.push(message.messageId);
+          message.messageSender = "Agent";
+          workingList.push(message);
 
 
 
-        console.log(message);
-        console.log(`%cNew Message: ${message.messageId}`, 'color: green');
-        //await timer(750);
-        await translateGenesysMessage(messageDetailListv2[message.messageId], translationProfile);
-        //await ADDI_translateMessage(message.messageId, message.messageSender, message.originalText, translationProfile.ProfileId, translateHistoricalADDIMessage);
+        }
 
-      }
+        for (const message of workflowMessages[0].messages) {
+
+          messageIds.push(message.messageId);
+          message.messageSender = "Workflow";
+          workingList.push(message);
 
 
+        }
+
+        //sort and translate
+
+        for (const message of workingList.sort((m1, m2) => m1.messageTime > m2.messageTime ? 1 : m1.messageTime < m2.messageTime ? -1 : 0)) {
+
+          messageDetailList.push(message);
+
+
+          //let sourceLangObject = agentLanguageObject;
+          //let targetLangObject = customerLanguageObject;
+          // always use the customer profile for historical translation to make sure everything is readable for the agent.
+          //let translationProfile = customerProfileObject;
+          // if (message.messageSender == 'Customer') {
+          let sourceLangObject = customerLanguageObject;
+          let targetLangObject = agentLanguageObject;
+          let translationProfile = customerProfileObject;
+          //}
+
+          messageDetailListv2[message.messageId] = createMessageObject(message.messageId, message.messageTime, "", sourceLangObject.name, sourceLangObject.flag_id, "", targetLangObject.name, targetLangObject.flag_id, "ADDI", message.messageSender);
+
+
+
+          console.log(message);
+          console.log(`%cNew Message: ${message.messageId}`, 'color: green');
+          //await timer(750);
+          translateGenesysMessage(messageDetailListv2[message.messageId], translationProfile);
+          //await ADDI_translateMessage(message.messageId, message.messageSender, message.originalText, translationProfile.ProfileId, translateHistoricalADDIMessage);
+
+        }
+
+      });
       //await ADDI_translateMessage(message.messageId, message.messageSender, message.originalText, translationProfile.ProfileId, translateHistoricalADDIMessage);
     }
 
@@ -1239,92 +1240,94 @@
     //---------------- 
     //Genesys Specific Setup
     function getCurrentConversationDetails() {
+      return new Promise((resolve) => {
+        let customerMessages, workflowMessages, agentMessages;
 
-      let customerMessages, workflowMessages, agentMessages;
+        // Get conversation
+        capi.getConversation(gc_conversationId)
+          .then((data) => {
+            //console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`, 'color: green');
+            gc_currentConversationObject = data;
+            //get some agent data we will need
+            let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
+            gc_agentParticipantId = agentParticipant.id
+            gc_queueId = agentParticipant.queueId
+            getCurrentQueue(gc_queueId)
 
-      // Get conversation
-      capi.getConversation(gc_conversationId)
-        .then((data) => {
-          //console.log(`%cgetConversation success! data: ${JSON.stringify(data, null, 2)}`, 'color: green');
-          gc_currentConversationObject = data;
-          //get some agent data we will need
-          let agentParticipant = data.participants.slice().reverse().find(p => p.purpose === 'agent');
-          gc_agentParticipantId = agentParticipant.id
-          gc_queueId = agentParticipant.queueId
-          getCurrentQueue(gc_queueId)
+            let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
 
-          let customerAttributes = data.participants.slice().find(p => p.purpose === 'customer').attributes;
+            if (customerAttributes.speaker_language) {
+              if (customerAttributes.speaker_language == "default") {
+                customerLanguage = "german"
+              }
+              else {
+                customerLanguage = customerAttributes.speaker_language;
+              }
 
-          if (customerAttributes.speaker_language) {
-            if (customerAttributes.speaker_language == "default") {
-              customerLanguage = "german"
+            }
+
+            updateLanguageSelections({ agent: agentLanguage, caller: customerLanguage });
+
+            //ADDI call with ID
+            if (customerAttributes.ADDI_TransactionId) {
+              currentTransaction = customerAttributes.ADDI_TransactionId;
+              document.getElementById("span_transactionId").innerText = currentTransaction;
+              subscribeADDITranscription();
+              ADDI_getActiveTransactionLanguage();
+            }
+
+
+            if (agentParticipant.messages.length > 0) {
+              gc_agentCommunicationId = agentParticipant.messages[0].id;
+              gc_mediaType = "MESSAGE";
+              document.getElementById("footer").style.visibility = "visible";
+              //document.getElementById("delayDiv").style.visibility = "hidden";
+
+              // customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
+              // agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
+              // workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
+
+              //console.log(customerMessages[0].messages);
+
+              //re-enable the subscriptions when the history is working!!!!!!!!!!!!!!!!!!!!!
+              //subscribeMessageEvents();
+
+
+
+
+            }
+            else if (agentParticipant.calls.length > 0) {
+              gc_agentCommunicationId = agentParticipant.calls[0].id;
+              gc_mediaType = "VOICE"
+              document.getElementById("footer").style.visibility = "visible";
+              //document.getElementById("delayDiv").style.visibility = "hidden";
+              //document.getElementById("footer").style.visibility = "hidden";
             }
             else {
-              customerLanguage = customerAttributes.speaker_language;
+              gc_mediaType = "OTHER"
+              document.getElementById("footer").style.visibility = "visible";
+              //document.getElementById("delayDiv").style.visibility = "hidden";
+              //document.getElementById("footer").style.visibility = "hidden";
             }
 
-          }
 
-          updateLanguageSelections({ agent: agentLanguage, caller: customerLanguage });
+            console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}.  The queue is ${gc_queueId}`, 'color: Blue')
+            document.getElementById('span_communication').innerText = gc_agentCommunicationId;
+            document.getElementById('span_participant').innerText = gc_agentParticipantId;
+            document.getElementById('span_media').innerText = gc_mediaType;
 
-          //ADDI call with ID
-          if (customerAttributes.ADDI_TransactionId) {
-            currentTransaction = customerAttributes.ADDI_TransactionId;
-            document.getElementById("span_transactionId").innerText = currentTransaction;
-            subscribeADDITranscription();
-            ADDI_getActiveTransactionLanguage();
-          }
+            //let customerParticipant = data.participants.slice().reverse().find(p => p.purpose === 'customer');
 
+            resolve("done");
+           
 
-          if (agentParticipant.messages.length > 0) {
-            gc_agentCommunicationId = agentParticipant.messages[0].id;
-            gc_mediaType = "MESSAGE";
-            document.getElementById("footer").style.visibility = "visible";
-            //document.getElementById("delayDiv").style.visibility = "hidden";
-
-            // customerMessages = data.participants.slice().find(p => p.purpose === 'customer').messages;
-            // agentMessages = data.participants.slice().reverse().find(p => p.purpose === 'agent').messages;
-            // workflowMessages = data.participants.slice().reverse().find(p => p.purpose === 'workflow').messages;
-
-            //console.log(customerMessages[0].messages);
-
-            //re-enable the subscriptions when the history is working!!!!!!!!!!!!!!!!!!!!!
-            //subscribeMessageEvents();
-
-
-
-
-          }
-          else if (agentParticipant.calls.length > 0) {
-            gc_agentCommunicationId = agentParticipant.calls[0].id;
-            gc_mediaType = "VOICE"
-            document.getElementById("footer").style.visibility = "visible";
-            //document.getElementById("delayDiv").style.visibility = "hidden";
-            //document.getElementById("footer").style.visibility = "hidden";
-          }
-          else {
-            gc_mediaType = "OTHER"
-            document.getElementById("footer").style.visibility = "visible";
-            //document.getElementById("delayDiv").style.visibility = "hidden";
-            //document.getElementById("footer").style.visibility = "hidden";
-          }
-
-
-          console.log(`%cThe agent participant id is ${gc_agentParticipantId}.  The media type is ${gc_mediaType}.  The communication id is ${gc_agentCommunicationId}.  The queue is ${gc_queueId}`, 'color: Blue')
-          document.getElementById('span_communication').innerText = gc_agentCommunicationId;
-          document.getElementById('span_participant').innerText = gc_agentParticipantId;
-          document.getElementById('span_media').innerText = gc_mediaType;
-
-          //let customerParticipant = data.participants.slice().reverse().find(p => p.purpose === 'customer');
-
-
-
-
-        })
-        .catch((err) => {
-          console.log("%cThere was a failure calling getConversation", 'color: red');
-          console.error(err);
-        });
+          })
+          .catch((err) => {
+            console.log("%cThere was a failure calling getConversation", 'color: red');
+            console.error(err);
+            resolve("error")
+          });
+      });
     }
 
     function getCurrentQueue(id) {
