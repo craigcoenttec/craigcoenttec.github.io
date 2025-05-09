@@ -115,12 +115,24 @@
         }
 
         function syncAll() {
-            //add sync logic
+            for (let i = 0; i < sourceArticles.length; i++) {
+                let article = sourceArticles[i];
+                let relatedObj = targetArticles.find(o => o.externalId === article.id);
+                if (relatedObj) {
+                    if(relatedObj.dateModified < article.dateModified) {
+                        updateArticle(article.id, relatedObj.id)
+                    }
+                    
+                } else {
+                    createArticle(article.id)
+                }
+            }
+            findRemovedArticles()
         }
 
         function processArticles() {
             let table = document.getElementById('knowledgeTable')
-            let tbody = table.getElementsByTagName('tbody')[0]
+            let tbody = document.getElementById('knowledgeTableBody')
             tbody.innerHTML = '' // Clear existing rows
 
             sourceArticles.forEach(article => {
@@ -402,7 +414,7 @@
         </div>
 
         <div slot="permanent-actions">
-            <gux-table-toolbar-action action="export"></gux-table-toolbar-action>
+            <gux-table-toolbar-action >custom</gux-table-toolbar-action>
             <gux-table-toolbar-action onclick="getArticles()" action="refresh"></gux-table-toolbar-action>
             <gux-table-toolbar-action action="revert"></gux-table-toolbar-action>
             <gux-table-toolbar-action action="import" onclick="syncAll()"></gux-table-toolbar-action>
@@ -413,14 +425,14 @@
             <gux-table-toolbar-action action="refresh"></gux-table-toolbar-action>
         </div>
 
-        <gux-table-toolbar-custom-action onclick="addRow()" slot="primary-action" accent="primary">
-            <span slot="text">Add</span>
-            <gux-icon slot="icon" icon-name="add" decorative></gux-icon>
+        <gux-table-toolbar-custom-action onclick="syncAll()" slot="primary-action" accent="primary">
+            <span slot="text">Sync</span>
+            <gux-icon slot="icon" icon-name="sync" decorative></gux-icon>
         </gux-table-toolbar-custom-action>
     </gux-table-toolbar>
 
 
-    <gux-table>
+    <gux-table empty-message=" " object-table="false" id="knowledgeGuxTable">
         <table id='knowledgeTable' slot="data">
             <thead>
                 <tr>
@@ -451,7 +463,7 @@
                     <th data-cell-action>Action</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="knowledgeTableBody">
 
             </tbody>
         </table>
