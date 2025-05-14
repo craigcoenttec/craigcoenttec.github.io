@@ -1,8 +1,11 @@
 'use strict'
 
 //Variables to change in your deployment
-const deploymentId = 'de9be94e-2637-4149-8daa-4f15649d0d66' //Your WebMessenger DeploymentId
+//const deploymentId = 'de9be94e-2637-4149-8daa-4f15649d0d66' //Your WebMessenger DeploymentId
+const deploymentId = '91c7eb30-5c78-490a-a087-31c8cf247803' //Your WebMessenger DeploymentId
 const hexColor = '#0D6EFD' //Color theme
+var survey = false
+var uniqueId = '1234567890' //Unique ID for the survey
 
 function toggleMessenger(wasIframe = false) {
   Genesys(
@@ -29,7 +32,7 @@ function toggleMessenger(wasIframe = false) {
         })
 
       }
-      else {
+      else if (survey == false) {
         Genesys("command", "MessagingService.sendMessage", {
           message: "Form completed by " + document.getElementById('fname').value
         })
@@ -342,15 +345,15 @@ svemailL.innerText = 'Was this a great interaction?'
 svemailL.style = `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';`
 svemailI.id = 'email'
 svemailI.style = `      width: 100%; padding: 12px 20px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;`
-svemailI.placeholder = 'Your email address..'
-svcaseL.innerText = 'Case'
+svemailI.placeholder = 'Provide some feedback..'
+svcaseL.innerText = 'Was this your first time contacting us?'
 svcaseL.style = `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';`
 svcaseI.id = 'case'
 svcaseI.style = `      width: 100%; padding: 12px 20px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;`
 svcaseI.placeholder = 'Optional case number..'
 svqueueL.innerText = 'Queue'
 svqueueL.style = `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', 'sans-serif';`
-svqueueS.id = 'queue'
+svqueueS.id = 'Experience'
 svqueueS.style = `    width: 100%;
 padding: 12px 20px;
 margin: 8px 0;
@@ -358,12 +361,12 @@ display: inline-block;
 border: 1px solid #ccc;
 border-radius: 4px;
 box-sizing: border-box;`
-svoption1.value = 'sales'
-svoption1.innerText = 'Sales'
-svoption2.value = 'support'
-svoption2.innerText = 'Support'
-svoption3.value = 'general'
-svoption3.innerText = 'General'
+svoption1.value = 'great'
+svoption1.innerText = 'Great'
+svoption2.value = 'ok'
+svoption2.innerText = 'OK'
+svoption3.value = 'bad'
+svoption3.innerText = 'Bad'
 svsubmit.style = `width: 100%;
 background-color: ${hexColor};
 color: white;
@@ -453,6 +456,15 @@ let screenSize = ''
 window.addEventListener('resize', sizeChanged)
 sizeChanged()
 
+Genesys('command', 'Database.set', {
+        messaging: {
+          customAttributes: {
+            externalId: uniqueId
+            //queueName: document.getElementById('queue').value,
+          },
+
+        },
+      })
 
 Genesys("subscribe", "MessagingService.messagesReceived", function (o) {
   try {
@@ -472,7 +484,24 @@ Genesys("subscribe", "MessagingService.messagesReceived", function (o) {
 
 Genesys("subscribe", "MessagingService.conversationDisconnected", function ({ data }) {
   console.log(data);
-  showForm();
+  if (survey) {
+  showSurvey();
+  }
+  else {
+    Genesys('command', 'Database.set', {
+        messaging: {
+          customAttributes: {
+            goToSurvey: "true",
+            //queueName: document.getElementById('queue').value,
+          },
+
+        },
+      })
+      survey = true
+       setTimeout(() => {Genesys("command", "MessagingService.sendMessage", {
+          message: "*Survey*"
+        })}, 750)
+  }
 });
 
 Genesys("subscribe", "MessagingService.readOnlyConversation", function({data}){
@@ -485,6 +514,7 @@ Genesys("subscribe", "MessagingService.conversationReset", function({data}){
 
 Genesys("subscribe", "MessagingService.conversationCleared", function({data}){
   console.log(data);
+  survey = true
   showSurvey();
 });
 
