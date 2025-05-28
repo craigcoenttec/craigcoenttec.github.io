@@ -1,7 +1,6 @@
 'use strict'
 
 //Variables to change in your deployment
-//const deploymentId = 'de9be94e-2637-4149-8daa-4f15649d0d66' //Your WebMessenger DeploymentId
 const deploymentId = '91c7eb30-5c78-490a-a087-31c8cf247803' //Your WebMessenger DeploymentId
 const hexColor = '#0D6EFD' //Color theme
 var survey = false
@@ -32,6 +31,10 @@ function toggleMessenger(wasIframe = false) {
         })
 
       }
+      /*
+      *Note that this logic sends information into the chat.  This was originally from a different example, but highlights how you could have the form to fill otu the survey but if you want to still interact with the conversation, you could
+      *Pass some data or responses back into the conversation to have it saved with the conversation.
+      * */
       else if (survey == false) {
         Genesys("command", "MessagingService.sendMessage", {
           message: "Form completed by " + document.getElementById('fname').value
@@ -466,6 +469,14 @@ Genesys('command', 'Database.set', {
         },
       })
 
+
+
+      /*
+* This is the set of events I am listening to after set up.  Note in this example, from other samples in here, text like Info Form or Iframe will trigger the form or iframe to show.
+*  The disconnect events handle the survey portions.  Note that there are additional in the SDK spec.  The Conversation clearing is what is occurring when the trash can is used or deployment is set to clear a conversation.
+*  The disconnect events only fire if the deployment is configured to send status events.
+*/
+
 Genesys("subscribe", "MessagingService.messagesReceived", function (o) {
   try {
     if (o.data.messages[0].text === 'Info Form') {
@@ -481,6 +492,8 @@ Genesys("subscribe", "MessagingService.messagesReceived", function (o) {
     console.error(err)
   }
 });
+
+
 
 Genesys("subscribe", "MessagingService.conversationDisconnected", function ({ data }) {
   console.log(data);
@@ -503,6 +516,8 @@ Genesys("subscribe", "MessagingService.conversationDisconnected", function ({ da
         })}, 750)
   }
 });
+
+
 
 Genesys("subscribe", "MessagingService.readOnlyConversation", function({data}){
   console.log(data);
