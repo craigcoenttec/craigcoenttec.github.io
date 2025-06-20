@@ -61,9 +61,17 @@
 
             if (gc_conversationId) {
                 document.getElementById('conversationID').innerHTML = `Conversation ID: ${gc_conversationId}`;
-            } else {
-                document.getElementById('conversationID').innerHTML = 'No conversation ID provided.';
+                Genesys("command", "Database.set", {
+                    messaging: {
+                        customAttributes: {
+                            relatedConvId: gc_conversationId  //this is an example of just setting a string
+                        }
+                    }
+                } );
             }
+                else {
+                    document.getElementById('conversationID').innerHTML = 'No conversation ID provided.';
+                }
         }
 
     </script>
