@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iframe Communication Demo - Learning Example</title>
+    <!-- Genesys PureCloud SDK -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            height: 100vh;
+        }
+        
+        .demo-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            padding: 10px;
+            box-sizing: border-box;
+            min-height: 0;
+        }
+        
+        .controls-panel {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 0 0 450px;
+            overflow-y: auto;
+            box-sizing: border-box;
+            max-height: 100%;
+        }
+        
+        .iframe-container {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        
+        .demo-iframe {
+            width: 100%;
+            flex: 1;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            min-height: 0;
+        }
+        
+        .button-group {
+            margin: 10px 0;
+        }
+        
+        .demo-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .demo-button:hover {
+            background: #0056b3;
+        }
+        
+        .demo-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .status-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .input-group {
+            margin: 10px 0;
+        }
+        
+        .input-group label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        
+        .input-group input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+        
+        .description {
+            background: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196f3;
+            margin-bottom: 20px;
+        }
+        
+        /* Form panel toggle styles */
+        .controls-panel.hidden {
+            display: none;
+        }
+        
+        .panel-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        
+        .toggle-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toggle-button:hover {
+            background: #218838;
+        }
+        
+        .toggle-button.hide-mode {
+            background: #dc3545;
+        }
+        
+        .toggle-button.hide-mode:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        
+
+        <div class="main-content">
+            <div class="controls-panel">
+            <h2>Communication Controls</h2>
+            
+            <!-- Connection Status -->
+            <div class="input-group">
+                <label>Connection Status:</label>
+                <span id="connectionStatus">Not Connected</span>
+            </div>
+            
+            <!-- Active Conversation ID from iframe response -->
+            <div class="input-group">
+                <label>Active Conversation ID:</label>
+                <span id="activeConversationId" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">None</span>
+            </div>
+            
+            <div class="input-group">
+                <label>Iframe Base URL:</label>
+                <input type="text" id="iframeUrlInput" value="https://agent-assist.tthcslabs.com" placeholder="Enter iframe base URL">
+            </div>
+            
+            <div class="input-group">
+                <label>Organization ID:</label>
+                <input type="text" id="organizationIdInput" value="01981384-048a-7074-9d2b-ba9100330a08" placeholder="Enter organization ID">
+            </div>
+            
+            <div class="input-group">
+                <button class="demo-button" onclick="loadIframeWithNewUrl()">Load Iframe</button>
+                <button class="demo-button" onclick="startNewCallSequence()" style="background: #e67e22; margin-left: 10px;">🚀 New Call</button>
+            </div>
+            
+            <!-- New Call Sequence Status -->
+            <div class="input-group">
+                <label>Call Sequence Status:</label>
+                <div id="callSequenceStatus" style="font-family: monospace; background: #f8f9fa; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 60px; font-size: 12px;">Ready to start new call sequence</div>
+            </div>
+
+            <!-- AudioHook Configuration -->
+            <div class="input-group">
+                <label>AudioHook WebSocket URL:</label>
+                <input type="text" id="audiohookUrlInput" value="wss://ttec-digital-audiohook-listener-638069638150.us-central1.run.app/api/v1/client/ws" placeholder="Enter AudioHook WebSocket URL" style="width: 400px;">
+            </div>
+            
+            <div class="input-group">
+                <label>AudioHook Status:</label>
+                <span id="audiohookStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Disconnected</span>
+                <button class="demo-button" onclick="connectToAudiohook()" id="audiohookConnectBtn">Connect AudioHook</button>
+                <button class="demo-button" onclick="disconnectFromAudiohook()" id="audiohookDisconnectBtn" disabled>Disconnect AudioHook</button>
+            </div>
+
+            <!-- Genesys Cloud Transcription Configuration -->
+            <h3>Genesys Cloud Transcription</h3>
+            
+            <div class="input-group">
+                <label>GC Region:</label>
+                <input type="text" id="gcRegionInput" value="usw2.pure.cloud" placeholder="Enter Genesys Cloud region (e.g., mypurecloud.com)">
+            </div>
+            
+            <div class="input-group">
+                <label>GC Client ID:</label>
+                <input type="text" id="gcClientIdInput" value="Add Client ID" placeholder="Enter Genesys Cloud Client ID" style="width: 300px;">
+            </div>
+            
+            <div class="input-group">
+                <label>GC Redirect URL:</label>
+                <input type="text" id="gcRedirectUrlInput" value="" placeholder="Will be auto-filled with current URL" style="width: 400px;">
+            </div>
+            
+            <div class="input-group">
+                <label>GC Conversation ID:</label>
+                <input type="text" id="gcConversationIdInput" value="" placeholder="Enter Genesys Cloud Conversation ID" style="width: 300px;">
+            </div>
+            
+            <div class="input-group">
+                <label>GC Auth Status:</label>
+                <span id="gcAuthStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Not Authenticated</span>
+            </div>
+            
+            <div class="input-group">
+                <label>GC Transcription Status:</label>
+                <span id="gcTranscriptionStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Disconnected</span>
+                <button class="demo-button" onclick="authenticateGenesysCloud()" id="gcAuthBtn">Authenticate GC</button>
+                <button class="demo-button" onclick="connectToTranscription()" id="gcTranscriptionConnectBtn" disabled>Connect Transcription</button>
+                <button class="demo-button" onclick="disconnectFromTranscription()" id="gcTranscriptionDisconnectBtn" disabled>Disconnect Transcription</button>
+            </div>
+
+            <!-- Authorization Functions -->
+            <div class="button-group">
+                <h3>Authorization Functions</h3>
+                <button class="demo-button" onclick="sendAuthorizeMessage()">Send Authorization Request</button>
+                <button class="demo-button" onclick="simulateAuthSuccess()">Simulate Auth Success</button>
+                <button class="demo-button" onclick="simulateConversationJoined()">Simulate Conversation Joined</button>
+            </div>
+
+            <!-- Conversation Management Functions -->
+            <div class="button-group">
+                <h3>Conversation Management Functions</h3>
+                <div class="input-group">
+                    <label>Conversation ID:</label>
+                    <input type="text" id="conversationIdInput" value="qrvn6sjly4a74x07" placeholder="Enter conversation ID">
+                </div>
+                <div class="input-group">
+                    <label>Profile ID:</label>
+                    <input type="text" id="conversationProfileIdInput" value="0198e667-6540-727d-b6b0-d8f4de9db1c6" placeholder="Enter conversation profile ID">
+                </div>
+                <div class="input-group">
+                    <label>Contact Name:</label>
+                    <input type="text" id="contactNameInput" value="John Doe" placeholder="Enter contact name">
+                </div>
+                <div class="input-group">
+                    <label>Contact Email:</label>
+                    <input type="text" id="contactEmailInput" value="john.doe@example.com" placeholder="Enter contact email">
+                </div>
+                <div class="input-group">
+                    <label>Contact Phone:</label>
+                    <input type="text" id="contactPhoneInput" value="5551112222" placeholder="Enter contact phone">
+                </div>
+                <button class="demo-button" onclick="sendJoinConversationMessage()">Join Conversation</button>
+                <button class="demo-button" onclick="sendActivateConversationMessage()">Activate Conversation</button>
+                <button class="demo-button" onclick="sendLeaveConversationMessage()">Leave Conversation</button>
+            </div>
+
+            <!-- Content Analysis Functions -->
+            <div class="button-group">
+                <h3>Content Analysis Functions</h3>
+                <div class="input-group">
+                    <label>Message Content:</label>
+                    <input type="text" id="messageContentInput" value="Hello, how can I help you today?" placeholder="Enter message content">
+                </div>
+                <div class="input-group">
+                    <label>Participant Type:</label>
+                    <select id="speakerTypeSelect">
+                        <option value="HUMAN_AGENT">HUMAN_AGENT (Agent)</option>
+                        <option value="END_USER">END_USER (Customer)</option>
+                    </select>
+                </div>
+                <button class="demo-button" onclick="sendAnalyzeContentMessage()">Analyze Content</button>
+            </div>
+
+            <!-- Conversation Wrap Up -->
+            <div class="button-group">
+                <h3>Conversation Wrap Up</h3>
+                <button class="demo-button" onclick="sendWrapConversationMessage()">Wrap Conversation</button>
+            </div>
+
+            <!-- Message Log -->
+            <h3>Message Log</h3>
+            <div id="messageLog" class="status-display">
+                Ready to send messages to iframe...
+            </div>
+            
+            <button class="demo-button" onclick="clearMessageLog()" style="background: #dc3545;">Clear Log</button>
+
+            <!-- AudioHook Message Log -->
+            <h3>AudioHook Message Log</h3>
+            <div id="audiohookMessageLog" class="status-display">
+                Ready to receive AudioHook messages...
+            </div>
+            
+            <button class="demo-button" onclick="clearAudiohookLog()" style="background: #dc3545;">Clear AudioHook Log</button>
+
+            <!-- Genesys Cloud Transcription Message Log -->
+            <h3>Genesys Cloud Transcription Log</h3>
+            <div id="gcTranscriptionMessageLog" class="status-display">
+                Ready to receive Genesys Cloud transcription messages...
+            </div>
+            
+            <button class="demo-button" onclick="clearGcTranscriptionLog()" style="background: #dc3545;">Clear GC Transcription Log</button>
+
+            <!-- Conversation Details -->
+            <h3>Conversation Details</h3>
+            <div class="input-group">
+                <button class="demo-button" onclick="getConversationDetails()" id="getConversationDetailsBtn">Get Conversation Details</button>
+            </div>
+            <div id="conversationDetailsLog" class="status-display">
+                Ready to fetch conversation details...
+            </div>
+            
+            <button class="demo-button" onclick="clearConversationDetailsLog()" style="background: #dc3545;">Clear Conversation Details Log</button>
+
+            <!-- Auto-Forwarding Controls -->
+            <h3>Auto-Forwarding to Iframe</h3>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="autoForwardTranscription" checked onchange="toggleAutoForwardTranscription()" style="margin-right: 8px;">
+                    Auto-forward GC Transcription to iframe
+                </label>
+            </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="autoForwardAudiohook" checked onchange="toggleAutoForwardAudiohook()" style="margin-right: 8px;">
+                    Auto-forward AudioHook messages to iframe
+                </label>
+            </div>
+            </div>
+
+            <div class="iframe-container">
+                <div class="panel-toggle">
+                    <h2 style="margin: 0;">TTEC Agent Assist</h2>
+                    <button id="panelToggleBtn" class="toggle-button" onclick="toggleFormPanel()">
+                        <span>🔍</span>
+                        <span id="toggleBtnText">Hide Form Panel</span>
+                    </button>
+                </div>
+                <iframe id="demoIframe" class="demo-iframe" src="about:blank"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the JavaScript file -->
+    <script src="iframe-communication-wrapper.js"></script>
+    
+    <!-- Demo-specific JavaScript -->
+    <script>
+        // Initialize PureCloud Platform Client
+        let platformClient = require('platformClient');
+        // Initialize the communication wrapper when page loads
+        let communicationWrapper = null;
+        
+        // Parse URL parameters and populate form fields
+        function populateFromUrlParameters() {
+            const url = new URL(document.location.href);
+            
+            // Genesys Cloud parameters
+            const gcRegion = url.searchParams.get('gc_region');
+            const gcClientId = url.searchParams.get('gc_clientId');
+            const gcRedirectUrl = url.searchParams.get('gc_redirectUrl');
+            const gcConversationId = url.searchParams.get('gc_conversationId');
+            
+            // AudioHook parameters
+            const audiohookUrl = url.searchParams.get('audiohook_url');
+            
+            // Iframe parameters
+            const iframeUrl = url.searchParams.get('iframe_url');
+            const organizationId = url.searchParams.get('organization_id');
+            
+            // Conversation parameters
+            const conversationId = url.searchParams.get('conversation_id');
+            const conversationProfileId = url.searchParams.get('conversation_profile_id');
+            const contactName = url.searchParams.get('contact_name');
+            const contactEmail = url.searchParams.get('contact_email');
+            const contactPhone = url.searchParams.get('contact_phone');
+            
+            // Populate Genesys Cloud fields
+            if (gcRegion) {
+                document.getElementById('gcRegionInput').value = gcRegion;
+                sessionStorage.setItem('gc_region', gcRegion);
+            }
+            if (gcClientId) {
+                document.getElementById('gcClientIdInput').value = gcClientId;
+                sessionStorage.setItem('gc_clientId', gcClientId);
+            }
+            if (gcRedirectUrl) {
+                document.getElementById('gcRedirectUrlInput').value = gcRedirectUrl;
+                sessionStorage.setItem('gc_redirectUrl', gcRedirectUrl);
+            }
+            if (gcConversationId) {
+                document.getElementById('gcConversationIdInput').value = gcConversationId;
+                sessionStorage.setItem('gc_conversationId', gcConversationId);
+            }
+            
+            // Populate AudioHook fields
+            if (audiohookUrl) {
+                document.getElementById('audiohookUrlInput').value = audiohookUrl;
+            }
+            
+            // Populate iframe fields
+            if (iframeUrl) {
+                document.getElementById('iframeUrlInput').value = iframeUrl;
+            }
+            if (organizationId) {
+                document.getElementById('organizationIdInput').value = organizationId;
+            }
+            
+            // Populate conversation fields
+            if (conversationId) {
+                document.getElementById('conversationIdInput').value = conversationId;
+            }
+            if (conversationProfileId) {
+                document.getElementById('conversationProfileIdInput').value = conversationProfileId;
+            }
+            if (contactName) {
+                document.getElementById('contactNameInput').value = contactName;
+            }
+            if (contactEmail) {
+                document.getElementById('contactEmailInput').value = contactEmail;
+            }
+            if (contactPhone) {
+                document.getElementById('contactPhoneInput').value = contactPhone;
+            }
+            
+            // Log what was populated
+            const populatedFields = [];
+            if (gcRegion) populatedFields.push(`GC Region: ${gcRegion}`);
+            if (gcClientId) populatedFields.push(`GC Client ID: ${gcClientId}`);
+            if (gcRedirectUrl) populatedFields.push(`GC Redirect URL: ${gcRedirectUrl}`);
+            if (gcConversationId) populatedFields.push(`GC Conversation ID: ${gcConversationId}`);
+            if (audiohookUrl) populatedFields.push(`AudioHook URL: ${audiohookUrl}`);
+            if (iframeUrl) populatedFields.push(`Iframe URL: ${iframeUrl}`);
+            if (organizationId) populatedFields.push(`Organization ID: ${organizationId}`);
+            if (conversationId) populatedFields.push(`Conversation ID: ${conversationId}`);
+            if (conversationProfileId) populatedFields.push(`Profile ID: ${conversationProfileId}`);
+            if (contactName) populatedFields.push(`Contact Name: ${contactName}`);
+            if (contactEmail) populatedFields.push(`Contact Email: ${contactEmail}`);
+            if (contactPhone) populatedFields.push(`Contact Phone: ${contactPhone}`);
+            
+            if (populatedFields.length > 0) {
+                logMessage('URL parameters loaded:', { populatedFields });
+                logGcTranscriptionMessage('URL parameters loaded:', { populatedFields });
+            }
+        }
+        
+        // Initialize the demo when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDemo();
+            initializeFormPanelState();
+            checkForAutoStartCallSequence();
+        });
+        
+        function initializeDemo() {
+            // Parse URL parameters for Genesys Cloud configuration
+            populateFromUrlParameters();
+            
+            // Create the communication wrapper
+            communicationWrapper = new IframeCommunicationWrapper({
+                targetOrigin: '*', // For demo purposes - in production, use specific domain
+                onMessageReceived: function(messageData) {
+                    logMessage('Received from iframe:', messageData);
+                },
+                onConnectionEstablished: function() {
+                    document.getElementById('connectionStatus').textContent = 'Connected';
+                    logMessage('Connection established with iframe');
+                },
+                onConversationIdChanged: function(conversationId) {
+                    const displayElement = document.getElementById('activeConversationId');
+                    if (conversationId) {
+                        displayElement.textContent = conversationId;
+                        displayElement.style.color = '#28a745'; // Green for active
+                    } else {
+                        displayElement.textContent = 'None';
+                        displayElement.style.color = '#6c757d'; // Gray for none
+                    }
+                },
+                onAudiohookMessage: function(messageData) {
+                    logAudiohookMessage('AudioHook message received:', messageData);
+                },
+                onAudiohookStatusChanged: function(status) {
+                    updateAudiohookStatus(status);
+                },
+                onGcTranscriptionMessage: function(messageData) {
+                    logGcTranscriptionMessage('GC Transcription message received:', messageData);
+                    // Note: Auto-forwarding to iframe is handled by the wrapper if enabled
+                },
+                onGcAuthStatusChanged: function(status) {
+                    updateGcAuthStatus(status);
+                },
+                onGcTranscriptionStatusChanged: function(status) {
+                    updateGcTranscriptionStatus(status);
+                }
+            });
+            
+            // Initialize with the iframe element
+            const iframeElement = document.getElementById('demoIframe');
+            communicationWrapper.initialize(iframeElement);
+            
+            // Auto-fill redirect URL with current page URL
+            const currentUrl = window.location.origin + window.location.pathname;
+            document.getElementById('gcRedirectUrlInput').value = currentUrl;
+            
+            // Check SDK loading status
+            setTimeout(() => {
+                if (typeof platformClient !== 'undefined') {
+                    logGcTranscriptionMessage('PureCloud Platform Client SDK loaded successfully');
+                } else if (typeof window.platformClient !== 'undefined') {
+                    logGcTranscriptionMessage('PureCloud Platform Client SDK loaded on window object');
+                } else {
+                    logGcTranscriptionMessage('WARNING: PureCloud Platform Client SDK not detected. Please check console for errors.');
+                    console.log('Available window properties:', Object.keys(window).filter(key => key.toLowerCase().includes('platform') || key.toLowerCase().includes('pure')));
+                }
+            }, 1000);
+            
+            logMessage('Demo initialized. Ready to communicate with iframe.');
+        }
+        
+        // Helper function to load iframe with new URL and organization ID
+        function loadIframeWithNewUrl() {
+            const baseUrl = document.getElementById('iframeUrlInput').value;
+            const organizationId = document.getElementById('organizationIdInput').value;
+            
+            // Construct the full URL with organization_id query parameter
+            let fullUrl = baseUrl;
+            if (organizationId && organizationId.trim() !== '') {
+                fullUrl += '?organization_id=' + encodeURIComponent(organizationId.trim());
+            }
+            
+            const iframe = document.getElementById('demoIframe');
+            iframe.src = fullUrl;
+            logMessage('Loading iframe with URL: ' + fullUrl);
+        }
+        
+        // Helper function to log messages
+        function logMessage(message, data = null) {
+            const logElement = document.getElementById('messageLog');
+            const timestamp = new Date().toLocaleTimeString();
+            let logEntry = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                logEntry += '\n' + JSON.stringify(data, null, 2);
+            }
+            
+            logElement.textContent += logEntry + '\n\n';
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function clearMessageLog() {
+            document.getElementById('messageLog').textContent = '';
+        }
+        
+        // AudioHook specific functions
+        function logAudiohookMessage(message, data = null) {
+            const logElement = document.getElementById('audiohookMessageLog');
+            const timestamp = new Date().toLocaleTimeString();
+            let logEntry = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                logEntry += '\n' + JSON.stringify(data, null, 2);
+            }
+            
+            logElement.textContent += logEntry + '\n\n';
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function clearAudiohookLog() {
+            document.getElementById('audiohookMessageLog').textContent = 'Ready to receive AudioHook messages...';
+        }
+        
+        function updateAudiohookStatus(status) {
+            const statusElement = document.getElementById('audiohookStatus');
+            const connectBtn = document.getElementById('audiohookConnectBtn');
+            const disconnectBtn = document.getElementById('audiohookDisconnectBtn');
+            
+            statusElement.textContent = status;
+            
+            // Update button states and status colors based on connection status
+            if (status === 'Connected') {
+                statusElement.style.color = '#28a745'; // Green
+                statusElement.style.backgroundColor = '#d4edda';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else if (status.startsWith('Connecting') || status.startsWith('Reconnecting')) {
+                statusElement.style.color = '#ffc107'; // Yellow
+                statusElement.style.backgroundColor = '#fff3cd';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusElement.style.color = '#6c757d'; // Gray
+                statusElement.style.backgroundColor = '#f8f9fa';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+        
+        function connectToAudiohook() {
+            const audiohookUrl = document.getElementById('audiohookUrlInput').value;
+            const conversationId = document.getElementById('conversationIdInput').value;
+            
+            if (!audiohookUrl || audiohookUrl.trim() === '') {
+                alert('Please enter an AudioHook WebSocket URL');
+                return;
+            }
+            
+            if (!audiohookUrl.startsWith('ws://') && !audiohookUrl.startsWith('wss://')) {
+                alert('AudioHook URL must start with ws:// or wss://');
+                return;
+            }
+            
+            if (!conversationId || conversationId.trim() === '') {
+                alert('Please enter a Conversation ID for AudioHook initialization');
+                return;
+            }
+            
+            if (communicationWrapper) {
+                logAudiohookMessage('Connecting to AudioHook...', { 
+                    url: audiohookUrl, 
+                    conversationId: conversationId 
+                });
+                communicationWrapper.connectToAudiohook(audiohookUrl, conversationId);
+            }
+        }
+        
+        function disconnectFromAudiohook() {
+            if (communicationWrapper) {
+                logAudiohookMessage('Disconnecting from AudioHook...');
+                communicationWrapper.disconnectFromAudiohook();
+            }
+        }
+        
+        // Genesys Cloud specific functions
+        function logGcTranscriptionMessage(message, data = null) {
+            const logElement = document.getElementById('gcTranscriptionMessageLog');
+            const timestamp = new Date().toLocaleTimeString();
+            let logEntry = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                logEntry += '\n' + JSON.stringify(data, null, 2);
+            }
+            
+            logElement.textContent += logEntry + '\n\n';
+            logElement.scrollTop = logElement.scrollHeight;
+
+            
+
+        }
+        
+        function clearGcTranscriptionLog() {
+            document.getElementById('gcTranscriptionMessageLog').textContent = 'Ready to receive Genesys Cloud transcription messages...';
+        }
+        
+        function clearConversationDetailsLog() {
+            const logElement = document.getElementById('conversationDetailsLog');
+            logElement.innerHTML = 'Ready to fetch conversation details...';
+            logConversationDetails('Log cleared');
+        }
+        
+        function logConversationDetails(message, data = null) {
+            const logElement = document.getElementById('conversationDetailsLog');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            if (data) {
+                // Format the JSON data nicely
+                const formattedData = JSON.stringify(data, null, 2);
+                logElement.innerHTML += `<div><strong>[${timestamp}]</strong> ${message}<br><pre style="background: #f0f0f0; padding: 5px; margin: 5px 0; font-size: 11px; max-height: 300px; overflow-y: auto;">${formattedData}</pre></div>`;
+            } else {
+                logElement.innerHTML += `<div><strong>[${timestamp}]</strong> ${message}</div>`;
+            }
+            
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function updateGcAuthStatus(status) {
+            const statusElement = document.getElementById('gcAuthStatus');
+            const authBtn = document.getElementById('gcAuthBtn');
+            const transcriptionConnectBtn = document.getElementById('gcTranscriptionConnectBtn');
+            
+            statusElement.textContent = status;
+            
+            if (status.startsWith('Authenticated')) {
+                statusElement.style.color = '#28a745'; // Green
+                statusElement.style.backgroundColor = '#d4edda';
+                authBtn.disabled = true;
+                transcriptionConnectBtn.disabled = false;
+            } else if (status === 'Authenticating...') {
+                statusElement.style.color = '#ffc107'; // Yellow
+                statusElement.style.backgroundColor = '#fff3cd';
+                authBtn.disabled = true;
+                transcriptionConnectBtn.disabled = true;
+            } else {
+                statusElement.style.color = '#6c757d'; // Gray
+                statusElement.style.backgroundColor = '#f8f9fa';
+                authBtn.disabled = false;
+                transcriptionConnectBtn.disabled = true;
+            }
+        }
+        
+        function updateGcTranscriptionStatus(status) {
+            const statusElement = document.getElementById('gcTranscriptionStatus');
+            const connectBtn = document.getElementById('gcTranscriptionConnectBtn');
+            const disconnectBtn = document.getElementById('gcTranscriptionDisconnectBtn');
+            
+            statusElement.textContent = status;
+            
+            if (status === 'Connected') {
+                statusElement.style.color = '#28a745'; // Green
+                statusElement.style.backgroundColor = '#d4edda';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else if (status === 'Connecting...') {
+                statusElement.style.color = '#ffc107'; // Yellow
+                statusElement.style.backgroundColor = '#fff3cd';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusElement.style.color = '#6c757d'; // Gray
+                statusElement.style.backgroundColor = '#f8f9fa';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+        
+        function authenticateGenesysCloud() {
+            const region = document.getElementById('gcRegionInput').value;
+            const clientId = document.getElementById('gcClientIdInput').value;
+            const redirectUrl = document.getElementById('gcRedirectUrlInput').value;
+            
+            if (!region || region.trim() === '') {
+                alert('Please enter a Genesys Cloud region');
+                return;
+            }
+            
+            if (!clientId || clientId.trim() === '') {
+                alert('Please enter a Genesys Cloud Client ID');
+                return;
+            }
+            
+            if (!redirectUrl || redirectUrl.trim() === '') {
+                alert('Please enter a redirect URL');
+                return;
+            }
+            
+            // Check if SDK is loaded
+            if (typeof platformClient === 'undefined' && typeof window.platformClient === 'undefined') {
+                alert('PureCloud Platform Client SDK is not loaded. Please refresh the page and try again.');
+                logGcTranscriptionMessage('ERROR: PureCloud SDK not loaded. Available globals:', Object.keys(window));
+                return;
+            }
+            
+            if (communicationWrapper) {
+                // Initialize and authenticate
+                const initialized = communicationWrapper.initializeGenesysCloud(region, clientId, redirectUrl);
+                if (initialized) {
+                    logGcTranscriptionMessage('Initializing Genesys Cloud...', {
+                        region: region,
+                        clientId: clientId,
+                        redirectUrl: redirectUrl
+                    });
+                    
+                    // Perform authentication
+                    communicationWrapper.authenticateGenesysCloud().then(success => {
+                        if (success) {
+                            logGcTranscriptionMessage('Genesys Cloud authentication successful');
+                        } else {
+                            logGcTranscriptionMessage('Genesys Cloud authentication failed');
+                        }
+                    }).catch(error => {
+                        logGcTranscriptionMessage('Genesys Cloud authentication error:', error);
+                    });
+                } else {
+                    logGcTranscriptionMessage('Failed to initialize Genesys Cloud');
+                }
+            }
+        }
+        
+        function connectToTranscription() {
+            const conversationId = document.getElementById('gcConversationIdInput').value;
+            
+            if (!conversationId || conversationId.trim() === '') {
+                alert('Please enter a Genesys Cloud Conversation ID');
+                return;
+            }
+            
+            if (communicationWrapper && communicationWrapper.isGenesysCloudAuthenticated()) {
+                logGcTranscriptionMessage('Connecting to Genesys Cloud transcription...', {
+                    conversationId: conversationId
+                });
+                
+                communicationWrapper.connectToGcTranscription(conversationId).then(success => {
+                    if (success) {
+                        logGcTranscriptionMessage('Successfully connected to Genesys Cloud transcription');
+                    } else {
+                        logGcTranscriptionMessage('Failed to connect to Genesys Cloud transcription');
+                    }
+                });
+            } else {
+                alert('Please authenticate with Genesys Cloud first');
+            }
+        }
+        
+        function disconnectFromTranscription() {
+            if (communicationWrapper) {
+                logGcTranscriptionMessage('Disconnecting from Genesys Cloud transcription...');
+                communicationWrapper.disconnectFromGcTranscription();
+            }
+        }
+        
+        function getConversationDetails() {
+            // Use the GC conversation ID input field (same as transcription subscription)
+            const conversationId = document.getElementById('gcConversationIdInput').value;
+            if (!conversationId) {
+                logConversationDetails('❌ Error: No GC conversation ID provided');
+                return;
+            }
+            
+            const authStatus = document.getElementById('gcAuthStatus').textContent;
+            if (!authStatus.startsWith('Authenticated')) {
+                logConversationDetails('❌ Error: Must authenticate with Genesys Cloud first');
+                return;
+            }
+            
+            if (!communicationWrapper || !communicationWrapper.gcPlatformClient) {
+                logConversationDetails('❌ Error: Genesys Cloud Platform Client not available');
+                return;
+            }
+            
+            logConversationDetails(`🔍 Fetching conversation details for: ${conversationId}...`);
+            
+            try {
+                // Initialize ConversationsApi
+                const conversationsApi = new communicationWrapper.gcPlatformClient.ConversationsApi();
+                
+                // Get conversation details using the SDK
+                conversationsApi.getConversation(conversationId)
+                    .then((data) => {
+                        logConversationDetails('✅ Successfully retrieved conversation details', data);
+                        console.log('Conversation details:', data);
+                        
+                        // Find the external participant (customer)
+                        const externalParticipant = data.participants.find(p => p.participantType === 'External');
+                        
+                        if (externalParticipant) {
+                            // Populate Contact Name from external participant name
+                            if (externalParticipant.name) {
+                                document.getElementById('contactNameInput').value = externalParticipant.name;
+                                logConversationDetails(`📝 Updated Contact Name: ${externalParticipant.name}`);
+                            }
+                            
+                            // Populate Contact Phone from external participant address (last 10 digits only)
+                            if (externalParticipant.address) {
+                                // Extract only numbers from the address and take the last 10 digits
+                                const numbersOnly = externalParticipant.address.replace(/\D/g, '');
+                                const last10Digits = numbersOnly.slice(-10);
+                                
+                                document.getElementById('contactPhoneInput').value = last10Digits;
+                                logConversationDetails(`📞 Updated Contact Phone: ${last10Digits} (from ${externalParticipant.address})`);
+                            }
+                            
+                            logConversationDetails('✅ Form fields updated with external participant data');
+                        } else {
+                            logConversationDetails('⚠️ No external participant found in conversation');
+                        }
+                    })
+                    .catch((error) => {
+                        logConversationDetails('❌ Error fetching conversation details', error);
+                        console.error('Error fetching conversation details:', error);
+                    });
+            } catch (error) {
+                logConversationDetails('❌ Error initializing Conversations API', error);
+                console.error('Error initializing Conversations API:', error);
+            }
+        }
+        
+        // Auto-forwarding toggle functions
+        function toggleAutoForwardTranscription() {
+            const checkbox = document.getElementById('autoForwardTranscription');
+            if (communicationWrapper) {
+                communicationWrapper.setAutoForwardTranscription(checkbox.checked);
+            }
+        }
+        
+        function toggleAutoForwardAudiohook() {
+            const checkbox = document.getElementById('autoForwardAudiohook');
+            if (communicationWrapper) {
+                communicationWrapper.setAutoForwardAudiohook(checkbox.checked);
+            }
+        }
+        
+        // Form panel toggle functions
+        let isFormPanelVisible = true;
+        
+        function toggleFormPanel() {
+            const controlsPanel = document.querySelector('.controls-panel');
+            const toggleBtn = document.getElementById('panelToggleBtn');
+            const toggleBtnText = document.getElementById('toggleBtnText');
+            
+            if (isFormPanelVisible) {
+                // Hide the form panel
+                controlsPanel.classList.add('hidden');
+                toggleBtn.classList.add('hide-mode');
+                toggleBtnText.textContent = 'Show Form Panel';
+                toggleBtn.querySelector('span:first-child').textContent = '👁️';
+                isFormPanelVisible = false;
+            } else {
+                // Show the form panel
+                controlsPanel.classList.remove('hidden');
+                toggleBtn.classList.remove('hide-mode');
+                toggleBtnText.textContent = 'Hide Form Panel';
+                toggleBtn.querySelector('span:first-child').textContent = '🔍';
+                isFormPanelVisible = true;
+            }
+        }
+        
+        function initializeFormPanelState() {
+            // Check for query parameter to set initial state
+            const urlParams = new URLSearchParams(window.location.search);
+            const hidePanel = urlParams.get('hidePanel') === 'true';
+            
+            if (hidePanel) {
+                // Set initial state without animation
+                isFormPanelVisible = true; // Set to true so toggle function will hide it
+                toggleFormPanel();
+            }
+        }
+        
+        function checkForAutoStartCallSequence() {
+            // Check if GC conversation ID is passed in URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const gcConversationId = urlParams.get('gc_conversationId');
+            
+            if (gcConversationId) {
+                // Set the conversation ID in the form if provided
+                //document.getElementById('conversationIdInput').value = gcConversationId;
+                
+                // Auto-start the call sequence after a brief delay to ensure everything is initialized
+                setTimeout(() => {
+                    updateCallSequenceStatus('🚀 Auto-starting call sequence (gc_conversationId provided in URL)...');
+                    startNewCallSequence();
+                }, 1000);
+            }
+        }
+        
+        // New Call Sequence Functions
+        let callSequenceInProgress = false;
+        
+        function updateCallSequenceStatus(message, isError = false) {
+            const statusDiv = document.getElementById('callSequenceStatus');
+            const timestamp = new Date().toLocaleTimeString();
+            const style = isError ? 'color: red; font-weight: bold;' : '';
+            statusDiv.innerHTML += `<div style="${style}">[${timestamp}] ${message}</div>`;
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        }
+        
+        function clearCallSequenceStatus() {
+            document.getElementById('callSequenceStatus').innerHTML = 'Ready to start new call sequence';
+        }
+        
+        function generateRandomConversationId() {
+            // Generate a random conversation ID that always starts with a letter
+            const letters = 'abcdefghijklmnopqrstuvwxyz';
+            const alphanumeric = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            
+            // Start with a random letter
+            let result = letters.charAt(Math.floor(Math.random() * letters.length));
+            
+            // Add 15 more random alphanumeric characters
+            for (let i = 1; i < 16; i++) {
+                result += alphanumeric.charAt(Math.floor(Math.random() * alphanumeric.length));
+            }
+            
+            return result;
+        }
+        
+        async function startNewCallSequence() {
+            if (callSequenceInProgress) {
+                updateCallSequenceStatus('❌ Call sequence already in progress', true);
+                return;
+            }
+            
+            callSequenceInProgress = true;
+            clearCallSequenceStatus();
+            updateCallSequenceStatus('🚀 Starting new call sequence...');
+            
+            try {
+                // Step 1: Load iframe with current settings
+                updateCallSequenceStatus('📋 Step 1: Loading iframe with current settings...');
+                loadIframeWithNewUrl();
+                
+                // Wait for iframe to load
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                updateCallSequenceStatus('✅ Iframe loaded successfully');
+                
+                // Step 2: Authenticate with Genesys Cloud
+                updateCallSequenceStatus('🔐 Step 2: Authenticating with Genesys Cloud...');
+                authenticateGenesysCloud();
+                
+                // Wait for authentication
+                await waitForGenesysAuth();
+                updateCallSequenceStatus('✅ Genesys Cloud authentication successful');
+                
+                // Step 3: Get Conversation Details
+                updateCallSequenceStatus('🔍 Step 3: Getting conversation details...');
+                getConversationDetails();
+                
+                // Wait for conversation details to complete
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                updateCallSequenceStatus('✅ Conversation details retrieved and form populated');
+                
+                // Check if conversation ID was provided via URL, if not randomize it
+                const urlParams = new URLSearchParams(window.location.search);
+                //const providedConversationId = urlParams.get('gc_conversationId');
+                
+                //if (!providedConversationId) {
+                    // Randomize conversation ID for join/activate if not provided via URL
+                    const newConversationId = generateRandomConversationId();
+                    document.getElementById('conversationIdInput').value = newConversationId;
+                    updateCallSequenceStatus(`🎲 Updated conversation ID to: ${newConversationId}`);
+                //} else {
+                 //   updateCallSequenceStatus(`📋 Using provided conversation ID for join/activate`);
+                //}
+                
+                // Step 4: Send join conversation message
+                updateCallSequenceStatus('📞 Step 4: Joining conversation...');
+                sendJoinConversationMessage();
+                
+                // Wait for conversation joined response
+                await waitForConversationJoined();
+                updateCallSequenceStatus('✅ Conversation joined successfully');
+                
+                // Step 5: Send activate conversation message
+                updateCallSequenceStatus('🔄 Step 5: Activating conversation...');
+                sendActivateConversationMessage();
+                
+                // Wait a moment for activation
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                updateCallSequenceStatus('✅ Conversation activated successfully');
+                
+                // Step 6: Connect transcription
+                updateCallSequenceStatus('🎙️ Step 6: Connecting transcription...');
+                connectToTranscription();
+                
+                // Wait for transcription connection
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                updateCallSequenceStatus('✅ Transcription connected successfully');
+                
+                updateCallSequenceStatus('🎉 New call sequence completed successfully!');
+                
+            } catch (error) {
+                updateCallSequenceStatus(`❌ Error in call sequence: ${error.message}`, true);
+            } finally {
+                callSequenceInProgress = false;
+            }
+        }
+        
+        function waitForConversationJoined() {
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Timeout waiting for conversation joined'));
+                }, 10000); // 10 second timeout
+                
+                // Listen for conversation joined event
+                const checkInterval = setInterval(() => {
+                    const activeConversationId = document.getElementById('activeConversationId').textContent;
+                    if (activeConversationId && activeConversationId !== 'None') {
+                        clearTimeout(timeout);
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 500);
+            });
+        }
+        
+        function waitForGenesysAuth() {
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Timeout waiting for Genesys Cloud authentication'));
+                }, 15000); // 15 second timeout
+                
+                // Listen for auth status change
+                const checkInterval = setInterval(() => {
+                    const authStatus = document.getElementById('gcAuthStatus').textContent;
+                    if (authStatus.startsWith('Authenticated')) {
+                        clearTimeout(timeout);
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 500);
+            });
+        }
+        
+        // Wrapper functions for each message type
+        function sendAuthorizeMessage() {
+            if (communicationWrapper) {
+                communicationWrapper.sendAuthorizationRequest();
+            }
+        }
+        
+        function sendJoinConversationMessage() {
+            const conversationId = document.getElementById('conversationIdInput').value;
+            const conversationProfileId = document.getElementById('conversationProfileIdInput').value;
+            const contactName = document.getElementById('contactNameInput').value;
+            const contactEmail = document.getElementById('contactEmailInput').value;
+            const contactPhone = document.getElementById('contactPhoneInput').value;
+            
+            if (communicationWrapper) {
+                communicationWrapper.sendJoinConversation(conversationId, conversationProfileId, contactName, contactEmail, contactPhone);
+            }
+        }
+        
+        function sendActivateConversationMessage() {
+            // Use the active conversation ID from the iframe response
+            const activeConversationId = communicationWrapper ? communicationWrapper.getCurrentConversationId() : null;
+            
+            if (!activeConversationId) {
+                alert('No active conversation ID available. Please join a conversation first.');
+                return;
+            }
+            
+            if (communicationWrapper) {
+                communicationWrapper.sendActivateConversation(activeConversationId);
+            }
+        }
+        
+        function sendLeaveConversationMessage() {
+            // Use the active conversation ID from the iframe response
+            const activeConversationId = communicationWrapper ? communicationWrapper.getCurrentConversationId() : null;
+            
+            if (!activeConversationId) {
+                alert('No active conversation ID available. Please join a conversation first.');
+                return;
+            }
+            
+            if (communicationWrapper) {
+                communicationWrapper.sendLeaveConversation(activeConversationId);
+            }
+        }
+        
+        function sendAnalyzeContentMessage() {
+            // Use the active conversation ID from the iframe response
+            const activeConversationId = communicationWrapper ? communicationWrapper.getCurrentConversationId() : null;
+            const messageContent = document.getElementById('messageContentInput').value;
+            const speakerType = document.getElementById('speakerTypeSelect').value;
+            
+            if (!activeConversationId) {
+                alert('No active conversation ID available. Please join a conversation first.');
+                return;
+            }
+            
+            if (communicationWrapper) {
+                communicationWrapper.sendAnalyzeContent(activeConversationId, messageContent, speakerType);
+            }
+        }
+        
+        function sendWrapConversationMessage() {
+            // Use the active conversation ID from the iframe response
+            const activeConversationId = communicationWrapper ? communicationWrapper.getCurrentConversationId() : null;
+            
+            if (!activeConversationId) {
+                alert('No active conversation ID available. Please join a conversation first.');
+                return;
+            }
+            
+            if (communicationWrapper) {
+                communicationWrapper.sendWrapConversation(activeConversationId);
+            }
+        }
+        
+        function simulateAuthSuccess() {
+            // Simulate receiving an auth success message from the iframe
+            const mockAuthResponse = {
+                topic: 'authorized',
+                success: true,
+                details: {
+                    sso: {
+                        access_token: 'mock-token-12345'
+                    }
+                }
+            };
+            
+            logMessage('Simulating auth success response:', mockAuthResponse);
+            
+            // Manually trigger the message handler
+            if (communicationWrapper) {
+                communicationWrapper.handleReceivedMessage({ data: mockAuthResponse });
+            }
+        }
+        
+        function simulateConversationJoined() {
+            // Simulate receiving a conversation-joined message from the iframe
+            const mockJoinResponse = {
+                topic: 'conversation-joined',
+                success: true,
+                details: {
+                    conversation: {
+                        id: '0198e63c-a5ee-73dc-9a91-e8b6ab58b61e',
+                        contact_center_conversation_id: 'qrvn6sjly4a74x07'
+                    }
+                },
+                error: null
+            };
+            
+            logMessage('Simulating conversation joined response:', mockJoinResponse);
+            
+            // Manually trigger the message handler
+            if (communicationWrapper) {
+                communicationWrapper.handleReceivedMessage({ data: mockJoinResponse });
+            }
+        }
+    </script>
+</body>
+</html>
