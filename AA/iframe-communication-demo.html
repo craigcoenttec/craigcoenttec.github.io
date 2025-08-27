@@ -393,14 +393,66 @@
     <!-- Include the JavaScript file -->
     <script src="iframe-communication-wrapper.js"></script>
     
-    <!-- Demo-specific JavaScript -->
+    <!-- 
+    ==========================================================================
+    TTEC AGENT ASSIST IFRAME COMMUNICATION DEMO
+    ==========================================================================
+    
+    This demo demonstrates how a parent page communicates with an Agent Assist
+    iframe using the postMessage API, similar to how the actual AA application
+    works. It includes:
+    
+    - Iframe communication using postMessage API
+    - AudioHook WebSocket integration for real-time transcription
+    - Genesys Cloud Platform SDK integration for conversation management
+    - Automated call sequence workflow
+    - Auto-forwarding of transcription messages to iframe for analysis
+    
+    Architecture:
+    - HTML: Form controls and iframe container
+    - JavaScript: Communication wrapper and demo-specific logic
+    - CSS: Responsive layout with form panel toggle
+    
+    URL Parameters Supported:
+    - gc_region: Genesys Cloud region (e.g., mypurecloud.com)
+    - gc_clientId: Genesys Cloud OAuth client ID
+    - gc_redirectUrl: OAuth redirect URL (auto-filled if not provided)
+    - gc_conversationId: Conversation ID (auto-starts sequence if provided)
+    - audiohook_url: AudioHook WebSocket URL
+    - iframe_url: Agent Assist iframe URL
+    - organization_id: Organization ID for iframe URL construction
+    - hidePanel: true/false to start with form panel hidden
+    
+    ==========================================================================
+    -->
     <script>
-        // Initialize PureCloud Platform Client
+        "use strict";
+        
+        // ==========================================================================
+        // GLOBAL VARIABLES & INITIALIZATION
+        // ==========================================================================
+        
+        /** @type {Object} PureCloud Platform Client SDK reference */
         let platformClient = require('platformClient');
-        // Initialize the communication wrapper when page loads
+        
+        /** @type {CCAIAgentAssistWrapper} Main communication wrapper instance */
         let communicationWrapper = null;
         
-        // Parse URL parameters and populate form fields
+        /** @type {boolean} Flag to track if form panel is currently visible */
+        let isFormPanelVisible = true;
+        
+        /** @type {boolean} Flag to prevent multiple concurrent call sequences */
+        let callSequenceInProgress = false;
+        
+        // ==========================================================================
+        // URL PARAMETER HANDLING
+        // ==========================================================================
+        
+        /**
+         * Parses URL parameters and populates corresponding form fields
+         * Supports Genesys Cloud, AudioHook, and iframe configuration parameters
+         * Logs which fields were populated for debugging purposes
+         */
         function populateFromUrlParameters() {
             const url = new URL(document.location.href);
             
@@ -493,13 +545,24 @@
             }
         }
         
-        // Initialize the demo when page loads
+        // ==========================================================================
+        // INITIALIZATION & SETUP
+        // ==========================================================================
+        
+        /**
+         * Main initialization when page loads
+         * Sets up the demo, form panel state, and checks for auto-start conditions
+         */
         document.addEventListener('DOMContentLoaded', function() {
             initializeDemo();
             initializeFormPanelState();
             checkForAutoStartCallSequence();
         });
         
+        /**
+         * Initializes the demo by parsing URL parameters and creating the communication wrapper
+         * Sets up all callbacks for iframe communication, AudioHook, and Genesys Cloud integration
+         */
         function initializeDemo() {
             // Parse URL parameters for Genesys Cloud configuration
             populateFromUrlParameters();
@@ -566,6 +629,14 @@
         }
         
         // Helper function to load iframe with new URL and organization ID
+        // ==========================================================================
+        // IFRAME MANAGEMENT FUNCTIONS
+        // ==========================================================================
+        
+        /**
+         * Loads the iframe with the current URL settings and organization ID
+         * Constructs the full URL by appending organization ID as query parameter
+         */
         function loadIframeWithNewUrl() {
             const baseUrl = document.getElementById('iframeUrlInput').value;
             const organizationId = document.getElementById('organizationIdInput').value;
@@ -595,11 +666,25 @@
             logElement.scrollTop = logElement.scrollHeight;
         }
         
+        // ==========================================================================
+        // LOGGING & MESSAGE DISPLAY FUNCTIONS
+        // ==========================================================================
+        
+        /**
+         * Clears the main iframe communication message log
+         */
         function clearMessageLog() {
             document.getElementById('messageLog').textContent = '';
         }
         
-        // AudioHook specific functions
+        // ==========================================================================
+        // AUDIOHOOK FUNCTIONS
+        // ==========================================================================
+        /**
+         * Logs AudioHook messages with timestamp to the AudioHook message log
+         * @param {string} message - The message to log
+         * @param {Object} data - Optional data object to include
+         */
         function logAudiohookMessage(message, data = null) {
             const logElement = document.getElementById('audiohookMessageLog');
             const timestamp = new Date().toLocaleTimeString();
@@ -770,6 +855,14 @@
             }
         }
         
+        // ==========================================================================
+        // GENESYS CLOUD INTEGRATION FUNCTIONS
+        // ==========================================================================
+        
+        /**
+         * Initiates Genesys Cloud OAuth authentication flow
+         * Uses the region, client ID, and redirect URL from form inputs
+         */
         function authenticateGenesysCloud() {
             const region = document.getElementById('gcRegionInput').value;
             const clientId = document.getElementById('gcClientIdInput').value;
@@ -936,9 +1029,14 @@
             }
         }
         
-        // Form panel toggle functions
-        let isFormPanelVisible = true;
+        // ==========================================================================
+        // FORM PANEL & UI CONTROL FUNCTIONS
+        // ==========================================================================
         
+        /**
+         * Toggles visibility of the form control panel
+         * Updates button text and icon based on current state
+         */
         function toggleFormPanel() {
             const controlsPanel = document.querySelector('.controls-panel');
             const toggleBtn = document.getElementById('panelToggleBtn');
@@ -990,9 +1088,15 @@
             }
         }
         
-        // New Call Sequence Functions
-        let callSequenceInProgress = false;
+        // ==========================================================================
+        // AUTOMATED CALL SEQUENCE FUNCTIONS
+        // ==========================================================================
         
+        /**
+         * Updates the call sequence status display with timestamped messages
+         * @param {string} message - Status message to display
+         * @param {boolean} isError - Whether this is an error message (shows in red)
+         */
         function updateCallSequenceStatus(message, isError = false) {
             const statusDiv = document.getElementById('callSequenceStatus');
             const timestamp = new Date().toLocaleTimeString();
@@ -1021,6 +1125,12 @@
             return result;
         }
         
+        /**
+         * Executes the complete automated call sequence workflow
+         * Steps: Load iframe → Auth GC → Get conversation details → Join → Activate → Connect transcription
+         * Handles errors and prevents concurrent executions
+         * @returns {Promise<void>}
+         */
         async function startNewCallSequence() {
             if (callSequenceInProgress) {
                 updateCallSequenceStatus('❌ Call sequence already in progress', true);
@@ -1138,13 +1248,24 @@
             });
         }
         
-        // Wrapper functions for each message type
+        // ==========================================================================
+        // IFRAME COMMUNICATION WRAPPER FUNCTIONS
+        // ==========================================================================
+        
+        /**
+         * Sends authorization request message to iframe
+         * Delegates to the communication wrapper's sendAuthorizationRequest method
+         */
         function sendAuthorizeMessage() {
             if (communicationWrapper) {
                 communicationWrapper.sendAuthorizationRequest();
             }
         }
         
+        /**
+         * Sends join conversation message to iframe with form data
+         * Includes conversation ID, profile ID, and contact information
+         */
         function sendJoinConversationMessage() {
             const conversationId = document.getElementById('conversationIdInput').value;
             const conversationProfileId = document.getElementById('conversationProfileIdInput').value;
@@ -1185,6 +1306,10 @@
             }
         }
         
+        /**
+         * Sends analyze content message to iframe for AI analysis
+         * Uses active conversation ID from iframe response and custom content
+         */
         function sendAnalyzeContentMessage() {
             // Use the active conversation ID from the iframe response
             const activeConversationId = communicationWrapper ? communicationWrapper.getCurrentConversationId() : null;
