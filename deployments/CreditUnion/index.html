@@ -585,8 +585,31 @@
         console.log('ClientType set to:', clientType);
     }
     
+    
     // Set initial client type
     setGenesysClientType("Mobile");
+    
+    setTimeout(()=>{ Genesys(
+    "command",
+    "Toaster.open",
+    {
+      title: "Welcome to a toast pop",
+      body: "Encountering issues? Our support team is ready to troubleshoot and assist you.",
+      buttons: {
+        type: "binary", // required when 'buttons' is present. Values: "unary" for one action button, "binary" for two action buttons
+        primary: "Get Support", // optional, default value is "Accept"
+        secondary: "Maybe Later", // optional, default value is "Decline"
+      },
+    },
+    function () {
+      /*fulfilled callback*/
+      console.log("Toaster is opened");
+    },
+    function (error) {
+      /*rejected callback*/
+      console.log("There was an error running the Toaster.open command:", error);
+    }
+  )},10000);
     
     // Handle toggle changes
     document.addEventListener('DOMContentLoaded', function() {
