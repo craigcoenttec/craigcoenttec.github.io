@@ -99,6 +99,11 @@
             overflow-y: auto;
         }
         
+        /* Larger display area for conversation details */
+        #conversationDetailsLog {
+            max-height: 400px;
+        }
+        
         .input-group {
             margin: 10px 0;
         }
@@ -175,6 +180,70 @@
         .toggle-button.hide-mode:hover {
             background: #c82333;
         }
+        
+        /* Collapsible header styles */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 10px 0 5px 0;
+            transition: background-color 0.2s ease;
+            border-left: 4px solid #007bff;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        }
+        
+        .collapsible-header:hover {
+            background: linear-gradient(135deg, #e9ecef, #dee2e6);
+        }
+        
+        .collapsible-header h3 {
+            margin: 0;
+            color: #495057;
+            font-size: 16px;
+        }
+        
+        
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            /* Default to collapsed state - will be overridden by JavaScript if needed */
+            max-height: 0;
+        }
+        
+        .collapsible-content.collapsed {
+            max-height: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        
+        /* Default indicator to collapsed state */
+        .collapsible-indicator {
+            font-size: 14px;
+            font-weight: bold;
+            color: #007bff;
+            transition: transform 0.2s ease;
+            /* Default to collapsed (rotated) state */
+            transform: rotate(-90deg);
+        }
+        
+        .collapsible-indicator.collapsed {
+            transform: rotate(-90deg);
+        }
+        
+        /* When expanded, rotate indicator back to down arrow */
+        .collapsible-indicator:not(.collapsed) {
+            transform: rotate(0deg);
+        }
+        
+        .section-container {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -210,6 +279,7 @@
             <div class="input-group">
                 <button class="demo-button" onclick="loadIframeWithNewUrl()">Load Iframe</button>
                 <button class="demo-button" onclick="startNewCallSequence()" style="background: #e67e22; margin-left: 10px;">🚀 New Call</button>
+                <button class="demo-button" onclick="startAutoListenSequence()" style="background: #17a2b8; margin-left: 10px;">👂 Auto Listen</button>
             </div>
             
             <!-- New Call Sequence Status -->
@@ -219,68 +289,168 @@
             </div>
 
             <!-- AudioHook Configuration -->
-            <div class="input-group">
-                <label>AudioHook WebSocket URL:</label>
-                <input type="text" id="audiohookUrlInput" value="wss://ttec-digital-audiohook-listener-638069638150.us-central1.run.app/api/v1/client/ws" placeholder="Enter AudioHook WebSocket URL" style="width: 400px;">
-            </div>
-            
-            <div class="input-group">
-                <label>AudioHook Status:</label>
-                <span id="audiohookStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Disconnected</span>
-                <button class="demo-button" onclick="connectToAudiohook()" id="audiohookConnectBtn">Connect AudioHook</button>
-                <button class="demo-button" onclick="disconnectFromAudiohook()" id="audiohookDisconnectBtn" disabled>Disconnect AudioHook</button>
+            <div class="section-container">
+                <div class="collapsible-header" onclick="toggleCollapsibleSection('audiohookSection')">
+                    <h3>AudioHook Integration</h3>
+                    <span class="collapsible-indicator">▼</span>
+                </div>
+                <div class="collapsible-content" id="audiohookSection">
+                
+                    <div class="input-group">
+                        <label>AudioHook WebSocket URL:</label>
+                        <input type="text" id="audiohookUrlInput" value="wss://ttec-digital-audiohook-listener-638069638150.us-central1.run.app/api/v1/client/ws" placeholder="Enter AudioHook WebSocket URL" style="width: 400px;">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>AudioHook Status:</label>
+                        <span id="audiohookStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Disconnected</span>
+                        <button class="demo-button" onclick="connectToAudiohook()" id="audiohookConnectBtn">Connect AudioHook</button>
+                        <button class="demo-button" onclick="disconnectFromAudiohook()" id="audiohookDisconnectBtn" disabled>Disconnect AudioHook</button>
+                    </div>
+                    
+                    <!-- AudioHook Message Log -->
+                    <div style="margin-top: 15px;">
+                        <h4 style="margin: 10px 0 5px 0; color: #495057;">Message Log</h4>
+                        <div id="audiohookMessageLog" class="status-display">
+                            Ready to receive AudioHook messages...
+                        </div>
+                        <button class="demo-button" onclick="clearAudiohookLog()" style="background: #dc3545; margin-top: 5px;">Clear AudioHook Log</button>
+                    </div>
+                
+                </div>
             </div>
 
-            <!-- Genesys Cloud Transcription Configuration -->
-            <h3>Genesys Cloud Transcription</h3>
-            
-            <div class="input-group">
-                <label>GC Region:</label>
-                <input type="text" id="gcRegionInput" value="usw2.pure.cloud" placeholder="Enter Genesys Cloud region (e.g., mypurecloud.com)">
-            </div>
-            
-            <div class="input-group">
-                <label>GC Client ID:</label>
-                <input type="text" id="gcClientIdInput" value="Add Client ID" placeholder="Enter Genesys Cloud Client ID" style="width: 300px;">
-            </div>
-            
-            <div class="input-group">
-                <label>GC Redirect URL:</label>
-                <input type="text" id="gcRedirectUrlInput" value="" placeholder="Will be auto-filled with current URL" style="width: 400px;">
-            </div>
-            
-            <div class="input-group">
-                <label>GC Conversation ID:</label>
-                <input type="text" id="gcConversationIdInput" value="" placeholder="Enter Genesys Cloud Conversation ID" style="width: 300px;">
-            </div>
-            
-            <div class="input-group">
-                <label>GC Auth Status:</label>
-                <span id="gcAuthStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Not Authenticated</span>
-            </div>
-            
-            <div class="input-group">
-                <label>GC Transcription Status:</label>
-                <span id="gcTranscriptionStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Disconnected</span>
-                <button class="demo-button" onclick="authenticateGenesysCloud()" id="gcAuthBtn">Authenticate GC</button>
-                <button class="demo-button" onclick="connectToTranscription()" id="gcTranscriptionConnectBtn" disabled>Connect Transcription</button>
-                <button class="demo-button" onclick="disconnectFromTranscription()" id="gcTranscriptionDisconnectBtn" disabled>Disconnect Transcription</button>
+            <!-- Genesys Cloud Functions -->
+            <div class="section-container">
+                <div class="collapsible-header" onclick="toggleCollapsibleSection('genesysCloudSection')">
+                    <h3>Genesys Cloud Functions</h3>
+                    <span class="collapsible-indicator">▼</span>
+                </div>
+                <div class="collapsible-content" id="genesysCloudSection">
+                
+                    <!-- Genesys Cloud Transcription -->
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 10px 0; color: #495057;">Transcription Configuration</h4>
+                        
+                        <div class="input-group">
+                            <label>GC Region:</label>
+                            <input type="text" id="gcRegionInput" value="usw2.pure.cloud" placeholder="Enter Genesys Cloud region (e.g., mypurecloud.com)">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>GC Client ID:</label>
+                            <input type="text" id="gcClientIdInput" value="Add Client ID" placeholder="Enter Genesys Cloud Client ID" style="width: 300px;">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>GC Redirect URL:</label>
+                            <input type="text" id="gcRedirectUrlInput" value="" placeholder="Will be auto-filled with current URL" style="width: 400px;">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>GC Conversation ID:</label>
+                            <input type="text" id="gcConversationIdInput" value="" placeholder="Enter Genesys Cloud Conversation ID" style="width: 300px;">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>GC Auth Status:</label>
+                            <span id="gcAuthStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Not Authenticated</span>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>GC Transcription Status:</label>
+                            <span id="gcTranscriptionStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Disconnected</span>
+                            <button class="demo-button" onclick="authenticateGenesysCloud()" id="gcAuthBtn">Authenticate GC</button>
+                            <button class="demo-button" onclick="connectToTranscription()" id="gcTranscriptionConnectBtn" disabled>Connect Transcription</button>
+                            <button class="demo-button" onclick="disconnectFromTranscription()" id="gcTranscriptionDisconnectBtn" disabled>Disconnect Transcription</button>
+                        </div>
+                    </div>
+
+                    <!-- Genesys Cloud Conversation Notifications -->
+                    <div style="margin: 20px 0; padding-top: 15px; border-top: 1px solid #ddd;">
+                        <h4 style="margin: 0 0 10px 0; color: #495057;">Conversation Notifications</h4>
+                        
+                        <div class="input-group">
+                            <label>GC User ID:</label>
+                            <input type="text" id="gcUserIdInput" value="f1804415-bca9-4eb7-ad5a-521fca8d6128" placeholder="Enter Genesys Cloud User ID" style="width: 300px;">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>GC Conversation Status:</label>
+                            <span id="gcConversationStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Disconnected</span>
+                            <button class="demo-button" onclick="connectToConversationNotifications()" id="gcConversationConnectBtn" disabled>Connect Conversations</button>
+                            <button class="demo-button" onclick="disconnectFromConversationNotifications()" id="gcConversationDisconnectBtn" disabled>Disconnect Conversations</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Genesys Cloud Message Notifications -->
+                    <div style="margin: 20px 0; padding-top: 15px; border-top: 1px solid #ddd;">
+                        <h4 style="margin: 0 0 10px 0; color: #495057;">Message Notifications</h4>
+                        
+                        <div class="input-group">
+                            <label>GC Message Status:</label>
+                            <span id="gcMessageStatus" style="font-family: monospace; background: #f8f9fa; padding: 2px 5px; border: 1px solid #ddd;">Disconnected</span>
+                            <button class="demo-button" onclick="connectToMessageNotifications()" id="gcMessageConnectBtn" disabled>Connect Messages</button>
+                            <button class="demo-button" onclick="disconnectFromMessageNotifications()" id="gcMessageDisconnectBtn" disabled>Disconnect Messages</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Genesys Cloud Transcription Log -->
+                    <div style="margin: 20px 0; padding-top: 15px; border-top: 1px solid #ddd;">
+                        <h4 style="margin: 0 0 10px 0; color: #495057;">Transcription Log</h4>
+                        <div id="gcTranscriptionMessageLog" class="status-display">
+                            Ready to receive Genesys Cloud transcription messages...
+                        </div>
+                        <button class="demo-button" onclick="clearGcTranscriptionLog()" style="background: #dc3545; margin-top: 5px;">Clear GC Transcription Log</button>
+                    </div>
+                    
+                    <!-- Genesys Cloud Conversation Notifications Log -->
+                    <div style="margin: 20px 0; padding-top: 15px; border-top: 1px solid #ddd;">
+                        <h4 style="margin: 0 0 10px 0; color: #495057;">Conversation Notifications Log</h4>
+                        <div id="gcConversationNotificationLog" class="status-display">
+                            Ready to receive Genesys Cloud conversation notifications...
+                        </div>
+                        <button class="demo-button" onclick="clearGcConversationNotificationLog()" style="background: #dc3545; margin-top: 5px;">Clear GC Conversation Log</button>
+                    </div>
+                    
+                    <!-- Message Tracker -->
+                    <div style="margin: 20px 0; padding-top: 15px; border-top: 1px solid #ddd;">
+                        <h4 style="margin: 0 0 10px 0; color: #495057;">Message Tracker</h4>
+                        <div id="messageTrackerDisplay" class="status-display" style="max-height: 300px;">
+                            No messages tracked yet...
+                        </div>
+                        <button class="demo-button" onclick="clearMessageTracker()" style="background: #dc3545; margin-top: 5px;">Clear Message Tracker</button>
+                    </div>
+                
+                </div>
             </div>
 
             <!-- Authorization Functions -->
-            <div class="button-group">
-                <h3>Authorization Functions</h3>
-                <button class="demo-button" onclick="sendAuthorizeMessage()">Send Authorization Request</button>
-                <button class="demo-button" onclick="simulateAuthSuccess()">Simulate Auth Success</button>
-                <button class="demo-button" onclick="simulateConversationJoined()">Simulate Conversation Joined</button>
+            <div class="section-container">
+                <div class="collapsible-header" onclick="toggleCollapsibleSection('authFunctionsSection')">
+                    <h3>Authorization Functions</h3>
+                    <span class="collapsible-indicator">▼</span>
+                </div>
+                <div class="collapsible-content" id="authFunctionsSection">
+                <div class="button-group">
+                    <button class="demo-button" onclick="sendAuthorizeMessage()">Send Authorization Request</button>
+                    <button class="demo-button" onclick="simulateAuthSuccess()">Simulate Auth Success</button>
+                    <button class="demo-button" onclick="simulateConversationJoined()">Simulate Conversation Joined</button>
+                </div>
+                </div>
             </div>
 
-            <!-- Conversation Management Functions -->
-            <div class="button-group">
-                <h3>Conversation Management Functions</h3>
+            <!-- Agent Assist Management Functions -->
+            <div class="section-container">
+                <div class="collapsible-header" onclick="toggleCollapsibleSection('conversationMgmtSection')">
+                    <h3>Agent Assist Management Functions</h3>
+                    <span class="collapsible-indicator">▼</span>
+                </div>
+                <div class="collapsible-content" id="conversationMgmtSection">
+                <div class="button-group">
                 <div class="input-group">
-                    <label>Conversation ID:</label>
-                    <input type="text" id="conversationIdInput" value="qrvn6sjly4a74x07" placeholder="Enter conversation ID">
+                    <label>AA Conv ID:</label>
+                    <input type="text" id="conversationIdInput" value="qrvn6sjly4a74x07" placeholder="Enter Agent Assist conversation ID">
                 </div>
                 <div class="input-group">
                     <label>Profile ID:</label>
@@ -301,68 +471,100 @@
                 <button class="demo-button" onclick="sendJoinConversationMessage()">Join Conversation</button>
                 <button class="demo-button" onclick="sendActivateConversationMessage()">Activate Conversation</button>
                 <button class="demo-button" onclick="sendLeaveConversationMessage()">Leave Conversation</button>
-            </div>
-
-            <!-- Content Analysis Functions -->
-            <div class="button-group">
-                <h3>Content Analysis Functions</h3>
-                <div class="input-group">
-                    <label>Message Content:</label>
-                    <input type="text" id="messageContentInput" value="Hello, how can I help you today?" placeholder="Enter message content">
+                
+                <!-- Content Analysis -->
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                    <h4 style="margin: 0 0 10px 0; color: #495057;">Content Analysis</h4>
+                    <div class="input-group">
+                        <label>Message Content:</label>
+                        <input type="text" id="messageContentInput" value="Hello, how can I help you today?" placeholder="Enter message content">
+                    </div>
+                    <div class="input-group">
+                        <label>Participant Type:</label>
+                        <select id="speakerTypeSelect">
+                            <option value="HUMAN_AGENT">HUMAN_AGENT (Agent)</option>
+                            <option value="END_USER">END_USER (Customer)</option>
+                        </select>
+                    </div>
+                    <button class="demo-button" onclick="sendAnalyzeContentMessage()">Analyze Content</button>
                 </div>
-                <div class="input-group">
-                    <label>Participant Type:</label>
-                    <select id="speakerTypeSelect">
-                        <option value="HUMAN_AGENT">HUMAN_AGENT (Agent)</option>
-                        <option value="END_USER">END_USER (Customer)</option>
-                    </select>
+                
+                <!-- Conversation Wrap Up -->
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                    <h4 style="margin: 0 0 10px 0; color: #495057;">Conversation Wrap Up</h4>
+                    <button class="demo-button" onclick="sendWrapConversationMessage()">Wrap Conversation</button>
                 </div>
-                <button class="demo-button" onclick="sendAnalyzeContentMessage()">Analyze Content</button>
+                
+                <!-- Message Log -->
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                    <h4 style="margin: 0 0 10px 0; color: #495057;">Message Log</h4>
+                    <div id="messageLog" class="status-display">
+                        Ready to send messages to iframe...
+                    </div>
+                    <button class="demo-button" onclick="clearMessageLog()" style="background: #dc3545; margin-top: 5px;">Clear Log</button>
+                </div>
+                
+                </div>
+                </div>
             </div>
 
-            <!-- Conversation Wrap Up -->
-            <div class="button-group">
-                <h3>Conversation Wrap Up</h3>
-                <button class="demo-button" onclick="sendWrapConversationMessage()">Wrap Conversation</button>
-            </div>
 
-            <!-- Message Log -->
-            <h3>Message Log</h3>
-            <div id="messageLog" class="status-display">
-                Ready to send messages to iframe...
-            </div>
-            
-            <button class="demo-button" onclick="clearMessageLog()" style="background: #dc3545;">Clear Log</button>
 
-            <!-- AudioHook Message Log -->
-            <h3>AudioHook Message Log</h3>
-            <div id="audiohookMessageLog" class="status-display">
-                Ready to receive AudioHook messages...
-            </div>
-            
-            <button class="demo-button" onclick="clearAudiohookLog()" style="background: #dc3545;">Clear AudioHook Log</button>
 
-            <!-- Genesys Cloud Transcription Message Log -->
-            <h3>Genesys Cloud Transcription Log</h3>
-            <div id="gcTranscriptionMessageLog" class="status-display">
-                Ready to receive Genesys Cloud transcription messages...
+            <!-- Conversation Tracking Display -->
+            <div class="section-container">
+                <div class="collapsible-header" onclick="toggleCollapsibleSection('trackedConversationsSection')">
+                    <h3>Tracked Conversations</h3>
+                    <span class="collapsible-indicator">▼</span>
+                </div>
+                <div class="collapsible-content" id="trackedConversationsSection">
+                    <div class="input-group">
+                        <button class="demo-button" onclick="clearTrackedConversations()" style="background: #dc3545;">Clear Tracked Conversations</button>
+                    </div>
+                    <div id="trackedConversationsDisplay" class="status-display" style="max-height: 400px;">
+                        No conversations tracked yet...
+                    </div>
+                </div>
             </div>
-            
-            <button class="demo-button" onclick="clearGcTranscriptionLog()" style="background: #dc3545;">Clear GC Transcription Log</button>
 
             <!-- Conversation Details -->
-            <h3>Conversation Details</h3>
-            <div class="input-group">
-                <button class="demo-button" onclick="getConversationDetails()" id="getConversationDetailsBtn">Get Conversation Details</button>
+            <div class="section-container">
+                <div class="collapsible-header" onclick="toggleCollapsibleSection('conversationDetailsSection')">
+                    <h3>Conversation Details</h3>
+                    <span class="collapsible-indicator">▼</span>
+                </div>
+                <div class="collapsible-content" id="conversationDetailsSection">
+                    <div class="input-group">
+                        <button class="demo-button" onclick="getConversationDetails()" id="getConversationDetailsBtn">Get Conversation Details</button>
+                    </div>
+                    <div id="conversationDetailsLog" class="status-display">
+                        Ready to fetch conversation details...
+                    </div>
+                    <button class="demo-button" onclick="clearConversationDetailsLog()" style="background: #dc3545;">Clear Conversation Details Log</button>
+                </div>
             </div>
-            <div id="conversationDetailsLog" class="status-display">
-                Ready to fetch conversation details...
+
+            <!-- Latest Notes Display -->
+            <div class="section-container">
+                <div class="collapsible-header" onclick="toggleCollapsibleSection('latestNotesSection')">
+                    <h3>Latest Notes from Iframe</h3>
+                    <span class="collapsible-indicator">▼</span>
+                </div>
+                <div class="collapsible-content" id="latestNotesSection">
+                    <div id="latestNotesDisplay" class="status-display" style="max-height: 300px;">
+                        No notes received yet...
+                    </div>
+                    <button class="demo-button" onclick="clearLatestNotes()" style="background: #dc3545;">Clear Notes</button>
+                </div>
             </div>
-            
-            <button class="demo-button" onclick="clearConversationDetailsLog()" style="background: #dc3545;">Clear Conversation Details Log</button>
 
             <!-- Auto-Forwarding Controls -->
-            <h3>Auto-Forwarding to Iframe</h3>
+            <div class="section-container">
+                <div class="collapsible-header" onclick="toggleCollapsibleSection('autoForwardingSection')">
+                    <h3>Auto-Forwarding to Iframe</h3>
+                    <span class="collapsible-indicator">▼</span>
+                </div>
+                <div class="collapsible-content" id="autoForwardingSection">
             <div class="input-group">
                 <label>
                     <input type="checkbox" id="autoForwardTranscription" checked onchange="toggleAutoForwardTranscription()" style="margin-right: 8px;">
@@ -375,6 +577,26 @@
                     Auto-forward AudioHook messages to iframe
                 </label>
             </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="autoForwardMessages" checked onchange="toggleAutoForwardMessages()" style="margin-right: 8px;">
+                    Auto-forward Genesys Cloud messages to iframe for analysis
+                </label>
+            </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="filterWorkflowMessages" checked onchange="toggleFilterWorkflowMessages()" style="margin-right: 8px;">
+                    Filter out workflow messages from analysis (exclude bot/system messages)
+                </label>
+            </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="autoHandleIncomingCalls" checked onchange="toggleAutoHandleIncomingCalls()" style="margin-right: 8px;">
+                    Auto-handle incoming calls (transcription + join + activate)
+                </label>
+            </div>
+                </div>
+            </div>
             </div>
 
             <div class="iframe-container">
@@ -382,10 +604,9 @@
                     <h2 style="margin: 0;">TTEC Agent Assist</h2>
                     <button id="panelToggleBtn" class="toggle-button" onclick="toggleFormPanel()">
                         <span>🔍</span>
-                        <span id="toggleBtnText">Hide Form Panel</span>
                     </button>
                 </div>
-                <iframe id="demoIframe" class="demo-iframe" src="about:blank"></iframe>
+                <iframe id="demoIframe" class="demo-iframe" src="about:blank" allow="clipboard-write"></iframe>
             </div>
         </div>
     </div>
@@ -422,6 +643,7 @@
     - iframe_url: Agent Assist iframe URL
     - organization_id: Organization ID for iframe URL construction
     - hidePanel: true/false to start with form panel hidden
+    - AutoListen: true to auto-start listening sequence (load iframe + auth GC + start conversation subscription)
     
     ==========================================================================
     -->
@@ -443,6 +665,12 @@
         
         /** @type {boolean} Flag to prevent multiple concurrent call sequences */
         let callSequenceInProgress = false;
+        
+        /** @type {boolean} Flag to prevent multiple concurrent auto-listen sequences */
+        let autoListenSequenceInProgress = false;
+        
+        /** @type {string} Store the detected conversation media type for call sequences */
+        let lastDetectedMediaType = 'unknown';
         
         // ==========================================================================
         // URL PARAMETER HANDLING
@@ -475,6 +703,9 @@
             const contactName = url.searchParams.get('contact_name');
             const contactEmail = url.searchParams.get('contact_email');
             const contactPhone = url.searchParams.get('contact_phone');
+            
+            // Auto-listen parameter
+            const autoListen = url.searchParams.get('AutoListen');
             
             // Populate Genesys Cloud fields
             if (gcRegion) {
@@ -524,6 +755,11 @@
                 document.getElementById('contactPhoneInput').value = contactPhone;
             }
             
+            // Store AutoListen parameter in session storage for later use
+            if (autoListen) {
+                sessionStorage.setItem('auto_listen', autoListen);
+            }
+            
             // Log what was populated
             const populatedFields = [];
             if (gcRegion) populatedFields.push(`GC Region: ${gcRegion}`);
@@ -538,6 +774,7 @@
             if (contactName) populatedFields.push(`Contact Name: ${contactName}`);
             if (contactEmail) populatedFields.push(`Contact Email: ${contactEmail}`);
             if (contactPhone) populatedFields.push(`Contact Phone: ${contactPhone}`);
+            if (autoListen) populatedFields.push(`AutoListen: ${autoListen}`);
             
             if (populatedFields.length > 0) {
                 logMessage('URL parameters loaded:', { populatedFields });
@@ -556,7 +793,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeDemo();
             initializeFormPanelState();
+            initializeCollapsibleSections();
             checkForAutoStartCallSequence();
+            checkForAutoListenSequence();
         });
         
         /**
@@ -602,6 +841,27 @@
                 },
                 onGcTranscriptionStatusChanged: function(status) {
                     updateGcTranscriptionStatus(status);
+                },
+                onGcConversationNotification: function(messageData) {
+                    logGcConversationNotification('GC Conversation notification received:', messageData);
+                },
+                onGcConversationStatusChanged: function(status) {
+                    updateGcConversationStatus(status);
+                },
+                onGcMessageStatusChanged: function(status) {
+                    updateGcMessageStatus(status);
+                },
+                onConversationTrackingUpdate: function(conversations) {
+                    updateTrackedConversationsDisplay(conversations);
+                },
+                onActiveConversationChanged: function(conversationId) {
+                    updateActiveConversationId(conversationId);
+                },
+                onNewNotesReceived: function(responseDetails) {
+                    displayLatestNotes(responseDetails);
+                },
+                onMessageTracked: function(messageData) {
+                    displayTrackedMessage(messageData);
                 }
             });
             
@@ -784,6 +1044,283 @@
             document.getElementById('gcTranscriptionMessageLog').textContent = 'Ready to receive Genesys Cloud transcription messages...';
         }
         
+        // ==========================================================================
+        // GENESYS CLOUD CONVERSATION NOTIFICATIONS FUNCTIONS
+        // ==========================================================================
+        
+        /**
+         * Logs Genesys Cloud conversation notification messages with timestamp
+         * @param {string} message - The message to log
+         * @param {Object} data - Optional data object to include
+         */
+        function logGcConversationNotification(message, data = null) {
+            const logElement = document.getElementById('gcConversationNotificationLog');
+            const timestamp = new Date().toLocaleTimeString();
+            let logEntry = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                logEntry += '\n' + JSON.stringify(data, null, 2);
+            }
+            
+            logElement.textContent += logEntry + '\n\n';
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            // Recalculate collapsible section heights after adding content
+            setTimeout(recalculateCollapsibleHeights, 50);
+        }
+        
+        function clearGcConversationNotificationLog() {
+            document.getElementById('gcConversationNotificationLog').textContent = 'Ready to receive Genesys Cloud conversation notifications...';
+        }
+        
+        function updateGcConversationStatus(status) {
+            const statusElement = document.getElementById('gcConversationStatus');
+            const connectBtn = document.getElementById('gcConversationConnectBtn');
+            const disconnectBtn = document.getElementById('gcConversationDisconnectBtn');
+            
+            statusElement.textContent = status;
+            
+            if (status === 'Connected') {
+                statusElement.style.color = '#28a745'; // Green
+                statusElement.style.backgroundColor = '#d4edda';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else if (status === 'Connecting...') {
+                statusElement.style.color = '#ffc107'; // Yellow
+                statusElement.style.backgroundColor = '#fff3cd';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusElement.style.color = '#6c757d'; // Gray
+                statusElement.style.backgroundColor = '#f8f9fa';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+        
+        function updateGcMessageStatus(status) {
+            const statusElement = document.getElementById('gcMessageStatus');
+            const connectBtn = document.getElementById('gcMessageConnectBtn');
+            const disconnectBtn = document.getElementById('gcMessageDisconnectBtn');
+            
+            statusElement.textContent = status;
+            
+            if (status === 'Connected') {
+                statusElement.style.color = '#28a745'; // Green
+                statusElement.style.backgroundColor = '#d4edda';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else if (status === 'Connecting...' || status === 'Authenticating...') {
+                statusElement.style.color = '#ffc107'; // Yellow
+                statusElement.style.backgroundColor = '#fff3cd';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusElement.style.color = '#6c757d'; // Gray
+                statusElement.style.backgroundColor = '#f8f9fa';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+        
+        /**
+         * Connects to Genesys Cloud conversation notifications for a specific user
+         * Uses the user ID from the form input
+         */
+        function connectToConversationNotifications() {
+            const userId = document.getElementById('gcUserIdInput').value;
+            
+            if (!userId || userId.trim() === '') {
+                alert('Please enter a Genesys Cloud User ID');
+                return;
+            }
+            
+            if (communicationWrapper && communicationWrapper.isGenesysCloudAuthenticated()) {
+                logGcConversationNotification('Connecting to Genesys Cloud conversation notifications...', {
+                    userId: userId
+                });
+                
+                communicationWrapper.connectToGcConversationNotifications(userId).then(success => {
+                    if (success) {
+                        logGcConversationNotification('Successfully connected to Genesys Cloud conversation notifications');
+                    } else {
+                        logGcConversationNotification('Failed to connect to Genesys Cloud conversation notifications');
+                    }
+                });
+            } else {
+                alert('Please authenticate with Genesys Cloud first');
+            }
+        }
+        
+        function disconnectFromConversationNotifications() {
+            if (communicationWrapper) {
+                logGcConversationNotification('Disconnecting from Genesys Cloud conversation notifications...');
+                communicationWrapper.disconnectFromGcConversationNotifications();
+            }
+        }
+        
+        function connectToMessageNotifications() {
+            const userId = document.getElementById('gcUserIdInput').value;
+            
+            if (!userId || userId.trim() === '') {
+                alert('Please enter a Genesys Cloud User ID');
+                return;
+            }
+            
+            if (communicationWrapper && communicationWrapper.isGenesysCloudAuthenticated()) {
+                logGcConversationNotification('Connecting to Genesys Cloud message notifications...', {
+                    userId: userId
+                });
+                
+                communicationWrapper.connectToGcMessageNotifications(userId).then(success => {
+                    if (success) {
+                        logGcConversationNotification('Successfully connected to Genesys Cloud message notifications');
+                    } else {
+                        logGcConversationNotification('Failed to connect to Genesys Cloud message notifications');
+                    }
+                });
+            } else {
+                alert('Please authenticate with Genesys Cloud first');
+            }
+        }
+        
+        function disconnectFromMessageNotifications() {
+            if (communicationWrapper) {
+                logGcConversationNotification('Disconnecting from Genesys Cloud message notifications...');
+                communicationWrapper.disconnectFromGcMessageNotifications();
+            }
+        }
+        
+        /**
+         * Updates the tracked conversations display
+         * @param {Array} conversations - Array of conversation objects
+         */
+        function updateTrackedConversationsDisplay(conversations) {
+            const displayElement = document.getElementById('trackedConversationsDisplay');
+            
+            if (!conversations || conversations.length === 0) {
+                displayElement.innerHTML = 'No conversations tracked yet...';
+                return;
+            }
+            
+            // Sort conversations by last updated (most recent first)
+            const sortedConversations = conversations.sort((a, b) => 
+                new Date(b.lastUpdated) - new Date(a.lastUpdated)
+            );
+            
+            let html = '<div style="font-family: monospace; font-size: 12px;">';
+            
+            sortedConversations.forEach(conv => {
+                const stateColor = getStateColor(conv.currentState);
+                const timeSinceUpdate = getTimeSince(conv.lastUpdated);
+                
+                // Check if this is the active conversation
+                const isActive = communicationWrapper && 
+                                communicationWrapper.getMostRecentActiveConversationId() === conv.id;
+                const backgroundStyle = isActive ? 
+                    'background: linear-gradient(135deg, #e8f5e8, #f9f9f9); border: 2px solid #28a745;' : 
+                    'background: #f9f9f9; border: 1px solid #ddd;';
+                
+                const activeIndicator = isActive ? '🟢 ' : '';
+                
+                html += `
+                    <div style="${backgroundStyle} margin: 5px 0; padding: 8px;">
+                        <div style="font-weight: bold; color: #333;">
+                            ${activeIndicator}📞 ${conv.customerName || 'Unknown'} 
+                            <span style="color: ${stateColor}; font-size: 11px;">[${conv.currentState.toUpperCase()}]</span>
+                            <span style="color: #666; font-size: 10px; float: right;">${timeSinceUpdate}</span>
+                            ${isActive ? '<span style="color: #28a745; font-size: 10px; float: right; margin-right: 10px;">[ACTIVE]</span>' : ''}
+                        </div>
+                        <div style="font-size: 10px; color: #666; margin: 2px 0;">
+                            ID: ${conv.id} | Direction: ${conv.direction || 'N/A'} | AA: ${conv.hasAgentAssist ? '✅' : '❌'}
+                        </div>
+                        <div style="font-size: 10px; color: #888;">
+                            States: ${conv.stateHistory.length > 0 ? 
+                                conv.stateHistory.map(h => h.state).join(' → ') + ' → ' + conv.currentState : 
+                                conv.currentState}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            displayElement.innerHTML = html;
+        }
+        
+        /**
+         * Get color for conversation state
+         * @param {string} state - The conversation state
+         * @returns {string} - CSS color
+         */
+        function getStateColor(state) {
+            switch (state.toLowerCase()) {
+                case 'contacting': return '#ffc107';
+                case 'dialing': return '#fd7e14';
+                case 'connected': return '#28a745';
+                case 'disconnected': return '#6c757d';
+                case 'terminated': return '#dc3545';
+                default: return '#6c757d';
+            }
+        }
+        
+        /**
+         * Get time since a timestamp in human readable format
+         * @param {string} timestamp - ISO timestamp
+         * @returns {string} - Human readable time difference
+         */
+        function getTimeSince(timestamp) {
+            const now = new Date();
+            const past = new Date(timestamp);
+            const diffMs = now - past;
+            const diffSecs = Math.floor(diffMs / 1000);
+            const diffMins = Math.floor(diffSecs / 60);
+            const diffHours = Math.floor(diffMins / 60);
+            
+            if (diffSecs < 60) return `${diffSecs}s ago`;
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            return past.toLocaleDateString();
+        }
+        
+        /**
+         * Clear all tracked conversations
+         */
+        function clearTrackedConversations() {
+            if (communicationWrapper) {
+                communicationWrapper.clearTrackedConversations();
+            }
+        }
+        
+        /**
+         * Update the GC Conversation ID input field with the active conversation
+         * @param {string|null} conversationId - The active conversation ID or null if none active
+         */
+        function updateActiveConversationId(conversationId) {
+            const gcConversationIdInput = document.getElementById('gcConversationIdInput');
+            
+            if (conversationId) {
+                console.log(`Setting GC Conversation ID field to active conversation: ${conversationId}`);
+                gcConversationIdInput.value = conversationId;
+                
+                // Visual indicator that this was auto-populated
+                gcConversationIdInput.style.backgroundColor = '#d1f2eb';
+                gcConversationIdInput.style.borderColor = '#28a745';
+                
+                // Add a subtle animation to draw attention
+                gcConversationIdInput.style.transition = 'all 0.3s ease';
+                setTimeout(() => {
+                    gcConversationIdInput.style.backgroundColor = '';
+                    gcConversationIdInput.style.borderColor = '';
+                }, 2000);
+                
+            } else {
+                console.log('No active conversation - clearing GC Conversation ID field');
+                gcConversationIdInput.value = '';
+                gcConversationIdInput.style.backgroundColor = '';
+                gcConversationIdInput.style.borderColor = '';
+            }
+        }
+        
         function clearConversationDetailsLog() {
             const logElement = document.getElementById('conversationDetailsLog');
             logElement.innerHTML = 'Ready to fetch conversation details...';
@@ -809,6 +1346,8 @@
             const statusElement = document.getElementById('gcAuthStatus');
             const authBtn = document.getElementById('gcAuthBtn');
             const transcriptionConnectBtn = document.getElementById('gcTranscriptionConnectBtn');
+            const conversationConnectBtn = document.getElementById('gcConversationConnectBtn');
+            const messageConnectBtn = document.getElementById('gcMessageConnectBtn');
             
             statusElement.textContent = status;
             
@@ -817,16 +1356,22 @@
                 statusElement.style.backgroundColor = '#d4edda';
                 authBtn.disabled = true;
                 transcriptionConnectBtn.disabled = false;
+                conversationConnectBtn.disabled = false;
+                messageConnectBtn.disabled = false;
             } else if (status === 'Authenticating...') {
                 statusElement.style.color = '#ffc107'; // Yellow
                 statusElement.style.backgroundColor = '#fff3cd';
                 authBtn.disabled = true;
                 transcriptionConnectBtn.disabled = true;
+                conversationConnectBtn.disabled = true;
+                messageConnectBtn.disabled = true;
             } else {
                 statusElement.style.color = '#6c757d'; // Gray
                 statusElement.style.backgroundColor = '#f8f9fa';
                 authBtn.disabled = false;
                 transcriptionConnectBtn.disabled = true;
+                conversationConnectBtn.disabled = true;
+                messageConnectBtn.disabled = true;
             }
         }
         
@@ -979,8 +1524,41 @@
                         logConversationDetails('✅ Successfully retrieved conversation details', data);
                         console.log('Conversation details:', data);
                         
-                        // Find the external participant (customer)
-                        const externalParticipant = data.participants.find(p => p.participantType === 'External');
+                        // Find the external participant - first try participantType === 'External'
+                        let externalParticipant = data.participants.find(p => p.participantType === 'External');
+                        
+                        // If no external participant found, look for participant with purpose === 'customer'
+                        if (!externalParticipant) {
+                            externalParticipant = data.participants.find(p => p.purpose === 'customer');
+                            if (externalParticipant) {
+                                logConversationDetails('🔍 Using customer participant as external participant');
+                            }
+                        }
+                        
+                        // Determine media type by checking for connected calls or messages
+                        let mediaType = 'unknown';
+                        for (const participant of data.participants) {
+                            // Check calls array for connected state
+                            if (participant.calls && participant.calls.length > 0) {
+                                const connectedCall = participant.calls.find(call => call.state === 'connected');
+                                if (connectedCall) {
+                                    mediaType = 'voice';
+                                    break;
+                                }
+                            }
+                            // Check messages array for connected state
+                            if (participant.messages && participant.messages.length > 0) {
+                                const connectedMessage = participant.messages.find(msg => msg.state === 'connected');
+                                if (connectedMessage) {
+                                    mediaType = 'messaging';
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Store the media type globally for use in call sequences
+                        lastDetectedMediaType = mediaType;
+                        logConversationDetails(`📞 Media Type: ${mediaType}`);
                         
                         if (externalParticipant) {
                             // Populate Contact Name from external participant name
@@ -999,9 +1577,9 @@
                                 logConversationDetails(`📞 Updated Contact Phone: ${last10Digits} (from ${externalParticipant.address})`);
                             }
                             
-                            logConversationDetails('✅ Form fields updated with external participant data');
+                            logConversationDetails(`✅ Form fields updated with external participant data (${externalParticipant.purpose || 'external'})`);
                         } else {
-                            logConversationDetails('⚠️ No external participant found in conversation');
+                            logConversationDetails('⚠️ No external participant or customer participant found in conversation');
                         }
                     })
                     .catch((error) => {
@@ -1029,6 +1607,305 @@
             }
         }
         
+        function toggleAutoForwardMessages() {
+            const checkbox = document.getElementById('autoForwardMessages');
+            if (communicationWrapper) {
+                communicationWrapper.setAutoForwardMessages(checkbox.checked);
+            }
+        }
+        
+        function toggleFilterWorkflowMessages() {
+            const checkbox = document.getElementById('filterWorkflowMessages');
+            if (communicationWrapper) {
+                communicationWrapper.setFilterWorkflowMessages(checkbox.checked);
+            }
+        }
+        
+        function toggleAutoHandleIncomingCalls() {
+            const checkbox = document.getElementById('autoHandleIncomingCalls');
+            if (communicationWrapper) {
+                communicationWrapper.setAutoHandleIncomingCalls(checkbox.checked);
+            }
+        }
+        
+        // ==========================================================================
+        // NOTES DISPLAY FUNCTIONS
+        // ==========================================================================
+        
+        /**
+         * Display the latest notes received from iframe in a user-friendly format
+         * @param {Object} responseDetails - The notes response details
+         */
+        function displayLatestNotes(responseDetails) {
+            const displayElement = document.getElementById('latestNotesDisplay');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            if (!responseDetails || !responseDetails.notes) {
+                displayElement.innerHTML = `<div style="color: #dc3545;">[${timestamp}] Invalid notes data received</div>`;
+                return;
+            }
+            
+            const { conversation, notes } = responseDetails;
+            const conversationId = conversation?.id || 'Unknown';
+            
+            // Create user-friendly display
+            let html = `<div style="font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin: 5px 0; background: #f8f9fa;">`;
+            html += `<div style="font-weight: bold; color: #333; margin-bottom: 8px;">📝 New Notes Received</div>`;
+            html += `<div style="color: #666; font-size: 11px; margin-bottom: 10px;">Time: ${timestamp} | Conversation: ${conversationId}</div>`;
+            
+            if (notes.sections && notes.sections.length > 0) {
+                html += `<div style="background: white; padding: 8px; border-radius: 4px;">`;
+                
+                notes.sections.forEach(section => {
+                    const friendlyKey = getFriendlyKeyName(section.key);
+                    const friendlyValue = getFriendlyValue(section.value);
+                    const keyColor = getKeyColor(section.key);
+                    
+                    html += `<div style="margin: 6px 0; display: flex; align-items: flex-start;">`;
+                    html += `<span style="font-weight: bold; color: ${keyColor}; min-width: 120px; margin-right: 10px;">${friendlyKey}:</span>`;
+                    html += `<span style="flex: 1;">${friendlyValue}</span>`;
+                    html += `</div>`;
+                });
+                
+                html += `</div>`;
+            }
+            
+            if (notes.entities && notes.entities.length > 0) {
+                html += `<div style="margin-top: 10px; padding: 8px; background: #e8f4f8; border-radius: 4px;">`;
+                html += `<div style="font-weight: bold; color: #0056b3; margin-bottom: 5px;">🏷️ Entities:</div>`;
+                notes.entities.forEach(entity => {
+                    html += `<span style="background: #007bff; color: white; padding: 2px 6px; border-radius: 12px; font-size: 10px; margin: 2px;">${entity}</span>`;
+                });
+                html += `</div>`;
+            }
+            
+            html += `</div>`;
+            
+            // Add to the display (keeping latest note at top)
+            displayElement.innerHTML = html + displayElement.innerHTML;
+            
+            console.log('Latest notes displayed in UI');
+        }
+        
+        /**
+         * Get user-friendly name for note keys
+         * @param {string} key - The raw key name
+         * @returns {string} - User-friendly key name
+         */
+        function getFriendlyKeyName(key) {
+            const keyMappings = {
+                'situation': '🔍 Situation',
+                'action': '⚡ Action Taken',
+                'resolution': '✅ Resolution',
+                'customer_satisfaction': '😊 Customer Satisfaction',
+                'reason_for_cancellation': '❌ Cancellation Reason',
+                'summary': '📋 Summary',
+                'next_steps': '👉 Next Steps',
+                'issue_type': '🏷️ Issue Type',
+                'priority': '🔥 Priority',
+                'outcome': '🎯 Outcome'
+            };
+            
+            return keyMappings[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+        
+        /**
+         * Get user-friendly display value
+         * @param {string} value - The raw value
+         * @returns {string} - User-friendly value
+         */
+        function getFriendlyValue(value) {
+            if (!value || value === 'N' || value === 'N/A') {
+                return '<span style="color: #6c757d; font-style: italic;">Not specified</span>';
+            }
+            
+            if (value === 'Y' || value === 'Yes') {
+                return '<span style="color: #28a745; font-weight: bold;">✓ Yes</span>';
+            }
+            
+            if (value === 'No') {
+                return '<span style="color: #dc3545; font-weight: bold;">✗ No</span>';
+            }
+            
+            return value;
+        }
+        
+        /**
+         * Get color for different key types
+         * @param {string} key - The key name
+         * @returns {string} - CSS color
+         */
+        function getKeyColor(key) {
+            const colorMappings = {
+                'situation': '#007bff',
+                'action': '#28a745',
+                'resolution': '#ffc107',
+                'customer_satisfaction': '#e83e8c',
+                'reason_for_cancellation': '#dc3545'
+            };
+            
+            return colorMappings[key] || '#6c757d';
+        }
+        
+        /**
+         * Clear the notes display
+         */
+        function clearLatestNotes() {
+            const displayElement = document.getElementById('latestNotesDisplay');
+            displayElement.innerHTML = 'No notes received yet...';
+        }
+        
+        // ==========================================================================
+        // MESSAGE TRACKER FUNCTIONS
+        // ==========================================================================
+        
+        /**
+         * Display a tracked message in the message tracker
+         * Rebuilds the entire display sorted by time to handle out-of-order messages
+         * @param {Object} messageData - The tracked message data
+         */
+        function displayTrackedMessage(messageData) {
+            rebuildMessageTrackerDisplay();
+            console.log(`📨 Message tracker updated: ${messageData.messageId}`);
+        }
+        
+        /**
+         * Rebuild the entire message tracker display sorted by time (newest first)
+         */
+        function rebuildMessageTrackerDisplay() {
+            const displayElement = document.getElementById('messageTrackerDisplay');
+            
+            if (!communicationWrapper) {
+                displayElement.innerHTML = 'Communication wrapper not initialized...';
+                return;
+            }
+            
+            // Get all tracked messages and sort by time (newest first)
+            const allMessages = communicationWrapper.getTrackedMessages();
+            allMessages.sort((a, b) => new Date(b.messageTime) - new Date(a.messageTime));
+            
+            if (allMessages.length === 0) {
+                displayElement.innerHTML = 'No messages tracked yet...';
+                return;
+            }
+            
+            // Clear and rebuild display
+            displayElement.innerHTML = '';
+            
+            allMessages.forEach(messageData => {
+                const timestamp = new Date(messageData.messageTime).toLocaleString();
+                
+                // Create message display entry
+                const messageEntry = document.createElement('div');
+                messageEntry.style.cssText = `
+                    font-family: monospace; 
+                    font-size: 11px; 
+                    padding: 8px; 
+                    margin: 4px 0; 
+                    border: 1px solid #ddd; 
+                    border-radius: 4px; 
+                    background: #ffffff;
+                    border-left: 4px solid ${getParticipantColor(messageData.participantPurpose)};
+                `;
+                
+                const messageText = messageData.messageText || 'Loading...';
+                const textDisplay = messageText.length > 100 ? 
+                    messageText.substring(0, 100) + '...' : 
+                    messageText;
+                
+                messageEntry.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-weight: bold; color: ${getParticipantColor(messageData.participantPurpose)};">
+                            ${getParticipantIcon(messageData.participantPurpose)} ${messageData.participantName} (${messageData.participantPurpose})
+                        </span>
+                        <span style="color: #6c757d; font-size: 10px;">${timestamp}</span>
+                    </div>
+                    <div style="margin: 2px 0;">
+                        <span style="color: #495057;">Message ID:</span> 
+                        <span style="font-family: monospace; background: #f8f9fa; padding: 2px 4px; border-radius: 2px;">${messageData.messageId}</span>
+                    </div>
+                    <div style="margin: 2px 0;">
+                        <span style="color: #495057;">Status:</span> 
+                        <span style="color: ${getMessageStatusColor(messageData.messageStatus)}; font-weight: bold;">${messageData.messageStatus}</span>
+                        <span style="color: #6c757d; margin-left: 10px;">Type: ${messageData.messageType}</span>
+                    </div>
+                    <div style="margin: 5px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid ${getParticipantColor(messageData.participantPurpose)};">
+                        <div style="color: #495057; font-weight: bold; margin-bottom: 3px;">Message Text:</div>
+                        <div style="color: #212529; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; line-height: 1.4; word-wrap: break-word;">
+                            ${messageText === 'Loading...' ? '<em style="color: #6c757d;">Loading...</em>' : textDisplay}
+                        </div>
+                        ${messageText.length > 100 ? '<div style="color: #6c757d; font-size: 10px; margin-top: 3px; font-style: italic;">Text truncated (click message ID to view full)</div>' : ''}
+                    </div>
+                `;
+                
+                displayElement.appendChild(messageEntry);
+            });
+            
+            // Recalculate collapsible section heights after rebuilding content
+            setTimeout(recalculateCollapsibleHeights, 50);
+        }
+        
+        /**
+         * Get color for different participant purposes
+         * @param {string} purpose - The participant purpose
+         * @returns {string} - CSS color
+         */
+        function getParticipantColor(purpose) {
+            const colors = {
+                'customer': '#dc3545',   // Red
+                'agent': '#28a745',      // Green  
+                'workflow': '#ffc107',   // Yellow
+                'acd': '#17a2b8',        // Blue
+                'unknown': '#6c757d'     // Gray
+            };
+            return colors[purpose] || colors['unknown'];
+        }
+        
+        /**
+         * Get icon for different participant purposes
+         * @param {string} purpose - The participant purpose
+         * @returns {string} - Icon
+         */
+        function getParticipantIcon(purpose) {
+            const icons = {
+                'customer': '👤',
+                'agent': '👨‍💼',
+                'workflow': '🔄',
+                'acd': '📞',
+                'unknown': '❓'
+            };
+            return icons[purpose] || icons['unknown'];
+        }
+        
+        /**
+         * Get color for message status
+         * @param {string} status - The message status
+         * @returns {string} - CSS color
+         */
+        function getMessageStatusColor(status) {
+            const colors = {
+                'received': '#28a745',        // Green
+                'delivery-success': '#17a2b8', // Blue
+                'queued': '#ffc107',          // Yellow
+                'sent': '#6c757d',            // Gray
+                'failed': '#dc3545'           // Red
+            };
+            return colors[status] || '#6c757d';
+        }
+        
+        /**
+         * Clear the message tracker display
+         */
+        function clearMessageTracker() {
+            const displayElement = document.getElementById('messageTrackerDisplay');
+            displayElement.innerHTML = 'No messages tracked yet...';
+            
+            // Also clear the tracked messages in the wrapper
+            if (communicationWrapper) {
+                communicationWrapper.clearTrackedMessages();
+            }
+        }
+        
         // ==========================================================================
         // FORM PANEL & UI CONTROL FUNCTIONS
         // ==========================================================================
@@ -1040,20 +1917,17 @@
         function toggleFormPanel() {
             const controlsPanel = document.querySelector('.controls-panel');
             const toggleBtn = document.getElementById('panelToggleBtn');
-            const toggleBtnText = document.getElementById('toggleBtnText');
             
             if (isFormPanelVisible) {
                 // Hide the form panel
                 controlsPanel.classList.add('hidden');
                 toggleBtn.classList.add('hide-mode');
-                toggleBtnText.textContent = 'Show Form Panel';
                 toggleBtn.querySelector('span:first-child').textContent = '👁️';
                 isFormPanelVisible = false;
             } else {
                 // Show the form panel
                 controlsPanel.classList.remove('hidden');
                 toggleBtn.classList.remove('hide-mode');
-                toggleBtnText.textContent = 'Hide Form Panel';
                 toggleBtn.querySelector('span:first-child').textContent = '🔍';
                 isFormPanelVisible = true;
             }
@@ -1069,6 +1943,100 @@
                 isFormPanelVisible = true; // Set to true so toggle function will hide it
                 toggleFormPanel();
             }
+        }
+        
+        /**
+         * Toggle collapsible section visibility
+         * @param {string} sectionId - The ID of the section to toggle
+         */
+        function toggleCollapsibleSection(sectionId) {
+            const content = document.getElementById(sectionId);
+            const header = document.querySelector(`[onclick*="${sectionId}"]`);
+            const indicator = header ? header.querySelector('.collapsible-indicator') : null;
+            
+            if (!content) return;
+            
+            // Check if collapsed - either has collapsed class or has max-height of 0 (default collapsed state)
+            const isCollapsed = content.classList.contains('collapsed') || content.style.maxHeight === '0px' || !content.style.maxHeight;
+            
+            if (isCollapsed) {
+                // Expand the section
+                content.classList.remove('collapsed');
+                
+                // Force reflow to ensure accurate height calculation
+                content.offsetHeight;
+                
+                // Set initial height and then recalculate after a brief moment for dynamic content
+                content.style.maxHeight = content.scrollHeight + 'px';
+                
+                // Recalculate height after a short delay to account for dynamic content
+                setTimeout(() => {
+                    if (!content.classList.contains('collapsed')) {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }
+                }, 100);
+                
+                if (indicator) indicator.classList.remove('collapsed');
+                
+                // Store expanded state
+                localStorage.setItem(`section_${sectionId}_collapsed`, 'false');
+            } else {
+                // Collapse the section
+                content.style.maxHeight = content.scrollHeight + 'px';
+                // Force reflow
+                content.offsetHeight;
+                content.style.maxHeight = '0px';
+                content.classList.add('collapsed');
+                if (indicator) indicator.classList.add('collapsed');
+                
+                // Store collapsed state
+                localStorage.setItem(`section_${sectionId}_collapsed`, 'true');
+            }
+        }
+        
+        /**
+         * Initialize collapsible sections based on stored preferences
+         */
+        function initializeCollapsibleSections() {
+            const sections = document.querySelectorAll('.collapsible-content');
+            
+            sections.forEach(section => {
+                const sectionId = section.id;
+                if (!sectionId) return;
+                
+                // Check stored preference - if no preference exists, default to collapsed
+                const storedPreference = localStorage.getItem(`section_${sectionId}_collapsed`);
+                const isCollapsed = storedPreference !== null ? storedPreference === 'true' : true; // Default to collapsed
+                
+                if (isCollapsed) {
+                    // Immediately collapse without animation
+                    section.style.maxHeight = '0px';
+                    section.classList.add('collapsed');
+                    
+                    const header = document.querySelector(`[onclick*="${sectionId}"]`);
+                    const indicator = header ? header.querySelector('.collapsible-indicator') : null;
+                    if (indicator) indicator.classList.add('collapsed');
+                } else {
+                    // Set initial max-height for expanded sections
+                    // Use setTimeout to ensure all content is rendered
+                    setTimeout(() => {
+                        section.style.maxHeight = section.scrollHeight + 'px';
+                    }, 50);
+                }
+            });
+        }
+        
+        /**
+         * Recalculate heights for all expanded collapsible sections
+         * Useful when content is dynamically added (like log messages)
+         */
+        function recalculateCollapsibleHeights() {
+            const expandedSections = document.querySelectorAll('.collapsible-content:not(.collapsed)');
+            expandedSections.forEach(section => {
+                if (section.style.maxHeight && section.style.maxHeight !== '0px') {
+                    section.style.maxHeight = section.scrollHeight + 'px';
+                }
+            });
         }
         
         function checkForAutoStartCallSequence() {
@@ -1195,13 +2163,34 @@
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 updateCallSequenceStatus('✅ Conversation activated successfully');
                 
-                // Step 6: Connect transcription
-                updateCallSequenceStatus('🎙️ Step 6: Connecting transcription...');
-                connectToTranscription();
-                
-                // Wait for transcription connection
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                updateCallSequenceStatus('✅ Transcription connected successfully');
+                // Step 6: Connect to appropriate subscription based on media type
+                if (lastDetectedMediaType === 'voice') {
+                    updateCallSequenceStatus('🎙️ Step 6: Voice conversation detected - Connecting transcription...');
+                    connectToTranscription();
+                    
+                    // Wait for transcription connection
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    updateCallSequenceStatus('✅ Transcription connected successfully');
+                    
+                } else if (lastDetectedMediaType === 'messaging') {
+                    updateCallSequenceStatus('💬 Step 6: Messaging conversation detected - Connecting message subscription...');
+                    
+                    // For messaging, we need a user ID to connect to message notifications
+                    // Get the user ID from the auth info or use a default
+                    const userId = document.getElementById('gcUserIdInput').value;
+                    if (userId && userId.trim()) {
+                        connectToMessageNotifications();
+                        
+                        // Wait for message connection
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        updateCallSequenceStatus('✅ Message subscription connected successfully');
+                    } else {
+                        updateCallSequenceStatus('⚠️ Message subscription skipped - User ID required for message notifications');
+                    }
+                    
+                } else {
+                    updateCallSequenceStatus(`⚠️ Step 6: Unknown media type (${lastDetectedMediaType}) - Skipping subscription connection`);
+                }
                 
                 updateCallSequenceStatus('🎉 New call sequence completed successfully!');
                 
@@ -1246,6 +2235,99 @@
                     }
                 }, 500);
             });
+        }
+        
+        /**
+         * Executes the auto-listen sequence workflow
+         * Steps: Load iframe → Auth GC → Connect conversation notifications → Enable auto-handling
+         * Triggered when URL contains AutoListen=true parameter
+         * @returns {Promise<void>}
+         */
+        async function startAutoListenSequence() {
+            if (autoListenSequenceInProgress) {
+                updateCallSequenceStatus('❌ Auto-listen sequence already in progress', true);
+                return;
+            }
+            
+            autoListenSequenceInProgress = true;
+            clearCallSequenceStatus();
+            updateCallSequenceStatus('🔄 Starting auto-listen sequence...');
+            
+            try {
+                // Step 1: Load Agent Assist iframe with current settings
+                updateCallSequenceStatus('📋 Step 1: Loading Agent Assist iframe...');
+                loadIframeWithNewUrl();
+                
+                // Wait for iframe to load
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                updateCallSequenceStatus('✅ Agent Assist iframe loaded successfully');
+                
+                // Step 2: Authenticate with Genesys Cloud
+                updateCallSequenceStatus('🔐 Step 2: Authenticating with Genesys Cloud...');
+                authenticateGenesysCloud();
+                
+                // Wait for authentication
+                await waitForGenesysAuth();
+                updateCallSequenceStatus('✅ Genesys Cloud authentication successful');
+                
+                // Step 3: Connect conversation notifications (start listening)
+                updateCallSequenceStatus('👂 Step 3: Starting conversation subscription...');
+                connectToConversationNotifications();
+                
+                // Wait for conversation subscription
+                await waitForConversationSubscription();
+                updateCallSequenceStatus('✅ Conversation subscription active');
+                
+                // Step 4: Ensure auto-handle incoming calls is enabled
+                updateCallSequenceStatus('⚙️ Step 4: Enabling auto-handle incoming calls...');
+                const autoHandleCheckbox = document.getElementById('autoHandleIncomingCalls');
+                if (autoHandleCheckbox) {
+                    autoHandleCheckbox.checked = true;
+                    toggleAutoHandleIncomingCalls(); // Apply the setting
+                }
+                updateCallSequenceStatus('✅ Auto-handle incoming calls enabled');
+                
+                updateCallSequenceStatus('🎉 Auto-listen sequence completed successfully! Now listening for incoming calls...');
+                
+            } catch (error) {
+                updateCallSequenceStatus(`❌ Error in auto-listen sequence: ${error.message}`, true);
+            } finally {
+                autoListenSequenceInProgress = false;
+            }
+        }
+        
+        function waitForConversationSubscription() {
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Timeout waiting for conversation subscription'));
+                }, 15000); // 15 second timeout
+                
+                // Listen for conversation subscription status change
+                const checkInterval = setInterval(() => {
+                    const gcConversationStatus = document.getElementById('gcConversationStatus').textContent;
+                    if (gcConversationStatus === 'Connected') {
+                        clearTimeout(timeout);
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 500);
+            });
+        }
+        
+        /**
+         * Check for AutoListen parameter and start sequence if found
+         */
+        function checkForAutoListenSequence() {
+            const autoListen = sessionStorage.getItem('auto_listen');
+            
+            if (autoListen && autoListen.toLowerCase() === 'true') {
+                updateCallSequenceStatus('🚀 AutoListen=true detected in URL - starting auto-listen sequence...');
+                
+                // Auto-start the sequence after a brief delay to ensure everything is initialized
+                setTimeout(() => {
+                    startAutoListenSequence();
+                }, 1500); // 1.5 second delay for initialization
+            }
         }
         
         // ==========================================================================

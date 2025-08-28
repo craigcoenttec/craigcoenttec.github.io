@@ -24,6 +24,13 @@ class IframeCommunicationWrapper {
      * @param {Function} config.onGcTranscriptionMessage - Callback when Genesys Cloud transcription message received
      * @param {Function} config.onGcAuthStatusChanged - Callback when Genesys Cloud auth status changes
      * @param {Function} config.onGcTranscriptionStatusChanged - Callback when Genesys Cloud transcription status changes
+     * @param {Function} config.onGcConversationNotification - Callback when Genesys Cloud conversation notification received
+     * @param {Function} config.onGcConversationStatusChanged - Callback when Genesys Cloud conversation notifications status changes
+     * @param {Function} config.onGcMessageStatusChanged - Callback when Genesys Cloud message notifications status changes
+     * @param {Function} config.onConversationTrackingUpdate - Callback when tracked conversations list changes
+     * @param {Function} config.onActiveConversationChanged - Callback when the most recent active conversation changes
+     * @param {Function} config.onNewNotesReceived - Callback when new notes are received from iframe
+     * @param {Function} config.onMessageTracked - Callback when a new message is tracked
      */
     constructor(config) {
         // Store configuration
@@ -36,6 +43,13 @@ class IframeCommunicationWrapper {
         this.onGcTranscriptionMessage = config.onGcTranscriptionMessage || function() {};
         this.onGcAuthStatusChanged = config.onGcAuthStatusChanged || function() {};
         this.onGcTranscriptionStatusChanged = config.onGcTranscriptionStatusChanged || function() {};
+        this.onGcConversationNotification = config.onGcConversationNotification || function() {};
+        this.onGcConversationStatusChanged = config.onGcConversationStatusChanged || function() {};
+        this.onGcMessageStatusChanged = config.onGcMessageStatusChanged || function() {};
+        this.onConversationTrackingUpdate = config.onConversationTrackingUpdate || function() {};
+        this.onActiveConversationChanged = config.onActiveConversationChanged || function() {};
+        this.onNewNotesReceived = config.onNewNotesReceived || function() {};
+        this.onMessageTracked = config.onMessageTracked || function() {};
         
         // Internal state
         this.iframeElement = null;
@@ -62,17 +76,44 @@ class IframeCommunicationWrapper {
         this.gcUsersApi = null;
         this.gcAuthenticated = false;
         this.gcChannelId = null;
-        this.gcTranscriptionWebSocket = null;
-        this.gcTranscriptionConnected = false;
+        this.gcWebSocket = null; // Single WebSocket for all GC notifications
+        this.gcWebSocketConnected = false;
+        this.gcSubscribedTopics = new Set(); // Track which topics are subscribed
+        this.gcTranscriptionConnected = false; // Track if transcription is actively wanted
         this.gcRegion = null;
         this.gcClientId = null;
         this.gcRedirectUrl = null;
         this.gcConversationId = null;
         this.gcUserId = null;
         
+        // Conversation notifications state
+        this.gcConversationNotificationsConnected = false;
+        this.gcConversationNotificationsUserId = null;
+        
+        // Message notifications state
+        this.gcMessageNotificationsConnected = false;
+        this.gcMessageNotificationsUserId = null;
+        
+        // Conversation tracking
+        this.trackedConversations = new Map(); // conversationId -> conversation object
+        this.mostRecentActiveConversationId = null; // Track the most recent active conversation
+        
+        // Message tracking
+        this.trackedMessages = new Map(); // messageId -> message details
+        this.messageTrackingCallback = null; // Callback for UI updates
+        this.lastWorkflowMessageTime = new Map(); // conversationId -> timestamp of last workflow message
+        
         // Auto-forwarding settings
         this.autoForwardTranscription = true; // Default to enabled
         this.autoForwardAudiohook = true; // Default to enabled
+        this.autoForwardMessages = true; // Default to enabled
+        
+        // Message filtering settings
+        this.filterWorkflowMessages = true; // Default to enabled (exclude workflow messages)
+        
+        // Automated call handling settings
+        this.autoHandleIncomingCalls = true; // Default to enabled
+        this.autoCallSequenceInProgress = false; // Track if auto sequence is running
         
         // Bind the message handlers to preserve 'this' context
         this.handleReceivedMessage = this.handleReceivedMessage.bind(this);
@@ -185,6 +226,10 @@ class IframeCommunicationWrapper {
                 
             case 'content-analyzed':
                 this.handleContentAnalyzedResponse(messageDetails, isSuccess, errorInfo);
+                break;
+                
+            case 'new-notes-received':
+                this.handleNewNotesReceived(messageDetails, isSuccess, errorInfo);
                 break;
                 
             default:
@@ -310,8 +355,17 @@ class IframeCommunicationWrapper {
             this.contactCenterConversationId = responseDetails.conversation.contact_center_conversation_id;
             
             console.log('Successfully joined conversation:');
-            console.log('  - Conversation ID:', this.currentConversationId);
-            console.log('  - Contact Center ID:', this.contactCenterConversationId);
+            console.log('  - AA Conversation ID:', this.currentConversationId);
+            console.log('  - GC Contact Center ID:', this.contactCenterConversationId);
+            
+            // Associate the AA conversation ID with the most recent active GC conversation
+            const activeGcConversationId = this.getMostRecentActiveConversationId();
+            if (activeGcConversationId) {
+                console.log(`Associating AA conversation ${this.currentConversationId} with active GC conversation ${activeGcConversationId}`);
+                this.associateAgentAssistConversation(activeGcConversationId, this.currentConversationId);
+            } else {
+                console.warn('No active GC conversation found to associate with AA conversation:', this.currentConversationId);
+            }
             
             // Notify the UI about the conversation ID change
             this.onConversationIdChanged(this.currentConversationId);
@@ -335,6 +389,15 @@ class IframeCommunicationWrapper {
         if (!isSuccess) {
             console.error('Conversation leave failed:', errorInfo);
             return;
+        }
+        
+        // Find and remove Agent Assist association from any tracked GC conversations
+        if (this.currentConversationId) {
+            const associatedConversation = this.findConversationByAAId(this.currentConversationId);
+            if (associatedConversation) {
+                console.log(`Removing AA association from GC conversation ${associatedConversation.id}`);
+                this.removeAgentAssistConversation(associatedConversation.id);
+            }
         }
         
         // Clear current conversation info
@@ -389,6 +452,27 @@ class IframeCommunicationWrapper {
         console.log('Content analysis completed successfully');
         console.log('Analysis response details:', responseDetails);
         // In a real app, you might display suggestions, insights, etc.
+    }
+    
+    /**
+     * Handle new notes received from iframe
+     * @param {Object} responseDetails - New notes response details
+     * @param {boolean} isSuccess - Whether receiving notes was successful
+     * @param {Object} errorInfo - Error information if notes failed
+     */
+    handleNewNotesReceived(responseDetails, isSuccess, errorInfo) {
+        console.log('Processing new notes received...');
+        
+        if (!isSuccess) {
+            console.error('New notes reception failed:', errorInfo);
+            return;
+        }
+        
+        console.log('New notes received successfully');
+        console.log('Notes details:', responseDetails);
+        
+        // Call the callback to update the UI
+        this.onNewNotesReceived(responseDetails);
     }
     
     // ==============================================
@@ -735,6 +819,15 @@ class IframeCommunicationWrapper {
             const user = await this.gcUsersApi.getUsersMe({});
             this.gcUserId = user.id;
             
+            // Auto-populate the GC User ID input field on the form
+            if (typeof document !== 'undefined') {
+                const gcUserIdInput = document.getElementById('gcUserIdInput');
+                if (gcUserIdInput) {
+                    gcUserIdInput.value = user.id;
+                    console.log(`Auto-populated GC User ID field with: ${user.id}`);
+                }
+            }
+            
             console.log('Genesys Cloud authentication successful. User:', user.name);
             this.gcAuthenticated = true;
             this.onGcAuthStatusChanged(`Authenticated as ${user.name}`);
@@ -763,6 +856,7 @@ class IframeCommunicationWrapper {
         }
         
         this.gcConversationId = conversationId;
+        this.gcTranscriptionConnected = true; // Mark that transcription is wanted
         
         try {
             this.onGcTranscriptionStatusChanged('Connecting...');
@@ -772,20 +866,19 @@ class IframeCommunicationWrapper {
             
             // Subscribe to transcription topic
             const transcriptionTopic = `v2.conversations.${conversationId}.transcription`;
-            await this.gcNotificationsApi.postNotificationsChannelSubscriptions(
-                this.gcChannelId, 
-                [{ id: transcriptionTopic }]
-            );
+            await this.subscribeToGcTopic(transcriptionTopic);
             
-            console.log(`Subscribed to transcription topic: ${transcriptionTopic}`);
+            // Ensure WebSocket connection
+            await this.ensureGcWebSocketConnection();
             
-            // Create WebSocket connection
-            await this.createGcTranscriptionWebSocket();
+            // Update status to connected since we've successfully set up transcription
+            this.onGcTranscriptionStatusChanged('Connected');
             
             return true;
             
         } catch (error) {
             console.error('Failed to connect to Genesys Cloud transcription:', error);
+            this.gcTranscriptionConnected = false;
             this.onGcTranscriptionStatusChanged('Connection Failed');
             return false;
         }
@@ -811,44 +904,110 @@ class IframeCommunicationWrapper {
     }
     
     /**
-     * Create WebSocket connection for Genesys Cloud notifications
+     * Create or ensure single WebSocket connection for all Genesys Cloud notifications
      */
-    async createGcTranscriptionWebSocket() {
+    async ensureGcWebSocketConnection() {
+        // If WebSocket already exists and is connected, do nothing
+        if (this.gcWebSocket && this.gcWebSocket.readyState === WebSocket.OPEN) {
+            console.log('Genesys Cloud WebSocket already connected');
+            return;
+        }
+        
+        // If WebSocket exists but is not open, clean it up
+        if (this.gcWebSocket) {
+            this.gcWebSocket.close();
+            this.gcWebSocket = null;
+        }
+        
         const websocketUrl = `wss://streaming.${this.gcRegion}/channels/${this.gcChannelId}`;
+        console.log('Creating Genesys Cloud WebSocket:', websocketUrl);
         
-        console.log('Creating Genesys Cloud transcription WebSocket:', websocketUrl);
+        this.gcWebSocket = new WebSocket(websocketUrl);
         
-        this.gcTranscriptionWebSocket = new WebSocket(websocketUrl);
-        
-        this.gcTranscriptionWebSocket.onopen = () => {
-            console.log('Genesys Cloud transcription WebSocket connected');
-            this.gcTranscriptionConnected = true;
-            this.onGcTranscriptionStatusChanged('Connected');
+        this.gcWebSocket.onopen = () => {
+            console.log('Genesys Cloud WebSocket connected');
+            this.gcWebSocketConnected = true;
+            
+            // Update transcription status only if transcription is actually wanted
+            if (this.gcTranscriptionConnected) {
+                this.onGcTranscriptionStatusChanged('Connected');
+                console.log('Transcription status updated to Connected');
+            }
         };
         
-        this.gcTranscriptionWebSocket.onmessage = (event) => {
-            this.handleGcTranscriptionMessage(event);
+        this.gcWebSocket.onmessage = (event) => {
+            this.handleGcMessages(event);
         };
         
-        this.gcTranscriptionWebSocket.onclose = (event) => {
-            console.log('Genesys Cloud transcription WebSocket closed:', event.reason);
-            this.gcTranscriptionConnected = false;
-            this.onGcTranscriptionStatusChanged('Disconnected');
+        this.gcWebSocket.onclose = (event) => {
+            console.log('Genesys Cloud WebSocket closed:', event.reason);
+            this.gcWebSocketConnected = false;
+            
+            // Update transcription status only if transcription was actually connected
+            if (this.gcTranscriptionConnected) {
+                this.onGcTranscriptionStatusChanged('Disconnected');
+                console.log('Transcription status updated to Disconnected');
+            }
         };
         
-        this.gcTranscriptionWebSocket.onerror = (error) => {
-            console.error('Genesys Cloud transcription WebSocket error:', error);
-            this.onGcTranscriptionStatusChanged('Error');
+        this.gcWebSocket.onerror = (error) => {
+            console.error('Genesys Cloud WebSocket error:', error);
+            this.gcWebSocketConnected = false;
+            
+            // Update transcription status only if transcription was actually connected
+            if (this.gcTranscriptionConnected) {
+                this.onGcTranscriptionStatusChanged('Error');
+                console.log('Transcription status updated to Error');
+            }
         };
         
-        console.log(`Waiting for transcription events on ${websocketUrl}`);
+        console.log(`Waiting for GC events on ${websocketUrl}`);
     }
     
     /**
-     * Handle incoming Genesys Cloud transcription messages
+     * Subscribe to a topic on the Genesys Cloud notification channel
+     * @param {string} topicId - The topic ID to subscribe to
+     */
+    async subscribeToGcTopic(topicId) {
+        if (this.gcSubscribedTopics.has(topicId)) {
+            console.log(`Already subscribed to topic: ${topicId}`);
+            return;
+        }
+        
+        console.log(`Subscribing to GC topic: ${topicId}`);
+        
+        await this.gcNotificationsApi.postNotificationsChannelSubscriptions(
+            this.gcChannelId, 
+            [{ id: topicId }]
+        );
+        
+        this.gcSubscribedTopics.add(topicId);
+        console.log(`Successfully subscribed to topic: ${topicId}`);
+    }
+    
+    /**
+     * Unsubscribe from a topic on the Genesys Cloud notification channel
+     * @param {string} topicId - The topic ID to unsubscribe from
+     */
+    async unsubscribeFromGcTopic(topicId) {
+        if (!this.gcSubscribedTopics.has(topicId)) {
+            console.log(`Not subscribed to topic: ${topicId}`);
+            return;
+        }
+        
+        console.log(`Unsubscribing from GC topic: ${topicId}`);
+        
+        // Note: Genesys Cloud doesn't have a direct unsubscribe API
+        // Topics are automatically removed when not renewed
+        this.gcSubscribedTopics.delete(topicId);
+        console.log(`Removed topic from local tracking: ${topicId}`);
+    }
+    
+    /**
+     * Handle incoming Genesys Cloud messages (transcription, conversations, etc.)
      * @param {MessageEvent} event - The WebSocket message event
      */
-    handleGcTranscriptionMessage(event) {
+    handleGcMessages(event) {
         console.log('Genesys Cloud transcription message received:', event.data);
         
         let messageData;
@@ -921,23 +1080,326 @@ class IframeCommunicationWrapper {
             }
         }
         
-        // Forward all messages to callback for logging
-        this.onGcTranscriptionMessage(messageData);
+        // Process conversation notifications (calls)
+        if (messageData.topicName && messageData.topicName.includes('conversations.calls')) {
+            console.log('Conversation notification received:', messageData);
+            
+            // Extract conversation and participant information
+            const conversationId = messageData.eventBody?.id;
+            const participants = messageData.eventBody?.participants;
+            
+            if (participants && participants.length > 0) {
+                // Find the agent/user participant to get state information
+                const agentParticipant = participants.find(p => p.purpose === 'agent' || p.purpose === 'user');
+                
+                if (agentParticipant) {
+                    const participantState = agentParticipant.state;
+                    const participantUserId = agentParticipant.user?.id;
+                    
+                    console.log(`Conversation ${conversationId} - Participant ${participantUserId} state: ${participantState}`);
+                    
+                    // Update conversation tracking
+                    this.updateTrackedConversation(conversationId, participantState, participants, messageData);
+                    
+                    // Create structured message for UI
+                    const conversationMessage = {
+                        type: 'conversation_notification',
+                        conversationId: conversationId,
+                        participantUserId: participantUserId,
+                        participantState: participantState,
+                        participants: participants,
+                        timestamp: new Date().toISOString(),
+                        rawEvent: messageData
+                    };
+                    
+                    this.onGcConversationNotification(conversationMessage);
+                }
+            } else {
+                // Even if no specific participant info, still log the notification
+                const conversationMessage = {
+                    type: 'conversation_notification',
+                    conversationId: conversationId,
+                    timestamp: new Date().toISOString(),
+                    rawEvent: messageData
+                };
+                
+                this.onGcConversationNotification(conversationMessage);
+            }
+        }
+        
+        // Process message notifications 
+        if (messageData.topicName && messageData.topicName.includes('conversations.messages')) {
+            console.log('Message notification received:', messageData);
+            
+            // Extract conversation ID from event body
+            const conversationId = messageData.eventBody?.id || 'unknown';
+            const participants = messageData.eventBody?.participants || [];
+            
+            // Process and track messages from all participants
+            this.processMessageNotifications(participants, conversationId, messageData);
+            
+            // Auto-populate conversation ID in the UI field when we receive messages
+            if (conversationId && conversationId !== 'unknown') {
+                // Check if the HTML function exists before calling it
+                if (typeof window.updateActiveConversationId === 'function') {
+                    window.updateActiveConversationId(conversationId);
+                } else {
+                    // Fallback: directly update the input field if the function doesn't exist
+                    const gcConversationIdInput = document.getElementById('gcConversationIdInput');
+                    if (gcConversationIdInput && !gcConversationIdInput.value) {
+                        gcConversationIdInput.value = conversationId;
+                        console.log(`Auto-populated GC Conversation ID from message: ${conversationId}`);
+                    }
+                }
+            }
+            
+            // Create structured message for general UI logging
+            const messageNotification = {
+                type: 'message_notification',
+                conversationId: conversationId,
+                timestamp: new Date().toISOString(),
+                rawEvent: messageData
+            };
+            
+            console.log(`Message notification processed - Conversation: ${conversationId}`);
+            
+            // Forward to callback for UI display
+            this.onGcConversationNotification(messageNotification);
+        }
+        
+        // Forward non-specific messages (heartbeats, etc.) to transcription log for general logging
+        // Only forward messages that aren't conversation calls, messages, or transcription events
+        if (messageData.topicName && 
+            !messageData.topicName.includes('conversations.calls') && 
+            !messageData.topicName.includes('conversations.messages') && 
+            !messageData.topicName.includes('transcription')) {
+            this.onGcTranscriptionMessage(messageData);
+        }
+    }
+    
+    /**
+     * Process message notifications and track individual messages
+     * @param {Array} participants - Array of participant objects with messages
+     * @param {string} conversationId - The conversation ID
+     * @param {Object} rawEvent - The original event data
+     */
+    processMessageNotifications(participants, conversationId, rawEvent) {
+        if (!participants || participants.length === 0) return;
+        
+        // Check for agent disconnect before processing messages
+        participants.forEach(participant => {
+            const participantPurpose = participant.purpose || 'unknown';
+            const participantState = participant.state;
+            const participantDisconnectType = participant.disconnectType;
+            const participantEndTime = participant.endTime;
+            const participantStartAcwTime = participant.startAcwTime;
+            
+            // Check if this is an agent who has disconnected
+            if (participantPurpose === 'agent' && participantState === 'disconnected') {
+                console.log('🔌 Agent disconnect detected in messaging conversation:', {
+                    conversationId: conversationId,
+                    participantId: participant.id,
+                    participantName: participant.name || 'Unknown',
+                    state: participantState,
+                    disconnectType: participantDisconnectType,
+                    endTime: participantEndTime,
+                    startAcwTime: participantStartAcwTime
+                });
+                
+                // Trigger wrap conversation automatically, similar to transcription session_end
+                if (this.currentConversationId) {
+                    console.log('🏁 Agent disconnected - sending wrap conversation automatically');
+                    this.sendWrapConversation(this.currentConversationId);
+                    
+                    // Log the event for UI display
+                    const wrapMessage = {
+                        type: 'agent_disconnected',
+                        conversationId: conversationId,
+                        participantId: participant.id,
+                        participantName: participant.name || 'Unknown',
+                        timestamp: participantEndTime || new Date().toISOString(),
+                        message: 'Agent disconnected - wrap conversation sent automatically'
+                    };
+                    this.onGcTranscriptionMessage(wrapMessage);
+                } else {
+                    console.log('⚠️ No current conversation ID available for wrap conversation');
+                }
+            }
+        });
+        
+        participants.forEach(participant => {
+            const participantId = participant.id;
+            const participantName = participant.name || 'Unknown';
+            const participantPurpose = participant.purpose || 'unknown';
+            const messages = participant.messages || [];
+            
+            messages.forEach(messageData => {
+                const message = messageData.message;
+                const messageId = message?.id;
+                const messageTime = messageData.messageTime;
+                const messageStatus = messageData.messageStatus;
+                const messageType = messageData.messageMetadata?.type || 'unknown';
+                
+                if (messageId && !this.trackedMessages.has(messageId)) {
+                    // Track workflow message timestamps for filtering logic
+                    if (participantPurpose === 'workflow') {
+                        const currentTime = this.lastWorkflowMessageTime.get(conversationId);
+                        if (!currentTime || new Date(messageTime) > new Date(currentTime)) {
+                            this.lastWorkflowMessageTime.set(conversationId, messageTime);
+                            console.log(`Updated last workflow message time for conversation ${conversationId}: ${messageTime}`);
+                        }
+                    }
+                    
+                    // Track new message
+                    const trackedMessage = {
+                        messageId: messageId,
+                        conversationId: conversationId,
+                        participantId: participantId,
+                        participantName: participantName,
+                        participantPurpose: participantPurpose,
+                        messageTime: messageTime,
+                        messageStatus: messageStatus,
+                        messageType: messageType,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    this.trackedMessages.set(messageId, trackedMessage);
+                    
+                    console.log(`📨 New message tracked: ${messageId} from ${participantName} (${participantPurpose})`);
+                    
+                    // Notify UI immediately
+                    this.onMessageTracked(trackedMessage);
+                    
+                    // Fetch message text asynchronously
+                    this.getMessageText(conversationId, messageId).then(messageText => {
+                        this.updateMessageText(messageId, messageText);
+                        // Notify UI again with updated text
+                        const updatedMessage = this.trackedMessages.get(messageId);
+                        if (updatedMessage) {
+                            this.onMessageTracked(updatedMessage);
+                        }
+                        
+                        // Auto-forward to iframe for analysis if enabled and we have message text
+                        if (this.autoForwardMessages && messageText && messageText.trim() && this.currentConversationId) {
+                            // Enhanced filtering logic for workflow messages
+                            let shouldSkip = false;
+                            let skipReason = '';
+                            
+                            if (this.filterWorkflowMessages) {
+                                // Skip workflow messages
+                                if (participantPurpose === 'workflow') {
+                                    shouldSkip = true;
+                                    skipReason = 'workflow message';
+                                } else {
+                                    // Skip messages that occurred before the last workflow message
+                                    const lastWorkflowTime = this.lastWorkflowMessageTime.get(conversationId);
+                                    if (lastWorkflowTime && new Date(messageTime) <= new Date(lastWorkflowTime)) {
+                                        shouldSkip = true;
+                                        skipReason = `occurred before/during workflow phase (${messageTime} <= ${lastWorkflowTime})`;
+                                    }
+                                }
+                            }
+                            
+                            if (shouldSkip) {
+                                console.log(`Skipping message analysis (${skipReason}): ${messageText.substring(0, 50)}... from ${participantName} (${participantPurpose}) at ${messageTime}`);
+                            } else {
+                                // Determine participant type for analysis
+                                const speakerType = participantPurpose === 'customer' ? 'END_USER' : 'HUMAN_AGENT';
+                                
+                                console.log(`Auto-forwarding message to iframe for analysis: ${messageText.substring(0, 50)}... from ${participantName} (${participantPurpose}) at ${messageTime}`);
+                                this.sendAnalyzeContent(this.currentConversationId, messageText, speakerType);
+                            }
+                        }
+                    }).catch(error => {
+                        console.error(`❌ Failed to fetch text for message ${messageId}:`, error);
+                    });
+                }
+            });
+        });
+    }
+    
+    /**
+     * Get all tracked messages
+     * @returns {Array} - Array of tracked message objects
+     */
+    getTrackedMessages() {
+        return Array.from(this.trackedMessages.values());
+    }
+    
+    /**
+     * Get the message text from Genesys Cloud using conversation ID and message ID
+     * @param {string} conversationId - The conversation ID
+     * @param {string} messageId - The message ID
+     * @returns {Promise<string>} - The message text or error message
+     */
+    async getMessageText(conversationId, messageId) {
+        try {
+            // Check if we have access to the platform client and are authenticated
+            if (!this.gcClient || !this.gcAuthenticated) {
+                console.log('⚠️ Cannot fetch message text: Not authenticated to Genesys Cloud');
+                return 'Not authenticated';
+            }
+            
+            const conversationsApi = new platformClient.ConversationsApi();
+            const message = await conversationsApi.getConversationsMessageMessage(conversationId, messageId);
+            
+            if (message && message.normalizedMessage && message.normalizedMessage.text) {
+                return message.normalizedMessage.text;
+            } else {
+                console.log('⚠️ No text found in message:', messageId);
+                return 'No text content';
+            }
+        } catch (error) {
+            console.error('❌ Error fetching message text:', error);
+            return `Error: ${error.message || 'Unknown error'}`;
+        }
+    }
+
+    /**
+     * Update a tracked message with text content
+     * @param {string} messageId - The message ID to update
+     * @param {string} messageText - The message text content
+     */
+    updateMessageText(messageId, messageText) {
+        if (this.trackedMessages.has(messageId)) {
+            const message = this.trackedMessages.get(messageId);
+            message.messageText = messageText;
+            this.trackedMessages.set(messageId, message);
+            console.log(`📝 Message text updated for: ${messageId}`);
+        }
+    }
+
+    /**
+     * Clear all tracked messages
+     */
+    clearTrackedMessages() {
+        this.trackedMessages.clear();
+        console.log('All tracked messages cleared');
     }
     
     /**
      * Disconnect from Genesys Cloud transcription
      */
-    disconnectFromGcTranscription() {
+    async disconnectFromGcTranscription() {
         console.log('Disconnecting from Genesys Cloud transcription...');
         
-        if (this.gcTranscriptionWebSocket) {
-            this.gcTranscriptionWebSocket.close(1000, 'Manual disconnect');
-            this.gcTranscriptionWebSocket = null;
+        // Unsubscribe from transcription topic
+        if (this.gcConversationId) {
+            const transcriptionTopic = `v2.conversations.${this.gcConversationId}.transcription`;
+            await this.unsubscribeFromGcTopic(transcriptionTopic);
         }
         
         this.gcTranscriptionConnected = false;
+        this.gcConversationId = null;
         this.onGcTranscriptionStatusChanged('Disconnected');
+        
+        // Close WebSocket only if no other subscriptions are active
+        if (this.gcSubscribedTopics.size === 0 && this.gcWebSocket) {
+            console.log('No remaining subscriptions, closing WebSocket');
+            this.gcWebSocket.close(1000, 'No active subscriptions');
+            this.gcWebSocket = null;
+            this.gcWebSocketConnected = false;
+        }
         
         console.log('Genesys Cloud transcription disconnected');
     }
@@ -956,8 +1418,385 @@ class IframeCommunicationWrapper {
      */
     isGcTranscriptionConnected() {
         return this.gcTranscriptionConnected && 
-               this.gcTranscriptionWebSocket && 
-               this.gcTranscriptionWebSocket.readyState === WebSocket.OPEN;
+               this.gcWebSocket && 
+               this.gcWebSocket.readyState === WebSocket.OPEN;
+    }
+
+    // ==============================================
+    // GENESYS CLOUD CONVERSATION NOTIFICATIONS FUNCTIONS
+    // ==============================================
+    
+    /**
+     * Connect to Genesys Cloud conversation notifications for a specific user
+     * @param {string} userId - The user ID to subscribe to conversation notifications for
+     */
+    async connectToGcConversationNotifications(userId) {
+        console.log('Connecting to Genesys Cloud conversation notifications for user:', userId);
+        
+        if (!this.gcAuthenticated) {
+            console.error('Not authenticated with Genesys Cloud');
+            this.onGcConversationStatusChanged('Not Authenticated');
+            return false;
+        }
+        
+        this.gcConversationNotificationsUserId = userId;
+        
+        try {
+            this.onGcConversationStatusChanged('Connecting...');
+            
+            // Create or reuse notification channel
+            await this.createOrReuseNotificationChannel();
+            
+            // Subscribe to user conversation calls topic
+            const userCallsTopic = `v2.users.${userId}.conversations.calls`;
+            await this.subscribeToGcTopic(userCallsTopic);
+            
+            // Ensure WebSocket connection
+            await this.ensureGcWebSocketConnection();
+            
+            this.gcConversationNotificationsConnected = true;
+            this.onGcConversationStatusChanged('Connected');
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Failed to connect to Genesys Cloud conversation notifications:', error);
+            this.onGcConversationStatusChanged('Connection Failed');
+            return false;
+        }
+    }
+    
+    /**
+     * Disconnect from Genesys Cloud conversation notifications
+     */
+    async disconnectFromGcConversationNotifications() {
+        console.log('Disconnecting from Genesys Cloud conversation notifications...');
+        
+        // Unsubscribe from conversation topic
+        if (this.gcConversationNotificationsUserId) {
+            const userCallsTopic = `v2.users.${this.gcConversationNotificationsUserId}.conversations.calls`;
+            await this.unsubscribeFromGcTopic(userCallsTopic);
+        }
+        
+        this.gcConversationNotificationsConnected = false;
+        this.gcConversationNotificationsUserId = null;
+        this.onGcConversationStatusChanged('Disconnected');
+        
+        // Close WebSocket only if no other subscriptions are active
+        if (this.gcSubscribedTopics.size === 0 && this.gcWebSocket) {
+            console.log('No remaining subscriptions, closing WebSocket');
+            this.gcWebSocket.close(1000, 'No active subscriptions');
+            this.gcWebSocket = null;
+            this.gcWebSocketConnected = false;
+        }
+        
+        console.log('Genesys Cloud conversation notifications disconnected');
+    }
+    
+    /**
+     * Connect to Genesys Cloud message notifications for a specific user
+     * @param {string} userId - The user ID to subscribe to message notifications for
+     */
+    async connectToGcMessageNotifications(userId) {
+        console.log('Connecting to Genesys Cloud message notifications for user:', userId);
+        
+        if (!this.gcAuthenticated) {
+            console.error('Not authenticated with Genesys Cloud');
+            this.onGcMessageStatusChanged('Not Authenticated');
+            return false;
+        }
+        
+        this.gcMessageNotificationsUserId = userId;
+        
+        try {
+            this.onGcMessageStatusChanged('Connecting...');
+            
+            // Create or reuse notification channel
+            await this.createOrReuseNotificationChannel();
+            
+            // Subscribe to user message notifications topic
+            const userMessagesTopic = `v2.users.${userId}.conversations.messages`;
+            await this.subscribeToGcTopic(userMessagesTopic);
+            
+            // Ensure WebSocket connection
+            await this.ensureGcWebSocketConnection();
+            
+            this.gcMessageNotificationsConnected = true;
+            this.onGcMessageStatusChanged('Connected');
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Failed to connect to Genesys Cloud message notifications:', error);
+            this.onGcMessageStatusChanged('Connection Failed');
+            return false;
+        }
+    }
+    
+    /**
+     * Disconnect from Genesys Cloud message notifications
+     */
+    async disconnectFromGcMessageNotifications() {
+        console.log('Disconnecting from Genesys Cloud message notifications...');
+        
+        // Unsubscribe from messages topic
+        if (this.gcMessageNotificationsUserId) {
+            const userMessagesTopic = `v2.users.${this.gcMessageNotificationsUserId}.conversations.messages`;
+            await this.unsubscribeFromGcTopic(userMessagesTopic);
+        }
+        
+        this.gcMessageNotificationsConnected = false;
+        this.gcMessageNotificationsUserId = null;
+        this.onGcMessageStatusChanged('Disconnected');
+        
+        // Close WebSocket only if no other subscriptions are active
+        if (this.gcSubscribedTopics.size === 0 && this.gcWebSocket) {
+            console.log('No remaining subscriptions, closing WebSocket');
+            this.gcWebSocket.close(1000, 'No active subscriptions');
+            this.gcWebSocket = null;
+            this.gcWebSocketConnected = false;
+        }
+        
+        console.log('Genesys Cloud message notifications disconnected');
+    }
+    
+    /**
+     * Get Genesys Cloud conversation notifications connection status
+     * @returns {boolean} - Whether connected to conversation notifications
+     */
+    isGcConversationNotificationsConnected() {
+        return this.gcConversationNotificationsConnected;
+    }
+    
+    /**
+     * Update tracked conversation with new state information
+     * @param {string} conversationId - The conversation ID
+     * @param {string} participantState - Current participant state
+     * @param {Array} participants - Array of participants
+     * @param {Object} rawEvent - Raw event data
+     */
+    updateTrackedConversation(conversationId, participantState, participants, rawEvent) {
+        if (!conversationId) return;
+        
+        let conversation = this.trackedConversations.get(conversationId);
+        
+        if (!conversation) {
+            // Create new conversation tracking entry
+            conversation = {
+                id: conversationId,
+                currentState: participantState,
+                hasAgentAssist: false, // Will be updated when AA conversation is joined
+                agentAssistConversationId: null, // AA conversation ID from iframe join response
+                createdTime: new Date().toISOString(),
+                lastUpdated: new Date().toISOString(),
+                stateHistory: [],
+                participants: participants,
+                direction: null,
+                customerName: null,
+                queueId: null,
+                autoSequenceTriggered: false // Track if auto sequence has been triggered for this conversation
+            };
+            
+            // Extract additional info from the first event
+            const agentParticipant = participants.find(p => p.purpose === 'agent' || p.purpose === 'user');
+            const customerParticipant = participants.find(p => p.purpose === 'customer');
+            
+            if (agentParticipant) {
+                conversation.direction = agentParticipant.direction || 'unknown';
+                conversation.queueId = agentParticipant.queue?.id;
+            }
+            
+            if (customerParticipant) {
+                conversation.customerName = customerParticipant.name || customerParticipant.address || 'Unknown';
+            }
+            
+            // Trigger automated sequence for new incoming calls
+            // Only trigger for connected states to avoid triggering on intermediate states
+            if (participantState.toLowerCase() === 'connected' && !conversation.autoSequenceTriggered) {
+                conversation.autoSequenceTriggered = true;
+                console.log(`🔔 New call detected: ${conversationId} - triggering automated sequence`);
+                
+                // Trigger the automated sequence asynchronously to avoid blocking the event processing
+                setTimeout(() => {
+                    this.handleIncomingCallSequence(conversationId, conversation).catch(error => {
+                        console.error('Error in automated incoming call sequence:', error);
+                    });
+                }, 100); // Small delay to ensure conversation is fully processed
+            }
+        }
+        
+        // Update conversation state
+        if (conversation.currentState !== participantState) {
+            conversation.stateHistory.push({
+                state: conversation.currentState,
+                timestamp: conversation.lastUpdated
+            });
+            conversation.currentState = participantState;
+            
+            // Check if we should trigger automated sequence on state change to 'connected'
+            // (for existing conversations that weren't initially in connected state)
+            if (participantState.toLowerCase() === 'connected' && !conversation.autoSequenceTriggered) {
+                conversation.autoSequenceTriggered = true;
+                console.log(`🔔 Call state changed to connected: ${conversationId} - triggering automated sequence`);
+                
+                // Trigger the automated sequence asynchronously
+                setTimeout(() => {
+                    this.handleIncomingCallSequence(conversationId, conversation).catch(error => {
+                        console.error('Error in automated incoming call sequence (state change):', error);
+                    });
+                }, 100);
+            }
+        }
+        
+        conversation.lastUpdated = new Date().toISOString();
+        conversation.participants = participants;
+        
+        // Store the updated conversation
+        this.trackedConversations.set(conversationId, conversation);
+        
+        console.log(`Updated tracked conversation ${conversationId}:`, conversation);
+        
+        // Update most recent active conversation tracking
+        this.updateMostRecentActiveConversation();
+        
+        // Notify UI of the update
+        this.onConversationTrackingUpdate(Array.from(this.trackedConversations.values()));
+    }
+    
+    /**
+     * Get all tracked conversations
+     * @returns {Array} - Array of tracked conversation objects
+     */
+    getTrackedConversations() {
+        return Array.from(this.trackedConversations.values());
+    }
+    
+    /**
+     * Clear all tracked conversations
+     */
+    clearTrackedConversations() {
+        this.trackedConversations.clear();
+        this.mostRecentActiveConversationId = null;
+        this.onConversationTrackingUpdate([]);
+        this.onActiveConversationChanged(null);
+    }
+    
+    /**
+     * Update tracking of the most recent active conversation
+     * Active conversations are those not in 'disconnected' or 'terminated' states
+     */
+    updateMostRecentActiveConversation() {
+        const activeStates = ['contacting', 'dialing', 'connected'];
+        let mostRecentActiveConversation = null;
+        let mostRecentTime = null;
+        
+        // Find the most recent active conversation
+        for (const conversation of this.trackedConversations.values()) {
+            if (activeStates.includes(conversation.currentState.toLowerCase())) {
+                const conversationTime = new Date(conversation.lastUpdated);
+                if (!mostRecentTime || conversationTime > mostRecentTime) {
+                    mostRecentTime = conversationTime;
+                    mostRecentActiveConversation = conversation;
+                }
+            }
+        }
+        
+        const newActiveConversationId = mostRecentActiveConversation ? mostRecentActiveConversation.id : null;
+        
+        // Only notify if the active conversation has changed
+        if (this.mostRecentActiveConversationId !== newActiveConversationId) {
+            const previousId = this.mostRecentActiveConversationId;
+            this.mostRecentActiveConversationId = newActiveConversationId;
+            
+            console.log(`Active conversation changed from ${previousId} to ${newActiveConversationId}`);
+            
+            // Notify UI of the change
+            this.onActiveConversationChanged(newActiveConversationId);
+        }
+    }
+    
+    /**
+     * Get the most recent active conversation ID
+     * @returns {string|null} - The conversation ID of the most recent active conversation
+     */
+    getMostRecentActiveConversationId() {
+        return this.mostRecentActiveConversationId;
+    }
+    
+    /**
+     * Get the most recent active conversation object
+     * @returns {Object|null} - The most recent active conversation object
+     */
+    getMostRecentActiveConversation() {
+        if (this.mostRecentActiveConversationId) {
+            return this.trackedConversations.get(this.mostRecentActiveConversationId);
+        }
+        return null;
+    }
+    
+    /**
+     * Associate an Agent Assist conversation ID with a Genesys Cloud conversation
+     * @param {string} gcConversationId - The Genesys Cloud conversation ID
+     * @param {string} aaConversationId - The Agent Assist conversation ID from iframe join response
+     */
+    associateAgentAssistConversation(gcConversationId, aaConversationId) {
+        console.log(`Associating Agent Assist conversation ${aaConversationId} with GC conversation ${gcConversationId}`);
+        
+        const conversation = this.trackedConversations.get(gcConversationId);
+        if (conversation) {
+            conversation.agentAssistConversationId = aaConversationId;
+            conversation.hasAgentAssist = true;
+            conversation.lastUpdated = new Date().toISOString();
+            
+            // Update the stored conversation
+            this.trackedConversations.set(gcConversationId, conversation);
+            
+            console.log(`Successfully associated AA conversation. Updated conversation:`, conversation);
+            
+            // Notify UI of the update
+            this.onConversationTrackingUpdate(Array.from(this.trackedConversations.values()));
+        } else {
+            console.warn(`Could not find GC conversation ${gcConversationId} to associate with AA conversation ${aaConversationId}`);
+        }
+    }
+    
+    /**
+     * Remove Agent Assist association from a Genesys Cloud conversation
+     * @param {string} gcConversationId - The Genesys Cloud conversation ID
+     */
+    removeAgentAssistConversation(gcConversationId) {
+        console.log(`Removing Agent Assist association from GC conversation ${gcConversationId}`);
+        
+        const conversation = this.trackedConversations.get(gcConversationId);
+        if (conversation) {
+            conversation.agentAssistConversationId = null;
+            conversation.hasAgentAssist = false;
+            conversation.lastUpdated = new Date().toISOString();
+            
+            // Update the stored conversation
+            this.trackedConversations.set(gcConversationId, conversation);
+            
+            console.log(`Successfully removed AA association. Updated conversation:`, conversation);
+            
+            // Notify UI of the update
+            this.onConversationTrackingUpdate(Array.from(this.trackedConversations.values()));
+        } else {
+            console.warn(`Could not find GC conversation ${gcConversationId} to remove AA association`);
+        }
+    }
+    
+    /**
+     * Find a tracked conversation by its Agent Assist conversation ID
+     * @param {string} aaConversationId - The Agent Assist conversation ID
+     * @returns {Object|null} - The tracked conversation object or null if not found
+     */
+    findConversationByAAId(aaConversationId) {
+        for (const conversation of this.trackedConversations.values()) {
+            if (conversation.agentAssistConversationId === aaConversationId) {
+                return conversation;
+            }
+        }
+        return null;
     }
 
     // ==============================================
@@ -983,6 +1822,24 @@ class IframeCommunicationWrapper {
     }
     
     /**
+     * Enable or disable auto-forwarding of Genesys Cloud messages to iframe for analysis
+     * @param {boolean} enabled - Whether to enable auto-forwarding
+     */
+    setAutoForwardMessages(enabled) {
+        this.autoForwardMessages = enabled;
+        console.log(`Auto-forwarding of Genesys Cloud messages ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    /**
+     * Enable or disable filtering of workflow messages from analysis
+     * @param {boolean} enabled - Whether to enable filtering (true = filter out workflow messages)
+     */
+    setFilterWorkflowMessages(enabled) {
+        this.filterWorkflowMessages = enabled;
+        console.log(`Workflow message filtering ${enabled ? 'enabled' : 'disabled'} - ${enabled ? 'excluding' : 'including'} bot/system messages`);
+    }
+    
+    /**
      * Get current auto-forwarding status
      * @returns {Object} - Current auto-forwarding settings
      */
@@ -991,6 +1848,152 @@ class IframeCommunicationWrapper {
             transcription: this.autoForwardTranscription,
             audiohook: this.autoForwardAudiohook
         };
+    }
+    
+    /**
+     * Enable or disable automatic handling of incoming calls
+     * @param {boolean} enabled - Whether to enable auto-handling
+     */
+    setAutoHandleIncomingCalls(enabled) {
+        this.autoHandleIncomingCalls = enabled;
+        console.log(`Automatic incoming call handling ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    /**
+     * Automated sequence for handling new incoming calls
+     * Reuses methods from the main call sequence for consistency
+     * @param {string} conversationId - The Genesys Cloud conversation ID
+     * @param {Object} conversation - The tracked conversation object
+     * @returns {Promise<void>}
+     */
+    async handleIncomingCallSequence(conversationId, conversation) {
+        if (!this.autoHandleIncomingCalls) {
+            console.log('Automatic call handling is disabled, skipping sequence');
+            return;
+        }
+        
+        if (this.autoCallSequenceInProgress) {
+            console.log('Auto call sequence already in progress, skipping');
+            return;
+        }
+        
+        this.autoCallSequenceInProgress = true;
+        console.log(`🔄 Starting automated sequence for incoming call: ${conversationId}`);
+        
+        try {
+            // Step 1: Connect transcription for the conversation
+            console.log(`📞 Auto Step 1: Connecting transcription for conversation ${conversationId}...`);
+            if (this.isGenesysCloudAuthenticated()) {
+                await this.connectToGcTranscription(conversationId);
+                console.log('✅ Auto transcription connected successfully');
+            } else {
+                console.log('⚠️ Skipping transcription - Genesys Cloud not authenticated');
+            }
+            
+            // Step 2: Generate random conversation ID for iframe join
+            console.log('🎲 Auto Step 2: Generating random conversation ID for iframe join...');
+            const randomConversationId = this.generateRandomConversationId();
+            console.log(`Generated random conversation ID: ${randomConversationId}`);
+            
+            // Update the form field if it exists (for UI consistency)
+            if (typeof document !== 'undefined') {
+                const conversationIdInput = document.getElementById('conversationIdInput');
+                if (conversationIdInput) {
+                    conversationIdInput.value = randomConversationId;
+                }
+            }
+            
+            // Step 3: Join the conversation in iframe
+            console.log('📋 Auto Step 3: Joining conversation in iframe...');
+            const contactName = conversation.customerName || 'Auto Customer';
+            const contactEmail = 'auto@example.com';
+            const contactPhone = this.extractPhoneFromConversation(conversation);
+            const profileId = '0198e667-6540-727d-b6b0-d8f4de9db1c6'; // Default profile ID
+            
+            this.sendJoinConversation(randomConversationId, profileId, contactName, contactEmail, contactPhone);
+            
+            // Step 4: Wait for successful join response, then activate
+            console.log('⏳ Auto Step 4: Waiting for join response to activate conversation...');
+            await this.waitForConversationJoined();
+            console.log('✅ Auto conversation join successful');
+            
+            // Step 5: Activate the conversation
+            console.log('🔄 Auto Step 5: Activating conversation...');
+            if (this.currentConversationId) {
+                this.sendActivateConversation(this.currentConversationId);
+                console.log('✅ Auto conversation activation sent');
+            } else {
+                console.warn('⚠️ No current conversation ID available for activation');
+            }
+            
+            console.log('🎉 Automated incoming call sequence completed successfully!');
+            
+        } catch (error) {
+            console.error('❌ Error in automated call sequence:', error);
+        } finally {
+            this.autoCallSequenceInProgress = false;
+        }
+    }
+    
+    /**
+     * Generate a random conversation ID (reused from main sequence)
+     * @returns {string} - Random conversation ID starting with a letter
+     */
+    generateRandomConversationId() {
+        const letters = 'abcdefghijklmnopqrstuvwxyz';
+        const alphanumeric = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        
+        // Start with a random letter
+        let result = letters.charAt(Math.floor(Math.random() * letters.length));
+        
+        // Add 15 more random alphanumeric characters
+        for (let i = 1; i < 16; i++) {
+            result += alphanumeric.charAt(Math.floor(Math.random() * alphanumeric.length));
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Extract phone number from conversation participants
+     * @param {Object} conversation - The conversation object
+     * @returns {string} - Extracted phone number or default
+     */
+    extractPhoneFromConversation(conversation) {
+        if (!conversation || !conversation.participants) {
+            return '5551112222';
+        }
+        
+        const customerParticipant = conversation.participants.find(p => p.purpose === 'customer');
+        if (customerParticipant && customerParticipant.address) {
+            // Extract only numbers from the address and take the last 10 digits
+            const numbersOnly = customerParticipant.address.replace(/\D/g, '');
+            const last10Digits = numbersOnly.slice(-10);
+            return last10Digits || '5551112222';
+        }
+        
+        return '5551112222';
+    }
+    
+    /**
+     * Wait for conversation joined event (reused from main sequence)
+     * @returns {Promise<void>}
+     */
+    waitForConversationJoined() {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Timeout waiting for conversation joined'));
+            }, 10000); // 10 second timeout
+            
+            // Listen for conversation joined event
+            const checkInterval = setInterval(() => {
+                if (this.currentConversationId) {
+                    clearTimeout(timeout);
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 500);
+        });
     }
 
     // ==============================================
@@ -1038,12 +2041,25 @@ class IframeCommunicationWrapper {
         // Clean up Genesys Cloud transcription connection
         this.disconnectFromGcTranscription();
         
+        // Clean up Genesys Cloud conversation notifications connection
+        this.disconnectFromGcConversationNotifications();
+        
+        // Clean up Genesys Cloud message notifications connection
+        this.disconnectFromGcMessageNotifications();
+        
         // Reset all state
         this.iframeElement = null;
         this.isConnected = false;
         this.accessToken = null;
         this.currentConversationId = null;
         this.contactCenterConversationId = null;
+        
+        // Reset automated sequence state
+        this.autoCallSequenceInProgress = false;
+        
+        // Clear conversation tracking
+        this.trackedConversations.clear();
+        this.mostRecentActiveConversationId = null;
         
         console.log('Cleanup completed');
     }
