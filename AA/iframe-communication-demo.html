@@ -99,6 +99,11 @@
             overflow-y: auto;
         }
         
+        /* Larger display area for conversation details */
+        #conversationDetailsLog {
+            max-height: 400px;
+        }
+        
         .input-group {
             margin: 10px 0;
         }
@@ -574,6 +579,18 @@
             </div>
             <div class="input-group">
                 <label>
+                    <input type="checkbox" id="autoForwardMessages" checked onchange="toggleAutoForwardMessages()" style="margin-right: 8px;">
+                    Auto-forward Genesys Cloud messages to iframe for analysis
+                </label>
+            </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="filterWorkflowMessages" checked onchange="toggleFilterWorkflowMessages()" style="margin-right: 8px;">
+                    Filter out workflow messages from analysis (exclude bot/system messages)
+                </label>
+            </div>
+            <div class="input-group">
+                <label>
                     <input type="checkbox" id="autoHandleIncomingCalls" checked onchange="toggleAutoHandleIncomingCalls()" style="margin-right: 8px;">
                     Auto-handle incoming calls (transcription + join + activate)
                 </label>
@@ -587,10 +604,9 @@
                     <h2 style="margin: 0;">TTEC Agent Assist</h2>
                     <button id="panelToggleBtn" class="toggle-button" onclick="toggleFormPanel()">
                         <span>🔍</span>
-                        <span id="toggleBtnText">Hide Form Panel</span>
                     </button>
                 </div>
-                <iframe id="demoIframe" class="demo-iframe" src="about:blank"></iframe>
+                <iframe id="demoIframe" class="demo-iframe" src="about:blank" allow="clipboard-write"></iframe>
             </div>
         </div>
     </div>
@@ -652,6 +668,9 @@
         
         /** @type {boolean} Flag to prevent multiple concurrent auto-listen sequences */
         let autoListenSequenceInProgress = false;
+        
+        /** @type {string} Store the detected conversation media type for call sequences */
+        let lastDetectedMediaType = 'unknown';
         
         // ==========================================================================
         // URL PARAMETER HANDLING
@@ -1505,8 +1524,41 @@
                         logConversationDetails('✅ Successfully retrieved conversation details', data);
                         console.log('Conversation details:', data);
                         
-                        // Find the external participant (customer)
-                        const externalParticipant = data.participants.find(p => p.participantType === 'External');
+                        // Find the external participant - first try participantType === 'External'
+                        let externalParticipant = data.participants.find(p => p.participantType === 'External');
+                        
+                        // If no external participant found, look for participant with purpose === 'customer'
+                        if (!externalParticipant) {
+                            externalParticipant = data.participants.find(p => p.purpose === 'customer');
+                            if (externalParticipant) {
+                                logConversationDetails('🔍 Using customer participant as external participant');
+                            }
+                        }
+                        
+                        // Determine media type by checking for connected calls or messages
+                        let mediaType = 'unknown';
+                        for (const participant of data.participants) {
+                            // Check calls array for connected state
+                            if (participant.calls && participant.calls.length > 0) {
+                                const connectedCall = participant.calls.find(call => call.state === 'connected');
+                                if (connectedCall) {
+                                    mediaType = 'voice';
+                                    break;
+                                }
+                            }
+                            // Check messages array for connected state
+                            if (participant.messages && participant.messages.length > 0) {
+                                const connectedMessage = participant.messages.find(msg => msg.state === 'connected');
+                                if (connectedMessage) {
+                                    mediaType = 'messaging';
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Store the media type globally for use in call sequences
+                        lastDetectedMediaType = mediaType;
+                        logConversationDetails(`📞 Media Type: ${mediaType}`);
                         
                         if (externalParticipant) {
                             // Populate Contact Name from external participant name
@@ -1525,9 +1577,9 @@
                                 logConversationDetails(`📞 Updated Contact Phone: ${last10Digits} (from ${externalParticipant.address})`);
                             }
                             
-                            logConversationDetails('✅ Form fields updated with external participant data');
+                            logConversationDetails(`✅ Form fields updated with external participant data (${externalParticipant.purpose || 'external'})`);
                         } else {
-                            logConversationDetails('⚠️ No external participant found in conversation');
+                            logConversationDetails('⚠️ No external participant or customer participant found in conversation');
                         }
                     })
                     .catch((error) => {
@@ -1552,6 +1604,20 @@
             const checkbox = document.getElementById('autoForwardAudiohook');
             if (communicationWrapper) {
                 communicationWrapper.setAutoForwardAudiohook(checkbox.checked);
+            }
+        }
+        
+        function toggleAutoForwardMessages() {
+            const checkbox = document.getElementById('autoForwardMessages');
+            if (communicationWrapper) {
+                communicationWrapper.setAutoForwardMessages(checkbox.checked);
+            }
+        }
+        
+        function toggleFilterWorkflowMessages() {
+            const checkbox = document.getElementById('filterWorkflowMessages');
+            if (communicationWrapper) {
+                communicationWrapper.setFilterWorkflowMessages(checkbox.checked);
             }
         }
         
@@ -1851,20 +1917,17 @@
         function toggleFormPanel() {
             const controlsPanel = document.querySelector('.controls-panel');
             const toggleBtn = document.getElementById('panelToggleBtn');
-            const toggleBtnText = document.getElementById('toggleBtnText');
             
             if (isFormPanelVisible) {
                 // Hide the form panel
                 controlsPanel.classList.add('hidden');
                 toggleBtn.classList.add('hide-mode');
-                toggleBtnText.textContent = 'Show Form Panel';
                 toggleBtn.querySelector('span:first-child').textContent = '👁️';
                 isFormPanelVisible = false;
             } else {
                 // Show the form panel
                 controlsPanel.classList.remove('hidden');
                 toggleBtn.classList.remove('hide-mode');
-                toggleBtnText.textContent = 'Hide Form Panel';
                 toggleBtn.querySelector('span:first-child').textContent = '🔍';
                 isFormPanelVisible = true;
             }
@@ -2100,13 +2163,34 @@
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 updateCallSequenceStatus('✅ Conversation activated successfully');
                 
-                // Step 6: Connect transcription
-                updateCallSequenceStatus('🎙️ Step 6: Connecting transcription...');
-                connectToTranscription();
-                
-                // Wait for transcription connection
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                updateCallSequenceStatus('✅ Transcription connected successfully');
+                // Step 6: Connect to appropriate subscription based on media type
+                if (lastDetectedMediaType === 'voice') {
+                    updateCallSequenceStatus('🎙️ Step 6: Voice conversation detected - Connecting transcription...');
+                    connectToTranscription();
+                    
+                    // Wait for transcription connection
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    updateCallSequenceStatus('✅ Transcription connected successfully');
+                    
+                } else if (lastDetectedMediaType === 'messaging') {
+                    updateCallSequenceStatus('💬 Step 6: Messaging conversation detected - Connecting message subscription...');
+                    
+                    // For messaging, we need a user ID to connect to message notifications
+                    // Get the user ID from the auth info or use a default
+                    const userId = document.getElementById('gcUserIdInput').value;
+                    if (userId && userId.trim()) {
+                        connectToMessageNotifications();
+                        
+                        // Wait for message connection
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        updateCallSequenceStatus('✅ Message subscription connected successfully');
+                    } else {
+                        updateCallSequenceStatus('⚠️ Message subscription skipped - User ID required for message notifications');
+                    }
+                    
+                } else {
+                    updateCallSequenceStatus(`⚠️ Step 6: Unknown media type (${lastDetectedMediaType}) - Skipping subscription connection`);
+                }
                 
                 updateCallSequenceStatus('🎉 New call sequence completed successfully!');
                 

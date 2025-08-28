@@ -101,10 +101,15 @@ class IframeCommunicationWrapper {
         // Message tracking
         this.trackedMessages = new Map(); // messageId -> message details
         this.messageTrackingCallback = null; // Callback for UI updates
+        this.lastWorkflowMessageTime = new Map(); // conversationId -> timestamp of last workflow message
         
         // Auto-forwarding settings
         this.autoForwardTranscription = true; // Default to enabled
         this.autoForwardAudiohook = true; // Default to enabled
+        this.autoForwardMessages = true; // Default to enabled
+        
+        // Message filtering settings
+        this.filterWorkflowMessages = true; // Default to enabled (exclude workflow messages)
         
         // Automated call handling settings
         this.autoHandleIncomingCalls = true; // Default to enabled
@@ -1133,6 +1138,21 @@ class IframeCommunicationWrapper {
             // Process and track messages from all participants
             this.processMessageNotifications(participants, conversationId, messageData);
             
+            // Auto-populate conversation ID in the UI field when we receive messages
+            if (conversationId && conversationId !== 'unknown') {
+                // Check if the HTML function exists before calling it
+                if (typeof window.updateActiveConversationId === 'function') {
+                    window.updateActiveConversationId(conversationId);
+                } else {
+                    // Fallback: directly update the input field if the function doesn't exist
+                    const gcConversationIdInput = document.getElementById('gcConversationIdInput');
+                    if (gcConversationIdInput && !gcConversationIdInput.value) {
+                        gcConversationIdInput.value = conversationId;
+                        console.log(`Auto-populated GC Conversation ID from message: ${conversationId}`);
+                    }
+                }
+            }
+            
             // Create structured message for general UI logging
             const messageNotification = {
                 type: 'message_notification',
@@ -1166,6 +1186,47 @@ class IframeCommunicationWrapper {
     processMessageNotifications(participants, conversationId, rawEvent) {
         if (!participants || participants.length === 0) return;
         
+        // Check for agent disconnect before processing messages
+        participants.forEach(participant => {
+            const participantPurpose = participant.purpose || 'unknown';
+            const participantState = participant.state;
+            const participantDisconnectType = participant.disconnectType;
+            const participantEndTime = participant.endTime;
+            const participantStartAcwTime = participant.startAcwTime;
+            
+            // Check if this is an agent who has disconnected
+            if (participantPurpose === 'agent' && participantState === 'disconnected') {
+                console.log('🔌 Agent disconnect detected in messaging conversation:', {
+                    conversationId: conversationId,
+                    participantId: participant.id,
+                    participantName: participant.name || 'Unknown',
+                    state: participantState,
+                    disconnectType: participantDisconnectType,
+                    endTime: participantEndTime,
+                    startAcwTime: participantStartAcwTime
+                });
+                
+                // Trigger wrap conversation automatically, similar to transcription session_end
+                if (this.currentConversationId) {
+                    console.log('🏁 Agent disconnected - sending wrap conversation automatically');
+                    this.sendWrapConversation(this.currentConversationId);
+                    
+                    // Log the event for UI display
+                    const wrapMessage = {
+                        type: 'agent_disconnected',
+                        conversationId: conversationId,
+                        participantId: participant.id,
+                        participantName: participant.name || 'Unknown',
+                        timestamp: participantEndTime || new Date().toISOString(),
+                        message: 'Agent disconnected - wrap conversation sent automatically'
+                    };
+                    this.onGcTranscriptionMessage(wrapMessage);
+                } else {
+                    console.log('⚠️ No current conversation ID available for wrap conversation');
+                }
+            }
+        });
+        
         participants.forEach(participant => {
             const participantId = participant.id;
             const participantName = participant.name || 'Unknown';
@@ -1180,6 +1241,15 @@ class IframeCommunicationWrapper {
                 const messageType = messageData.messageMetadata?.type || 'unknown';
                 
                 if (messageId && !this.trackedMessages.has(messageId)) {
+                    // Track workflow message timestamps for filtering logic
+                    if (participantPurpose === 'workflow') {
+                        const currentTime = this.lastWorkflowMessageTime.get(conversationId);
+                        if (!currentTime || new Date(messageTime) > new Date(currentTime)) {
+                            this.lastWorkflowMessageTime.set(conversationId, messageTime);
+                            console.log(`Updated last workflow message time for conversation ${conversationId}: ${messageTime}`);
+                        }
+                    }
+                    
                     // Track new message
                     const trackedMessage = {
                         messageId: messageId,
@@ -1207,6 +1277,38 @@ class IframeCommunicationWrapper {
                         const updatedMessage = this.trackedMessages.get(messageId);
                         if (updatedMessage) {
                             this.onMessageTracked(updatedMessage);
+                        }
+                        
+                        // Auto-forward to iframe for analysis if enabled and we have message text
+                        if (this.autoForwardMessages && messageText && messageText.trim() && this.currentConversationId) {
+                            // Enhanced filtering logic for workflow messages
+                            let shouldSkip = false;
+                            let skipReason = '';
+                            
+                            if (this.filterWorkflowMessages) {
+                                // Skip workflow messages
+                                if (participantPurpose === 'workflow') {
+                                    shouldSkip = true;
+                                    skipReason = 'workflow message';
+                                } else {
+                                    // Skip messages that occurred before the last workflow message
+                                    const lastWorkflowTime = this.lastWorkflowMessageTime.get(conversationId);
+                                    if (lastWorkflowTime && new Date(messageTime) <= new Date(lastWorkflowTime)) {
+                                        shouldSkip = true;
+                                        skipReason = `occurred before/during workflow phase (${messageTime} <= ${lastWorkflowTime})`;
+                                    }
+                                }
+                            }
+                            
+                            if (shouldSkip) {
+                                console.log(`Skipping message analysis (${skipReason}): ${messageText.substring(0, 50)}... from ${participantName} (${participantPurpose}) at ${messageTime}`);
+                            } else {
+                                // Determine participant type for analysis
+                                const speakerType = participantPurpose === 'customer' ? 'END_USER' : 'HUMAN_AGENT';
+                                
+                                console.log(`Auto-forwarding message to iframe for analysis: ${messageText.substring(0, 50)}... from ${participantName} (${participantPurpose}) at ${messageTime}`);
+                                this.sendAnalyzeContent(this.currentConversationId, messageText, speakerType);
+                            }
                         }
                     }).catch(error => {
                         console.error(`❌ Failed to fetch text for message ${messageId}:`, error);
@@ -1717,6 +1819,24 @@ class IframeCommunicationWrapper {
     setAutoForwardAudiohook(enabled) {
         this.autoForwardAudiohook = enabled;
         console.log(`Auto-forwarding of AudioHook messages ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    /**
+     * Enable or disable auto-forwarding of Genesys Cloud messages to iframe for analysis
+     * @param {boolean} enabled - Whether to enable auto-forwarding
+     */
+    setAutoForwardMessages(enabled) {
+        this.autoForwardMessages = enabled;
+        console.log(`Auto-forwarding of Genesys Cloud messages ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    /**
+     * Enable or disable filtering of workflow messages from analysis
+     * @param {boolean} enabled - Whether to enable filtering (true = filter out workflow messages)
+     */
+    setFilterWorkflowMessages(enabled) {
+        this.filterWorkflowMessages = enabled;
+        console.log(`Workflow message filtering ${enabled ? 'enabled' : 'disabled'} - ${enabled ? 'excluding' : 'including'} bot/system messages`);
     }
     
     /**
