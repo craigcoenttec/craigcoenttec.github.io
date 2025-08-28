@@ -1227,6 +1227,9 @@ class IframeCommunicationWrapper {
             }
         });
         
+        // Track messaging conversation and trigger automated sequence if needed
+        this.trackMessagingConversation(conversationId, participants, rawEvent);
+        
         participants.forEach(participant => {
             const participantId = participant.id;
             const participantName = participant.name || 'Unknown';
@@ -1664,6 +1667,68 @@ class IframeCommunicationWrapper {
     }
     
     /**
+     * Track messaging conversation and trigger automated sequence if needed
+     * @param {string} conversationId - The conversation ID
+     * @param {Array} participants - Array of participants
+     * @param {Object} rawEvent - Raw event data
+     */
+    trackMessagingConversation(conversationId, participants, rawEvent) {
+        if (!conversationId) return;
+        
+        let conversation = this.trackedConversations.get(conversationId);
+        
+        if (!conversation) {
+            // Create new messaging conversation tracking entry
+            const agentParticipant = participants.find(p => p.purpose === 'agent' || p.purpose === 'user');
+            const customerParticipant = participants.find(p => p.purpose === 'customer');
+            
+            conversation = {
+                id: conversationId,
+                currentState: agentParticipant?.state || 'connected', // Default to connected for messaging
+                hasAgentAssist: false,
+                agentAssistConversationId: null,
+                createdTime: new Date().toISOString(),
+                lastUpdated: new Date().toISOString(),
+                stateHistory: [],
+                participants: participants,
+                direction: agentParticipant?.direction || 'inbound',
+                customerName: customerParticipant?.name || customerParticipant?.address || 'Unknown',
+                queueId: agentParticipant?.queue?.id || null,
+                autoSequenceTriggered: false,
+                mediaType: 'messaging' // Mark as messaging conversation
+            };
+            
+            this.trackedConversations.set(conversationId, conversation);
+            
+            // Trigger automated sequence for new messaging conversations
+            if (!conversation.autoSequenceTriggered) {
+                conversation.autoSequenceTriggered = true;
+                console.log(`💬 New messaging conversation detected: ${conversationId} - triggering automated sequence`);
+                
+                // Trigger the automated sequence asynchronously
+                setTimeout(() => {
+                    this.handleIncomingMessagingSequence(conversationId, conversation).catch(error => {
+                        console.error('Error in automated incoming messaging sequence:', error);
+                    });
+                }, 100);
+            }
+            
+            console.log(`Created new messaging conversation tracking: ${conversationId}`, conversation);
+            
+            // Update most recent active conversation tracking
+            this.updateMostRecentActiveConversation();
+            
+            // Notify UI of the update
+            this.onConversationTrackingUpdate(Array.from(this.trackedConversations.values()));
+        } else {
+            // Update existing conversation
+            conversation.participants = participants;
+            conversation.lastUpdated = new Date().toISOString();
+            this.trackedConversations.set(conversationId, conversation);
+        }
+    }
+    
+    /**
      * Get all tracked conversations
      * @returns {Array} - Array of tracked conversation objects
      */
@@ -1905,8 +1970,8 @@ class IframeCommunicationWrapper {
             
             // Step 3: Join the conversation in iframe
             console.log('📋 Auto Step 3: Joining conversation in iframe...');
-            const contactName = conversation.customerName || 'Auto Customer';
-            const contactEmail = 'auto@example.com';
+            const contactName = conversation.customerName || 'Customer';
+            const contactEmail = 'customer@email.com';
             const contactPhone = this.extractPhoneFromConversation(conversation);
             const profileId = '0198e667-6540-727d-b6b0-d8f4de9db1c6'; // Default profile ID
             
@@ -1930,6 +1995,77 @@ class IframeCommunicationWrapper {
             
         } catch (error) {
             console.error('❌ Error in automated call sequence:', error);
+        } finally {
+            this.autoCallSequenceInProgress = false;
+        }
+    }
+    
+    /**
+     * Automated sequence for handling new incoming messaging conversations
+     * Similar to handleIncomingCallSequence but adapted for messaging
+     * @param {string} conversationId - The Genesys Cloud conversation ID
+     * @param {Object} conversation - The tracked conversation object
+     * @returns {Promise<void>}
+     */
+    async handleIncomingMessagingSequence(conversationId, conversation) {
+        if (!this.autoHandleIncomingCalls) {
+            console.log('Automatic call handling is disabled, skipping messaging sequence');
+            return;
+        }
+        
+        if (this.autoCallSequenceInProgress) {
+            console.log('Auto call sequence already in progress, skipping messaging sequence');
+            return;
+        }
+        
+        this.autoCallSequenceInProgress = true;
+        console.log(`💬 Starting automated sequence for incoming messaging conversation: ${conversationId}`);
+        
+        try {
+            // Step 1: Skip transcription for messaging - messages are handled via message subscription
+            console.log(`💬 Auto Step 1: Skipping transcription for messaging conversation ${conversationId}...`);
+            console.log('✅ Messages will be processed via message subscription');
+            
+            // Step 2: Generate random conversation ID for iframe join
+            console.log('🎲 Auto Step 2: Generating random conversation ID for iframe join...');
+            const randomConversationId = this.generateRandomConversationId();
+            console.log(`Generated random conversation ID: ${randomConversationId}`);
+            
+            // Update the form field if it exists (for UI consistency)
+            if (typeof document !== 'undefined') {
+                const conversationIdInput = document.getElementById('conversationIdInput');
+                if (conversationIdInput) {
+                    conversationIdInput.value = randomConversationId;
+                }
+            }
+            
+            // Step 3: Join the conversation in iframe
+            console.log('📋 Auto Step 3: Joining messaging conversation in iframe...');
+            const contactName = conversation.customerName || 'Customer';
+            const contactEmail = 'customer@email.com';
+            const contactPhone = this.extractPhoneFromConversation(conversation);
+            const profileId = '0198e667-6540-727d-b6b0-d8f4de9db1c6'; // Default profile ID
+            
+            this.sendJoinConversation(randomConversationId, profileId, contactName, contactEmail, contactPhone);
+            
+            // Step 4: Wait for successful join response, then activate
+            console.log('⏳ Auto Step 4: Waiting for join response to activate conversation...');
+            await this.waitForConversationJoined();
+            console.log('✅ Auto messaging conversation join successful');
+            
+            // Step 5: Activate the conversation
+            console.log('🔄 Auto Step 5: Activating messaging conversation...');
+            if (this.currentConversationId) {
+                this.sendActivateConversation(this.currentConversationId);
+                console.log('✅ Auto messaging conversation activation sent');
+            } else {
+                console.warn('⚠️ No current conversation ID available for activation');
+            }
+            
+            console.log('🎉 Automated incoming messaging sequence completed successfully!');
+            
+        } catch (error) {
+            console.error('❌ Error in automated messaging sequence:', error);
         } finally {
             this.autoCallSequenceInProgress = false;
         }
