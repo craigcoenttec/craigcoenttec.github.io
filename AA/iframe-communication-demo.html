@@ -458,11 +458,11 @@
                 </div>
                 <div class="input-group">
                     <label>Contact Name:</label>
-                    <input type="text" id="contactNameInput" value="John Doe" placeholder="Enter contact name">
+                    <input type="text" id="contactNameInput" value="Customer" placeholder="Enter contact name">
                 </div>
                 <div class="input-group">
                     <label>Contact Email:</label>
-                    <input type="text" id="contactEmailInput" value="john.doe@example.com" placeholder="Enter contact email">
+                    <input type="text" id="contactEmailInput" value="customer@email.com" placeholder="Enter contact email">
                 </div>
                 <div class="input-group">
                     <label>Contact Phone:</label>
@@ -2278,8 +2278,16 @@
                 await waitForConversationSubscription();
                 updateCallSequenceStatus('✅ Conversation subscription active');
                 
-                // Step 4: Ensure auto-handle incoming calls is enabled
-                updateCallSequenceStatus('⚙️ Step 4: Enabling auto-handle incoming calls...');
+                // Step 4: Connect message notifications (start listening for chats)
+                updateCallSequenceStatus('💬 Step 4: Starting message subscription...');
+                connectToMessageNotifications();
+                
+                // Wait for message subscription
+                await waitForMessageSubscription();
+                updateCallSequenceStatus('✅ Message subscription active');
+                
+                // Step 5: Ensure auto-handle incoming calls is enabled
+                updateCallSequenceStatus('⚙️ Step 5: Enabling auto-handle incoming calls...');
                 const autoHandleCheckbox = document.getElementById('autoHandleIncomingCalls');
                 if (autoHandleCheckbox) {
                     autoHandleCheckbox.checked = true;
@@ -2306,6 +2314,24 @@
                 const checkInterval = setInterval(() => {
                     const gcConversationStatus = document.getElementById('gcConversationStatus').textContent;
                     if (gcConversationStatus === 'Connected') {
+                        clearTimeout(timeout);
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 500);
+            });
+        }
+        
+        function waitForMessageSubscription() {
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Timeout waiting for message subscription'));
+                }, 15000); // 15 second timeout
+                
+                // Listen for message subscription status change
+                const checkInterval = setInterval(() => {
+                    const gcMessageStatus = document.getElementById('gcMessageStatus').textContent;
+                    if (gcMessageStatus === 'Connected') {
                         clearTimeout(timeout);
                         clearInterval(checkInterval);
                         resolve();

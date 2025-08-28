@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Portal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .iframe-container {
+            width: 100%;
+            height: calc(100vh - 80px);
+            border: none;
+            display: block;
+        }
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .loading-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Healthcare Portal</h1>
+    </div>
+    
+    <div class="iframe-container">
+        <iframe 
+            id="healthcareIframe"
+            src="https://paronext.com/health" 
+            title="Healthcare Portal"
+            loading="lazy"
+            allow="camera; microphone; geolocation; encrypted-media">
+        </iframe>
+    </div>
+
+    <div class="loading-message" id="loadingMessage" style="display: none;">
+        Loading healthcare portal...
+    </div>
+
+    <!-- Genesys Web Widget Script -->
+    <script type="text/javascript" charset="utf-8">
+        (function (g, e, n, es, ys) {
+            g['_genesysJs'] = e;
+            g[e] = g[e] || function () {
+                (g[e].q = g[e].q || []).push(arguments)
+            };
+            g[e].t = 1 * new Date();
+            g[e].c = es;
+            ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
+        })(window, 'Genesys', 'https://apps.usw2.pure.cloud/genesys-bootstrap/genesys.min.js', {
+            environment: 'prod-usw2',
+            deploymentId: 'dbcba290-917a-4e32-8b1a-7d698d5b96ef'
+        });
+    </script>
+
+    <script>
+        // Optional: Handle iframe loading states
+        const iframe = document.getElementById('healthcareIframe');
+        const loadingMessage = document.getElementById('loadingMessage');
+
+        iframe.addEventListener('load', function() {
+            console.log('Healthcare portal loaded successfully');
+        });
+
+        iframe.addEventListener('error', function() {
+            console.error('Failed to load healthcare portal');
+            loadingMessage.style.display = 'block';
+            loadingMessage.textContent = 'Failed to load healthcare portal. Please try again later.';
+        });
+    </script>
+</body>
+</html>
