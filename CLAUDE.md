@@ -10,6 +10,7 @@ This is a GitHub Pages repository containing multiple Genesys Cloud client appli
 
 The repository is organized into multiple standalone HTML applications, each demonstrating specific Genesys Cloud functionality:
 
+- **AA/**: Agent Assist iframe communication demo with external CSS styling
 - **ADDIPOCWidget/**: Widget for ADDI (AI-powered agent assist) proof of concept
 - **ConversationParse/**: Tool for parsing and analyzing conversation data with syntax highlighting
 - **DirectoryExample/**: Client application directory examples with table functionality
@@ -65,8 +66,15 @@ Applications expect URL parameters for configuration:
 ### File Structure Standards
 - `index.html`: Main application entry point
 - `style/`: Custom CSS (when present)
+- `styles.css`: External CSS file (AA/ folder uses this pattern)
 - `scripts/`: JavaScript modules and configuration files
 - `genesys-spark/`: Local Spark component builds (when customized)
+
+### AA/ Folder Specific Notes
+The Agent Assist iframe communication demo (`AA/iframe-communication-demo.html`) has been refactored to use external CSS:
+- CSS extracted from inline `<style>` blocks into `AA/styles.css`
+- HTML file references external stylesheet via `<link rel="stylesheet" href="styles.css">`
+- Original file (`iframe-communication-demo-original.html`) maintains inline CSS for reference
 
 ## Working with This Repository
 
