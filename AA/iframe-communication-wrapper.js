@@ -1701,9 +1701,17 @@ class IframeCommunicationWrapper {
             this.trackedConversations.set(conversationId, conversation);
             
             // Trigger automated sequence for new messaging conversations
-            if (!conversation.autoSequenceTriggered) {
+            // Only trigger if auto-handle is enabled, no sequence is in progress, and no AA conversation exists
+            if (!conversation.autoSequenceTriggered && 
+                this.autoHandleIncomingCalls && 
+                !this.autoCallSequenceInProgress &&
+                !this.currentConversationId) {
+                
                 conversation.autoSequenceTriggered = true;
                 console.log(`💬 New messaging conversation detected: ${conversationId} - triggering automated sequence`);
+                
+                // Update the conversation in the map with the triggered flag immediately
+                this.trackedConversations.set(conversationId, conversation);
                 
                 // Trigger the automated sequence asynchronously
                 setTimeout(() => {
@@ -1711,6 +1719,14 @@ class IframeCommunicationWrapper {
                         console.error('Error in automated incoming messaging sequence:', error);
                     });
                 }, 100);
+            } else if (conversation.autoSequenceTriggered) {
+                console.log(`💬 Messaging conversation ${conversationId} already has automated sequence triggered - skipping`);
+            } else if (!this.autoHandleIncomingCalls) {
+                console.log(`💬 Messaging conversation ${conversationId} detected but auto-handle is disabled - skipping`);
+            } else if (this.autoCallSequenceInProgress) {
+                console.log(`💬 Messaging conversation ${conversationId} detected but auto sequence already in progress - skipping`);
+            } else if (this.currentConversationId) {
+                console.log(`💬 Messaging conversation ${conversationId} detected but Agent Assist conversation already active (${this.currentConversationId}) - skipping`);
             }
             
             console.log(`Created new messaging conversation tracking: ${conversationId}`, conversation);
