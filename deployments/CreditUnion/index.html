@@ -1,367 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Almost Real Credit Union</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-        }
-        
-        .top-nav {
-            background-color: #f8f9fa;
-            padding: 10px 0;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .top-nav .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            padding: 0 20px;
-        }
-        
-        .top-nav-links {
-            display: flex;
-            gap: 20px;
-        }
-        
-        .client-toggle {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 30px;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 30px;
-        }
-        
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 22px;
-            width: 22px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        
-        input:checked + .slider {
-            background-color: #0056b3;
-        }
-        
-        input:checked + .slider:before {
-            transform: translateX(30px);
-        }
-        
-        .toggle-label {
-            font-size: 14px;
-            color: #0056b3;
-            font-weight: bold;
-        }
-        
-        .top-nav a {
-            color: #0056b3;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        
-        header {
-            background-color: #0056b3;
-            color: white;
-            padding: 15px 0;
-        }
-        
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-        }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-        }
-        
-        .login-section {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            font-weight: bold;
-        }
-        
-        .btn-primary {
-            background-color: #28a745;
-            color: white;
-        }
-        
-        .btn-secondary {
-            background-color: transparent;
-            color: white;
-            border: 2px solid white;
-        }
-        
-        nav {
-            background-color: #004494;
-            padding: 0;
-        }
-        
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            padding: 0 20px;
-        }
-        
-        .nav-item {
-            padding: 15px 20px;
-            color: white;
-            text-decoration: none;
-            border-right: 1px solid #0056b3;
-        }
-        
-        .nav-item:hover {
-            background-color: #0056b3;
-        }
-        
-        .hero {
-            background: linear-gradient(135deg, #0056b3, #28a745);
-            color: white;
-            padding: 80px 0;
-            text-align: center;
-        }
-        
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            font-weight: 300;
-        }
-        
-        .hero p {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        .services {
-            padding: 60px 0;
-            background-color: #f8f9fa;
-        }
-        
-        .services h2 {
-            text-align: center;
-            margin-bottom: 50px;
-            font-size: 2.5rem;
-            color: #0056b3;
-        }
-        
-        .service-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-        
-        .service-card {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .service-card h3 {
-            color: #0056b3;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-        }
-        
-        .service-card p {
-            margin-bottom: 20px;
-            color: #666;
-        }
-        
-        .rates-section {
-            padding: 60px 0;
-            background-color: white;
-        }
-        
-        .rates-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-        }
-        
-        .rates-table th,
-        .rates-table td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .rates-table th {
-            background-color: #0056b3;
-            color: white;
-        }
-        
-        .rates-table tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        
-        .about {
-            padding: 60px 0;
-            background-color: #f8f9fa;
-        }
-        
-        .about-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            align-items: center;
-        }
-        
-        .about h2 {
-            color: #0056b3;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-top: 30px;
-        }
-        
-        .stat {
-            text-align: center;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #28a745;
-        }
-        
-        footer {
-            background-color: #333;
-            color: white;
-            padding: 40px 0 20px;
-        }
-        
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        
-        .footer-section h3 {
-            margin-bottom: 15px;
-            color: #28a745;
-        }
-        
-        .footer-section ul {
-            list-style: none;
-        }
-        
-        .footer-section li {
-            margin-bottom: 8px;
-        }
-        
-        .footer-section a {
-            color: #ccc;
-            text-decoration: none;
-        }
-        
-        .footer-section a:hover {
-            color: white;
-        }
-        
-        .footer-bottom {
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid #555;
-        }
-        
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .nav-container {
-                flex-direction: column;
-            }
-            
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .about-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="top-nav">
         <div class="container">
@@ -381,7 +27,7 @@
             </div>
         </div>
     </div>
-    
+
     <header>
         <div class="header-content">
             <div class="logo">Almost Real Credit Union</div>
@@ -391,17 +37,17 @@
             </div>
         </div>
     </header>
-    
+
     <nav>
         <div class="nav-container">
             <a href="#" class="nav-item">Checking & Savings</a>
-            <a href="#" class="nav-item">Loans</a>
+            <a href="loans.html" class="nav-item">Loans</a>
             <a href="#" class="nav-item">Credit Cards</a>
             <a href="#" class="nav-item">Investing</a>
-            <a href="#" class="nav-item">About Us</a>
+            <a href="aboutus.html" class="nav-item">About Us</a>
         </div>
     </nav>
-    
+
     <section class="hero">
         <div class="container">
             <h1>Banking Made Simple</h1>
@@ -409,7 +55,7 @@
             <a href="#" class="btn btn-primary">Get Started Today</a>
         </div>
     </section>
-    
+
     <section class="services">
         <div class="container">
             <h2>Our Services</h2>
@@ -447,7 +93,7 @@
             </div>
         </div>
     </section>
-    
+
     <section class="rates-section">
         <div class="container">
             <h2>Current Rates</h2>
@@ -484,14 +130,17 @@
             </table>
         </div>
     </section>
-    
+
     <section class="about">
         <div class="container">
             <div class="about-content">
                 <div>
                     <h2>Why Choose Us?</h2>
-                    <p>For over 50 years, Almost Real Credit Union has been serving our members with personalized financial solutions. As a member-owned cooperative, we're committed to your financial success, not profit margins.</p>
-                    <p>We offer competitive rates, low fees, and exceptional customer service because our members are our priority. Join thousands of satisfied members who trust us with their financial future.</p>
+                    <p>For over 50 years, Almost Real Credit Union has been serving our members with personalized
+                        financial solutions. As a member-owned cooperative, we're committed to your financial success,
+                        not profit margins.</p>
+                    <p>We offer competitive rates, low fees, and exceptional customer service because our members are
+                        our priority. Join thousands of satisfied members who trust us with their financial future.</p>
                 </div>
                 <div class="stats">
                     <div class="stat">
@@ -510,7 +159,7 @@
             </div>
         </div>
     </section>
-    
+
     <footer>
         <div class="container">
             <div class="footer-content">
@@ -557,22 +206,22 @@
     </footer>
 </body>
 <script type="text/javascript" charset="utf-8">
-  (function (g, e, n, es, ys) {
-    g['_genesysJs'] = e;
-    g[e] = g[e] || function () {
-      (g[e].q = g[e].q || []).push(arguments)
-    };
-    g[e].t = 1 * new Date();
-    g[e].c = es;
-    ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
-  })(window, 'Genesys', 'https://apps.usw2.pure.cloud/genesys-bootstrap/genesys.min.js', {
-    environment: 'prod-usw2',
-    deploymentId: 'c0a2ec81-662d-4cfb-ad37-dcf521917e23'
-  });
+    (function (g, e, n, es, ys) {
+        g['_genesysJs'] = e;
+        g[e] = g[e] || function () {
+            (g[e].q = g[e].q || []).push(arguments)
+        };
+        g[e].t = 1 * new Date();
+        g[e].c = es;
+        ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
+    })(window, 'Genesys', 'https://apps.usw2.pure.cloud/genesys-bootstrap/genesys.min.js', {
+        environment: 'prod-usw2',
+        deploymentId: 'ca96f7b5-79ff-4d36-837b-cf7cd6cacc69'
+    });
 </script>
 <script>
     let currentClientType = "Mobile";
-    
+
     function setGenesysClientType(clientType) {
         currentClientType = clientType;
         Genesys('command', 'Database.set', {
@@ -584,41 +233,54 @@
         });
         console.log('ClientType set to:', clientType);
     }
-    
-    
+
+
     // Set initial client type
     setGenesysClientType("Mobile");
-    
-    setTimeout(()=>{ Genesys(
-    "command",
-    "Toaster.open",
-    {
-      title: "Welcome to a toast pop",
-      body: "Encountering issues? Our support team is ready to troubleshoot and assist you.",
-      buttons: {
-        type: "binary", // required when 'buttons' is present. Values: "unary" for one action button, "binary" for two action buttons
-        primary: "Get Support", // optional, default value is "Accept"
-        secondary: "Maybe Later", // optional, default value is "Decline"
-      },
-    },
-    function () {
-      /*fulfilled callback*/
-      console.log("Toaster is opened");
-    },
-    function (error) {
-      /*rejected callback*/
-      console.log("There was an error running the Toaster.open command:", error);
-    }
-  )},10000);
-    
+
+    setTimeout(() => {
+        Genesys("command", "Launcher.show",
+            {},
+            function () {
+                /*fulfilled callback*/
+            },
+            function () {
+                /*rejected callback*/
+            }
+        )
+    }, 10000);
+
+    //     setTimeout(()=>{ Genesys(
+    //     "command",
+    //     "Toaster.open",
+    //     {
+    //       title: "Welcome to a toast pop",
+    //       body: "Encountering issues? Our support team is ready to troubleshoot and assist you.",
+    //       buttons: {
+    //         type: "binary", // required when 'buttons' is present. Values: "unary" for one action button, "binary" for two action buttons
+    //         primary: "Get Support", // optional, default value is "Accept"
+    //         secondary: "Maybe Later", // optional, default value is "Decline"
+    //       },
+    //     },
+    //     function () {
+    //       /*fulfilled callback*/
+    //       console.log("Toaster is opened");
+    //     },
+    //     function (error) {
+    //       /*rejected callback*/
+    //       console.log("There was an error running the Toaster.open command:", error);
+    //     }
+    //   )},10000);
+
     // Handle toggle changes
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const toggle = document.getElementById('clientTypeToggle');
-        
-        toggle.addEventListener('change', function() {
+
+        toggle.addEventListener('change', function () {
             const clientType = this.checked ? 'Web' : 'Mobile';
             setGenesysClientType(clientType);
         });
     });
 </script>
+
 </html>
