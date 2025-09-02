@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loans - Almost Real Credit Union</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="top-nav">
+        <div class="container">
+            <div class="client-toggle">
+                <span class="toggle-label">Mobile</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="clientTypeToggle">
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-label">Web</span>
+            </div>
+            <div class="top-nav-links">
+                <a href="#">Open an Account</a>
+                <a href="#">Rates</a>
+                <a href="#">ATM Finder</a>
+                <a href="#">Support</a>
+            </div>
+        </div>
+    </div>
+    
+    <header>
+        <div class="header-content">
+            <div class="logo"><a href="index.html" style="color: white; text-decoration: none;">Almost Real Credit Union</a></div>
+            <div class="login-section">
+                <a href="#" class="btn btn-secondary">Log In</a>
+                <a href="#" class="btn btn-primary">Join Now</a>
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="nav-item">Checking & Savings</a>
+            <a href="loans.html" class="nav-item active">Loans</a>
+            <a href="#" class="nav-item">Credit Cards</a>
+            <a href="#" class="nav-item">Investing</a>
+            <a href="aboutus.html" class="nav-item">About Us</a>
+        </div>
+    </nav>
+    
+    <section class="hero">
+        <div class="container">
+            <h1>Loan Services</h1>
+            <p>Apply for a loan or check your application status</p>
+        </div>
+    </section>
+    
+    <section class="loan-section">
+        <div class="container">
+            <h2>Loan Center</h2>
+            
+            <div class="loan-tabs">
+                <button class="tab-button active" onclick="showTab('apply')">Apply for Loan</button>
+                <button class="tab-button" onclick="showTab('status')">Check Status</button>
+                <button class="tab-button" onclick="showTab('rates')">View Rates</button>
+            </div>
+            
+            <!-- Apply for Loan Tab -->
+            <div id="apply-tab" class="tab-content active">
+                <div class="loan-types">
+                    <div class="loan-card">
+                        <h3>Auto Loan</h3>
+                        <div class="rate">5.99% APR</div>
+                        <p>Finance your new or used vehicle with competitive rates and flexible terms.</p>
+                        <a href="#" class="btn btn-primary" onclick="showLoanForm('auto')">Apply Now</a>
+                    </div>
+                    <div class="loan-card">
+                        <h3>Home Loan</h3>
+                        <div class="rate">7.25% APR</div>
+                        <p>Purchase your dream home or refinance your existing mortgage.</p>
+                        <a href="#" class="btn btn-primary" onclick="showLoanForm('home')">Apply Now</a>
+                    </div>
+                    <div class="loan-card">
+                        <h3>Personal Loan</h3>
+                        <div class="rate">8.99% APR</div>
+                        <p>Consolidate debt, make home improvements, or fund life's important moments.</p>
+                        <a href="#" class="btn btn-primary" onclick="showLoanForm('personal')">Apply Now</a>
+                    </div>
+                </div>
+                
+                <!-- Loan Application Form -->
+                <div id="loan-form" class="form-section" style="display: none;">
+                    <h3 id="form-title" style="color: #0056b3; margin-bottom: 30px;">Loan Application</h3>
+                    <form>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstName">First Name *</label>
+                                <input type="text" id="firstName" name="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Last Name *</label>
+                                <input type="text" id="lastName" name="lastName" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="email">Email Address *</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone Number *</label>
+                                <input type="tel" id="phone" name="phone" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ssn">Social Security Number *</label>
+                                <input type="text" id="ssn" name="ssn" placeholder="XXX-XX-XXXX" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dob">Date of Birth *</label>
+                                <input type="date" id="dob" name="dob" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="income">Annual Income *</label>
+                                <input type="number" id="income" name="income" placeholder="$" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="employment">Employment Status *</label>
+                                <select id="employment" name="employment" required>
+                                    <option value="">Select...</option>
+                                    <option value="full-time">Full-time</option>
+                                    <option value="part-time">Part-time</option>
+                                    <option value="self-employed">Self-employed</option>
+                                    <option value="retired">Retired</option>
+                                    <option value="unemployed">Unemployed</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="loanAmount">Requested Loan Amount *</label>
+                                <input type="number" id="loanAmount" name="loanAmount" placeholder="$" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="loanTerm">Loan Term *</label>
+                                <select id="loanTerm" name="loanTerm" required>
+                                    <option value="">Select...</option>
+                                    <option value="12">12 months</option>
+                                    <option value="24">24 months</option>
+                                    <option value="36">36 months</option>
+                                    <option value="48">48 months</option>
+                                    <option value="60">60 months</option>
+                                    <option value="72">72 months</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="purpose">Loan Purpose</label>
+                                <textarea id="purpose" name="purpose" placeholder="Please describe the purpose of your loan..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <button type="submit" class="btn btn-primary" style="padding: 15px 30px; font-size: 18px;">Submit Application</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Check Status Tab -->
+            <div id="status-tab" class="tab-content">
+                <div class="form-section" style="margin-bottom: 30px;">
+                    <h3 style="color: #0056b3; margin-bottom: 20px;">Check Application Status</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="applicationId">Application ID</label>
+                            <input type="text" id="applicationId" placeholder="Enter your application ID">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastFour">Last 4 digits of SSN</label>
+                            <input type="text" id="lastFour" placeholder="XXXX" maxlength="4">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="checkStatus()">Check Status</button>
+                </div>
+                
+                <!-- Sample Status Results -->
+                <div id="status-results">
+                    <div class="status-card">
+                        <div class="status-header">
+                            <div class="status-title">Auto Loan Application #AL-2025-001</div>
+                            <div class="status-badge status-approved">Approved</div>
+                        </div>
+                        <div class="status-details">
+                            <div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Application Date:</span>
+                                    <span class="detail-value">January 15, 2025</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Loan Amount:</span>
+                                    <span class="detail-value">$25,000</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Approved Rate:</span>
+                                    <span class="detail-value">5.99% APR</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Loan Term:</span>
+                                    <span class="detail-value">60 months</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Monthly Payment:</span>
+                                    <span class="detail-value">$483.32</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Next Step:</span>
+                                    <span class="detail-value">Schedule closing appointment</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-header">
+                            <div class="status-title">Personal Loan Application #PL-2025-002</div>
+                            <div class="status-badge status-processing">Processing</div>
+                        </div>
+                        <div class="status-details">
+                            <div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Application Date:</span>
+                                    <span class="detail-value">January 28, 2025</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Loan Amount:</span>
+                                    <span class="detail-value">$15,000</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Status:</span>
+                                    <span class="detail-value">Under review</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Loan Term:</span>
+                                    <span class="detail-value">36 months</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Expected Decision:</span>
+                                    <span class="detail-value">Within 2-3 business days</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Contact:</span>
+                                    <span class="detail-value">(555) 123-4567</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- View Rates Tab -->
+            <div id="rates-tab" class="tab-content">
+                <div class="form-section">
+                    <h3 style="color: #0056b3; margin-bottom: 30px;">Current Loan Rates</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color: #0056b3; color: white;">
+                                <th style="padding: 15px; text-align: left;">Loan Type</th>
+                                <th style="padding: 15px; text-align: left;">Term</th>
+                                <th style="padding: 15px; text-align: left;">APR</th>
+                                <th style="padding: 15px; text-align: left;">Monthly Payment*</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e0e0e0;">
+                                <td style="padding: 15px;">Auto Loan (New)</td>
+                                <td style="padding: 15px;">60 months</td>
+                                <td style="padding: 15px;">5.99%</td>
+                                <td style="padding: 15px;">$193 per $10k</td>
+                            </tr>
+                            <tr style="background-color: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
+                                <td style="padding: 15px;">Auto Loan (Used)</td>
+                                <td style="padding: 15px;">60 months</td>
+                                <td style="padding: 15px;">6.49%</td>
+                                <td style="padding: 15px;">$197 per $10k</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e0e0e0;">
+                                <td style="padding: 15px;">Home Loan (Fixed)</td>
+                                <td style="padding: 15px;">30 years</td>
+                                <td style="padding: 15px;">7.25%</td>
+                                <td style="padding: 15px;">$682 per $100k</td>
+                            </tr>
+                            <tr style="background-color: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
+                                <td style="padding: 15px;">Personal Loan</td>
+                                <td style="padding: 15px;">36 months</td>
+                                <td style="padding: 15px;">8.99%</td>
+                                <td style="padding: 15px;">$318 per $10k</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e0e0e0;">
+                                <td style="padding: 15px;">Home Equity Line</td>
+                                <td style="padding: 15px;">Variable</td>
+                                <td style="padding: 15px;">Prime + 1%</td>
+                                <td style="padding: 15px;">Interest only option</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                        * Monthly payment examples based on loan amount shown. Actual rates may vary based on creditworthiness and other factors.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#">Online Banking</a></li>
+                        <li><a href="#">Mobile App</a></li>
+                        <li><a href="#">ATM Locator</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Services</h3>
+                    <ul>
+                        <li><a href="#">Personal Banking</a></li>
+                        <li><a href="#">Business Banking</a></li>
+                        <li><a href="#">Loans & Credit</a></li>
+                        <li><a href="#">Financial Planning</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Info</h3>
+                    <ul>
+                        <li>Phone: (555) 123-4567</li>
+                        <li>Email: info@communityfirstcu.org</li>
+                        <li>Address: 123 Main St, Anytown, ST 12345</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Security</h3>
+                    <ul>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Security Center</a></li>
+                        <li><a href="#">Terms of Use</a></li>
+                        <li><a href="#">NCUA Insured</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Community First Credit Union. All rights reserved. | NCUA Insured</p>
+            </div>
+        </div>
+    </footer>
+</body>
+
+<script type="text/javascript" charset="utf-8">
+  (function (g, e, n, es, ys) {
+    g['_genesysJs'] = e;
+    g[e] = g[e] || function () {
+      (g[e].q = g[e].q || []).push(arguments)
+    };
+    g[e].t = 1 * new Date();
+    g[e].c = es;
+    ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
+  })(window, 'Genesys', 'https://apps.usw2.pure.cloud/genesys-bootstrap/genesys.min.js', {
+    environment: 'prod-usw2',
+    deploymentId: 'ca96f7b5-79ff-4d36-837b-cf7cd6cacc69'
+  });
+</script>
+
+<script>
+    let currentClientType = "Mobile";
+
+    setTimeout(() => {
+        Genesys("command", "Launcher.show",
+            {},
+            function () {
+                /*fulfilled callback*/
+            },
+            function () {
+                /*rejected callback*/
+            }
+        )
+    }, 2000);
+    
+    function setGenesysClientType(clientType) {
+        currentClientType = clientType;
+        Genesys('command', 'Database.set', {
+            messaging: {
+                customAttributes: {
+                    ClientType: clientType
+                }
+            }
+        });
+        console.log('ClientType set to:', clientType);
+    }
+    
+    // Set initial client type
+    setGenesysClientType("Mobile");
+    
+    // Listen for toast acceptance (Get Help Now button)
+    Genesys(
+        "subscribe",
+        "Toaster.accepted",
+        function (e) {
+            console.log("Toaster was accepted", e);
+            // Open the chat window when assistance is requested
+            openChatAssistance();
+        }
+    );
+    
+    // Function to open chat window for loan assistance
+    function openChatAssistance() {
+        // Set custom attribute to track that user requested help
+        Genesys('command', 'Database.set', {
+            messaging: {
+                customAttributes: {
+                    LoanAssistanceRequested: 'Chat_Opened',
+                    ClientType: currentClientType,
+                    AssistanceContext: 'Loan_Application_Form'
+                }
+            }
+        });
+        
+        // Open the messenger when ready
+        Genesys('subscribe', 'Messenger.ready', function () {
+            Genesys(
+                'command',
+                'Messenger.open',
+                {},
+                () => {
+                    console.log('Messenger opened for loan assistance');
+                },
+                (error) => {
+                    console.log("Couldn't open messenger for loan assistance.", error);
+                }
+            );
+        });
+    }
+    
+    // Handle toggle changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggle = document.getElementById('clientTypeToggle');
+        
+        toggle.addEventListener('change', function() {
+            const clientType = this.checked ? 'Web' : 'Mobile';
+            setGenesysClientType(clientType);
+        });
+    });
+    
+    // Tab functionality
+    function showTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        document.getElementById(tabName + '-tab').classList.add('active');
+        
+        // Add active class to clicked button
+        event.target.classList.add('active');
+        
+        // Hide loan form when switching tabs
+        if (tabName !== 'apply') {
+            document.getElementById('loan-form').style.display = 'none';
+        }
+    }
+    
+    // Show loan application form
+    function showLoanForm(loanType) {
+        const form = document.getElementById('loan-form');
+        const title = document.getElementById('form-title');
+        
+        let titleText = '';
+        switch(loanType) {
+            case 'auto':
+                titleText = 'Auto Loan Application';
+                break;
+            case 'home':
+                titleText = 'Home Loan Application';
+                break;
+            case 'personal':
+                titleText = 'Personal Loan Application';
+                break;
+        }
+        
+        title.textContent = titleText;
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Check loan status
+    function checkStatus() {
+        const applicationId = document.getElementById('applicationId').value;
+        const lastFour = document.getElementById('lastFour').value;
+        
+        if (!applicationId || !lastFour) {
+            alert('Please enter both Application ID and last 4 digits of SSN');
+            return;
+        }
+        
+        // In a real application, this would make an API call
+        // For demo purposes, we'll just show the existing sample data
+        alert('Status check complete. Results shown below.');
+        
+        // Optionally trigger Genesys interaction
+        Genesys('command', 'Database.set', {
+            messaging: {
+                customAttributes: {
+                    LoanStatusCheck: applicationId,
+                    ClientType: currentClientType
+                }
+            }
+        });
+    }
+    
+    // Form inactivity detection and assistance
+    let formInactivityTimer = null;
+    let formStarted = false;
+    let assistanceOffered = false;
+    
+    function startInactivityTimer() {
+        clearTimeout(formInactivityTimer);
+        formInactivityTimer = setTimeout(function() {
+            if (formStarted && !assistanceOffered) {
+                showAssistanceToast();
+                assistanceOffered = true;
+            }
+        }, 10000); // 10 seconds
+    }
+    
+    function resetInactivityTimer() {
+        if (formStarted) {
+            startInactivityTimer();
+        }
+    }
+    
+    function showAssistanceToast() {
+        Genesys(
+            "command",
+            "Toaster.open",
+            {
+                title: "Need Help with Your Application?",
+                body: "Having trouble completing your loan application? Our loan specialists are here to help guide you through the process.",
+                buttons: {
+                    type: "binary",
+                    primary: "Get Help Now",
+                    secondary: "Continue Alone"
+                }
+            },
+            function () {
+                console.log("Assistance toast opened");
+                // Set Genesys custom attribute to track assistance request
+                Genesys('command', 'Database.set', {
+                    messaging: {
+                        customAttributes: {
+                            LoanAssistanceRequested: 'Toast_Shown',
+                            ClientType: currentClientType,
+                            FormInactivity: '20_seconds'
+                        }
+                    }
+                });
+            },
+            function (error) {
+                console.log("Error showing assistance toast:", error);
+            }
+        );
+    }
+    
+    // Form submission handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('#loan-form form');
+        if (form) {
+            // Add event listeners to all form inputs to detect activity
+            const formInputs = form.querySelectorAll('input, select, textarea');
+            
+            formInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (!formStarted) {
+                        formStarted = true;
+                        console.log('Loan form activity started');
+                        // Set initial custom attribute
+                        Genesys('command', 'Database.set', {
+                            messaging: {
+                                customAttributes: {
+                                    LoanFormStarted: 'True',
+                                    ClientType: currentClientType
+                                }
+                            }
+                        });
+                    }
+                    resetInactivityTimer();
+                });
+                
+                input.addEventListener('focus', function() {
+                    if (formStarted) {
+                        resetInactivityTimer();
+                    }
+                });
+                
+                input.addEventListener('keydown', function() {
+                    if (formStarted) {
+                        resetInactivityTimer();
+                    }
+                });
+            });
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Clear the inactivity timer on submission
+                clearTimeout(formInactivityTimer);
+                
+                // Get form data
+                const formData = new FormData(form);
+                const loanAmount = formData.get('loanAmount');
+                const loanTerm = formData.get('loanTerm');
+                
+                // Set Genesys custom attributes
+                Genesys('command', 'Database.set', {
+                    messaging: {
+                        customAttributes: {
+                            LoanApplication: 'Submitted',
+                            LoanAmount: loanAmount,
+                            LoanTerm: loanTerm,
+                            ClientType: currentClientType
+                        }
+                    }
+                });
+                
+                alert('Thank you! Your loan application has been submitted. You will receive a confirmation email shortly with your application ID.');
+                form.reset();
+                document.getElementById('loan-form').style.display = 'none';
+                
+                // Reset form state
+                formStarted = false;
+                assistanceOffered = false;
+            });
+        }
+    });
+</script>
+</html>
