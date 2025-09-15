@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 0 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 0;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            height: 70px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            border-radius: 8px;
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .nav-item.active {
+            background-color: rgba(255,255,255,0.15);
+        }
+        
+        .nav-item i {
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .user-profile {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .main-content {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+        
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .category-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid #e9ecef;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .card-image {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .card-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.1));
+        }
+        
+        .card-content {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .ecommerce {
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23f8f9fa" width="400" height="300"/><rect fill="%236c757d" x="50" y="50" width="300" height="200" rx="10"/><rect fill="%23fff" x="80" y="80" width="100" height="60" rx="5"/><rect fill="%23e9ecef" x="200" y="90" width="120" height="15" rx="3"/><rect fill="%23e9ecef" x="200" y="115" width="80" height="15" rx="3"/><circle fill="%23007bff" cx="320" cy="110" r="20"/></svg>');
+        }
+        
+        .health {
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23e8f5e8" width="400" height="300"/><circle fill="%2328a745" cx="200" cy="150" r="80"/><rect fill="%23fff" x="180" y="120" width="40" height="15" rx="2"/><rect fill="%23fff" x="185" y="115" width="30" height="25" rx="2"/><rect fill="%23fff" x="190" y="165" width="20" height="30" rx="2"/></svg>');
+        }
+        
+        .financial {
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23fff3cd" width="400" height="300"/><rect fill="%23ffc107" x="100" y="100" width="200" height="100" rx="10"/><rect fill="%23fff" x="120" y="130" width="50" height="40" rx="5"/><rect fill="%23fff" x="190" y="140" width="80" height="8" rx="2"/><rect fill="%23fff" x="190" y="155" width="60" height="8" rx="2"/></svg>');
+        }
+        
+        .insurance {
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23e7f3ff" width="400" height="300"/><path fill="%23007bff" d="M200 50 L250 100 L200 250 L150 100 Z"/><rect fill="%23fff" x="180" y="120" width="40" height="30" rx="3"/><circle fill="%23fff" cx="200" cy="170" r="15"/></svg>');
+        }
+        
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                height: auto;
+                padding: 1rem 0;
+            }
+            
+            .nav-menu {
+                margin-top: 1rem;
+            }
+            
+            .nav-item {
+                padding: 0.5rem 1rem;
+                height: auto;
+            }
+            
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-content {
+                margin: 2rem auto;
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">=%</div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item active">
+                        <i><�</i> Home
+                    </li>
+                    <li class="nav-item">
+                        <i>S</i> Support
+                    </li>
+                    <li class="nav-item">
+                        <i>=�</i> Demonstrations
+                    </li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                =d
+            </div>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <div class="categories-grid">
+            <div class="category-card">
+                <div class="card-image ecommerce">
+                    <div class="card-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Ecommerce</h3>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="card-image health">
+                    <div class="card-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Health</h3>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="card-image financial">
+                    <div class="card-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Financial</h3>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="card-image insurance">
+                    <div class="card-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Insurance</h3>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                    console.log('Navigation clicked:', this.textContent.trim());
+                });
+            });
+            
+            const categoryCards = document.querySelectorAll('.category-card');
+            categoryCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const title = this.querySelector('.card-title').textContent;
+                    console.log('Category clicked:', title);
+                });
+            });
+        });
+    </script>
+</body>
+<script type="text/javascript" charset="utf-8">
+  (function (g, e, n, es, ys) {
+    g['_genesysJs'] = e;
+    g[e] = g[e] || function () {
+      (g[e].q = g[e].q || []).push(arguments)
+    };
+    g[e].t = 1 * new Date();
+    g[e].c = es;
+    ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
+  })(window, 'Genesys', 'https://apps.usw2.pure.cloud/genesys-bootstrap/genesys.min.js', {
+    environment: 'prod-usw2',
+    deploymentId: '9db93784-706e-4328-8234-d71957f25b36'
+  });
+</script>
+</html>
