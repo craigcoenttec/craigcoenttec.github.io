@@ -88,8 +88,10 @@
     let workflowImage = "https://craigcoenttec.github.io/TranscriptionExample/sandcastlerobot.jpg";
     //let workflowImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/robot-large.svg";
     let customerImage = "https://dhqbrvplips7x.cloudfront.net/directory/11.25.0-1/assets/images/svg/person.svg";
-    let ADDIURLHOST = "https://addi.smldev.com"
-    let ADDIWEBSOCKETHOST = "wss://addi.smldev.com"
+    //let ADDIURLHOST = "https://addi.smldev.com/addi/v1"
+    //let ADDIWEBSOCKETHOST = "wss://addi.smldev.com"
+    let ADDIURLHOST = "https://addi-dev.ttec-cloudapps.com/addi/ccaip"
+    let ADDIWEBSOCKETHOST = "wss://addi-dev.ttec-cloudapps.com"
     let currentTransaction = "";
     let transcriptionWebSocket = null;
     let pingInterval = null;
@@ -1369,7 +1371,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/transactions`, requestOptions)
+      fetch(`${ADDIURLHOST}/transactions`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result);
@@ -1387,7 +1389,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/languages`, requestOptions)
+      fetch(`${ADDIURLHOST}/languages`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result)
@@ -1402,7 +1404,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/profiles`, requestOptions)
+      fetch(`${ADDIURLHOST}/profiles`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result);
@@ -1418,7 +1420,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/profiles`, requestOptions)
+      fetch(`${ADDIURLHOST}/profiles`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result)
@@ -1455,7 +1457,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/transaction/${transactionId}`, requestOptions)
+      fetch(`${ADDIURLHOST}/transaction/${transactionId}`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result);
@@ -1473,7 +1475,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/language/${transactionId}`, requestOptions)
+      fetch(`${ADDIURLHOST}/language/${transactionId}`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           console.log(result)
@@ -1499,7 +1501,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/language`, requestOptions)
+      fetch(`${ADDIURLHOST}/language`, requestOptions)
         .then((response) => response.status)
         .then((result) => {
           console.log(result)
@@ -1534,7 +1536,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/speak`, requestOptions)
+      fetch(`${ADDIURLHOST}/speak`, requestOptions)
         .then((response) => response.text())
         .then((result) => console.log(result))
         .catch((error) => console.error(error));
@@ -1562,7 +1564,7 @@
         redirect: "follow"
       };
 
-      fetch(`${ADDIURLHOST}/addi/v1/translate`, requestOptions)
+      fetch(`${ADDIURLHOST}/translate`, requestOptions)
         .then((response) => response.text())
         .then((result) => {
           //console.log(result)
