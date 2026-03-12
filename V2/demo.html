@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+    ============================================
+    ADDI POC Widget V2 - DEMO MODE
+    ============================================
+    Standalone demo for testing the UI without
+    requiring Genesys Cloud or ADDI connections.
+    ============================================
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ADDI Translation Widget - Demo</title>
+
+    <!-- Genesys Spark Components CSS -->
+    <link
+        href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css"
+        rel="stylesheet"
+    >
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="./styles/main.css">
+
+    <style>
+        /* Demo-specific styles */
+        .demo-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            text-align: center;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .demo-controls button {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .demo-controls button:hover {
+            background: #f5f5f5;
+            border-color: #999;
+        }
+
+        .demo-controls button:active {
+            transform: scale(0.98);
+        }
+
+        .config-panel {
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            padding: 16px 20px;
+        }
+
+        .config-panel__content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .config-panel__row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .config-panel__row label {
+            min-width: 100px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .config-panel__output {
+            margin-top: 12px;
+            padding: 12px;
+            background: #1e1e1e;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #9cdcfe;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .config-panel__output .header-key {
+            color: #ce9178;
+        }
+
+        .config-panel__output .header-value {
+            color: #9cdcfe;
+        }
+
+        .config-panel__output .url-label {
+            color: #569cd6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Demo Banner -->
+    <div class="demo-banner">
+        <div>🎨 DEMO MODE - UI Preview (No Backend Connections Required)</div>
+        <div class="demo-controls">
+            <button onclick="Demo.addCustomerMessage()">📨 Add Customer Message</button>
+            <button onclick="Demo.addAgentMessage()">💬 Add Agent Message</button>
+            <button onclick="Demo.addSystemMessage()">🤖 Add System Message</button>
+            <button onclick="Demo.clearMessages()">🗑️ Clear All</button>
+            <button onclick="Demo.toggleDebug()">🐛 Toggle Debug</button>
+            <button onclick="Demo.toggleConfig()">⚙️ Config</button>
+        </div>
+    </div>
+
+    <!-- Config Panel for Bearer Token Testing -->
+    <div id="configPanel" class="config-panel" style="display: none;">
+        <div class="config-panel__content">
+            <h4 style="margin: 0 0 12px 0; color: #333;">Configuration Testing</h4>
+            <div class="config-panel__row">
+                <label for="configBearer">Bearer Token:</label>
+                <input type="text" id="configBearer" placeholder="Enter bearer token..." style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div class="config-panel__row">
+                <label for="configAddiHost">ADDI Host:</label>
+                <input type="text" id="configAddiHost" value="https://addi-dev.ttec-cloudapps.com" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div class="config-panel__row">
+                <button onclick="Demo.applyConfig()" style="margin-left: auto;">Apply & Show Headers</button>
+            </div>
+            <div id="configOutput" class="config-panel__output" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Main Application Container -->
+    <div class="app-container">
+
+        <!-- Header / Control Panel -->
+        <header class="app-header">
+            <div class="control-panel">
+                <!-- Customer Language Dropdown -->
+                <div class="control-panel__dropdown">
+                    <gux-form-field-dropdown>
+                        <gux-dropdown id="sourceLanguageDropdown" value="spanish">
+                            <gux-listbox id="sourceListbox" aria-label="Customer Language">
+                                <gux-option value="english">English</gux-option>
+                                <gux-option value="spanish">Spanish</gux-option>
+                                <gux-option value="french">French</gux-option>
+                                <gux-option value="german">German</gux-option>
+                                <gux-option value="mandarin">Mandarin</gux-option>
+                                <gux-option value="arabic">Arabic</gux-option>
+                            </gux-listbox>
+                        </gux-dropdown>
+                        <label slot="label">Customer Language</label>
+                    </gux-form-field-dropdown>
+                </div>
+
+                <!-- Agent Language Dropdown -->
+                <div class="control-panel__dropdown">
+                    <gux-form-field-dropdown>
+                        <gux-dropdown id="targetLanguageDropdown" value="english">
+                            <gux-listbox id="targetListbox" aria-label="Agent Language">
+                                <gux-option value="english">English</gux-option>
+                                <gux-option value="spanish">Spanish</gux-option>
+                                <gux-option value="french">French</gux-option>
+                                <gux-option value="german">German</gux-option>
+                                <gux-option value="mandarin">Mandarin</gux-option>
+                                <gux-option value="arabic">Arabic</gux-option>
+                            </gux-listbox>
+                        </gux-dropdown>
+                        <label slot="label">Agent Language</label>
+                    </gux-form-field-dropdown>
+                </div>
+
+                <!-- Update Button -->
+                <div class="control-panel__button">
+                    <gux-button accent="primary" onclick="Demo.updateLanguages()">
+                        Update
+                    </gux-button>
+                </div>
+
+                <!-- Warning Message -->
+                <div id="warningMessage" class="control-panel__warning"></div>
+
+                <!-- Loading Indicator -->
+                <div class="control-panel__loading">
+                    <gux-radial-loading
+                        id="loadingIndicator"
+                        context="input"
+                        screenreader-text="Loading..."
+                    ></gux-radial-loading>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content / Conversation Panel -->
+        <main class="app-content">
+            <div id="conversationPanel" class="conversation-panel">
+                <div id="conversation" class="conversation-messages">
+                    <!-- Sample messages will be added here -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer / Message Input -->
+        <footer id="footer" class="app-footer">
+            <gux-tabs id="tabPanel" active-tab="1-1">
+                <gux-tab-list slot="tab-list">
+                    <gux-tab tab-id="1-1">
+                        <span>Message</span>
+                    </gux-tab>
+                    <gux-tab tab-id="1-2">
+                        <span>Canned Responses</span>
+                    </gux-tab>
+                </gux-tab-list>
+
+                <!-- Message Input Tab -->
+                <gux-tab-panel tab-id="1-1">
+                    <div class="message-input-area">
+                        <div class="message-input-group">
+                            <textarea
+                                id="messageInput"
+                                class="message-input"
+                                placeholder="Enter message..."
+                                aria-label="Enter message"
+                                spellcheck="true"
+                                dir="auto"
+                            ></textarea>
+                            <button
+                                type="button"
+                                id="sendButton"
+                                class="send-button"
+                                aria-label="Send translated message"
+                                onclick="Demo.sendMessage()"
+                            >
+                                <gux-icon
+                                    icon-name="custom/arrows-retweet-regular"
+                                    decorative="true"
+                                ></gux-icon>
+                            </button>
+                        </div>
+                    </div>
+                </gux-tab-panel>
+
+                <!-- Canned Responses Tab -->
+                <gux-tab-panel tab-id="1-2">
+                    <div id="cannedResponseContainer" class="canned-response-container">
+                        <!-- Sample canned responses -->
+                    </div>
+                </gux-tab-panel>
+            </gux-tabs>
+        </footer>
+    </div>
+
+    <!-- Debug Panel (Collapsible) -->
+    <aside id="debugPanel" class="debug-panel" style="display: none;">
+        <gux-accordion>
+            <gux-accordion-section>
+                <h2 slot="header">Debug Information</h2>
+                <div slot="content" class="debug-panel__content">
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Environment:</span>
+                        <span id="debugEnvironment" class="debug-panel__value">demo.mypurecloud.com</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Language:</span>
+                        <span id="debugLanguage" class="debug-panel__value">en-US</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">User:</span>
+                        <span id="debugUser" class="debug-panel__value">Demo User</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Version:</span>
+                        <span id="debugVersion" class="debug-panel__value">2.0.0-demo</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Client ID:</span>
+                        <span id="debugClientId" class="debug-panel__value">demo-client-id-12345</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Conversation ID:</span>
+                        <span id="debugConversation" class="debug-panel__value">demo-conv-67890</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Media Type:</span>
+                        <span id="debugMedia" class="debug-panel__value">MESSAGE</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">ADDI Host:</span>
+                        <span id="debugAddiHost" class="debug-panel__value">https://addi-dev.ttec-cloudapps.com</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Bearer Token:</span>
+                        <span id="debugBearer" class="debug-panel__value">(not set)</span>
+                    </div>
+                </div>
+            </gux-accordion-section>
+        </gux-accordion>
+    </aside>
+
+    <!-- Genesys Spark Components -->
+    <script
+        type="module"
+        src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"
+    ></script>
+
+    <!-- Demo JavaScript -->
+    <script>
+        const Demo = (() => {
+            'use strict';
+
+            // Language flag mappings
+            const flagMap = {
+                english: 'us',
+                spanish: 'es',
+                french: 'fr',
+                german: 'de',
+                mandarin: 'cn',
+                arabic: 'eg',
+                portuguese: 'br',
+                japanese: 'jp',
+                korean: 'kr'
+            };
+
+            // Sample messages in different languages
+            const sampleMessages = {
+                customer: [
+                    { original: "¿Puedes ayudarme con mi pedido?", translated: "Can you help me with my order?", lang: "spanish" },
+                    { original: "Bonjour, j'ai un problème avec mon compte.", translated: "Hello, I have a problem with my account.", lang: "french" },
+                    { original: "Ich habe meine Bestellung noch nicht erhalten.", translated: "I haven't received my order yet.", lang: "german" },
+                    { original: "مرحبا، أحتاج إلى مساعدة", translated: "Hello, I need help", lang: "arabic" },
+                    { original: "你好，我有一个问题", translated: "Hello, I have a question", lang: "mandarin" }
+                ],
+                agent: [
+                    { original: "I'd be happy to help you with that!", translated: "¡Estaré encantado de ayudarte con eso!", lang: "spanish" },
+                    { original: "Let me check your account details.", translated: "Déjame revisar los detalles de tu cuenta.", lang: "spanish" },
+                    { original: "Your order is being processed.", translated: "Tu pedido está siendo procesado.", lang: "spanish" }
+                ],
+                system: [
+                    { original: "Customer joined the conversation", translated: "El cliente se unió a la conversación", lang: "spanish" },
+                    { original: "Translation enabled", translated: "Traducción habilitada", lang: "spanish" }
+                ]
+            };
+
+            // Canned responses
+            const cannedResponses = [
+                { name: "Welcome", text: "Hello! Welcome to our support. How can I help you today?" },
+                { name: "Thank You", text: "Thank you for contacting us. Is there anything else I can help you with?" },
+                { name: "Processing", text: "I'm looking into that for you now. One moment please." },
+                { name: "Follow Up", text: "I'll send you a follow-up email with the details." }
+            ];
+
+            let messageCounter = 0;
+
+            /**
+             * Initialize demo with sample messages
+             */
+            function init() {
+                // Set up language validation
+                setupLanguageValidation();
+
+                // Add initial welcome messages
+                addMessage(
+                    "Hello! How can I assist you today?",
+                    "¡Hola! ¿Cómo puedo ayudarte hoy?",
+                    "english",
+                    "spanish",
+                    "System"
+                );
+
+                setTimeout(() => {
+                    addMessage(
+                        "¿Puedes ayudarme con mi pedido?",
+                        "Can you help me with my order?",
+                        "spanish",
+                        "english",
+                        "Customer"
+                    );
+                }, 500);
+
+                setTimeout(() => {
+                    addMessage(
+                        "Of course! I'd be happy to help you.",
+                        "¡Por supuesto! Estaré encantado de ayudarte.",
+                        "english",
+                        "spanish",
+                        "Agent"
+                    );
+                }, 1000);
+
+                // Add canned responses
+                loadCannedResponses();
+            }
+
+            /**
+             * Add a message bubble to the conversation
+             */
+            function addMessage(originalText, translatedText, originalLang, translatedLang, senderType) {
+                const conversation = document.getElementById('conversation');
+                const messageId = `msg_${messageCounter++}`;
+                const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                // Create message bubble
+                const bubble = document.createElement('div');
+                bubble.id = messageId;
+                bubble.className = getBubbleClass(senderType);
+
+                // Original text section
+                const originalSection = document.createElement('div');
+                originalSection.className = 'message-bubble__original';
+
+                const originalFlag = document.createElement('gux-flag-icon-beta');
+                originalFlag.setAttribute('flag', flagMap[originalLang] || 'us');
+
+                const originalSpan = document.createElement('span');
+                originalSpan.className = 'gux-body-lg-semibold';
+                originalSpan.textContent = originalText;
+
+                originalSection.appendChild(originalFlag);
+                originalSection.appendChild(originalSpan);
+
+                // Divider
+                const divider = document.createElement('div');
+                divider.className = 'message-bubble__divider';
+
+                // Translated text section
+                const translatedSection = document.createElement('div');
+                translatedSection.className = 'message-bubble__translated';
+
+                const translatedFlag = document.createElement('gux-flag-icon-beta');
+                translatedFlag.setAttribute('flag', flagMap[translatedLang] || 'us');
+
+                const translatedSpan = document.createElement('span');
+                translatedSpan.className = 'gux-body-lg-semibold';
+                translatedSpan.textContent = translatedText;
+
+                translatedSection.appendChild(translatedFlag);
+                translatedSection.appendChild(translatedSpan);
+
+                // Assemble bubble
+                bubble.appendChild(originalSection);
+                bubble.appendChild(divider);
+                bubble.appendChild(translatedSection);
+
+                // Create header
+                const header = createMessageHeader(timestamp, senderType);
+
+                // Add to conversation
+                conversation.appendChild(bubble);
+                conversation.appendChild(header);
+
+                // Scroll to bottom
+                scrollToBottom();
+            }
+
+            /**
+             * Create message header
+             */
+            function createMessageHeader(timestamp, senderType) {
+                const header = document.createElement('div');
+                header.className = senderType === 'Customer'
+                    ? 'message-header message-header--left'
+                    : 'message-header message-header--right';
+
+                const timeTag = document.createElement('gux-tag');
+                timeTag.setAttribute('size', 'small');
+                timeTag.setAttribute('disabled', 'true');
+                timeTag.className = 'message-header__timestamp';
+                timeTag.textContent = timestamp;
+
+                const senderTag = document.createElement('gux-tag');
+                senderTag.setAttribute('size', 'small');
+                senderTag.className = 'message-header__sender';
+                senderTag.textContent = senderType;
+                senderTag.setAttribute('accent', getSenderAccent(senderType));
+
+                const avatar = createAvatar(senderType);
+
+                if (senderType === 'Customer') {
+                    header.appendChild(avatar);
+                    header.appendChild(senderTag);
+                    header.appendChild(timeTag);
+                } else {
+                    header.appendChild(timeTag);
+                    header.appendChild(senderTag);
+                    header.appendChild(avatar);
+                }
+
+                return header;
+            }
+
+            /**
+             * Create avatar
+             */
+            function createAvatar(senderType) {
+                const avatar = document.createElement('gux-avatar-beta');
+                avatar.setAttribute('size', 'small');
+
+                const img = document.createElement('img');
+                img.setAttribute('slot', 'image');
+
+                switch (senderType) {
+                    case 'Agent':
+                        img.setAttribute('src', 'https://i.pravatar.cc/150?img=12');
+                        img.setAttribute('alt', 'Agent');
+                        avatar.setAttribute('name', 'Agent');
+                        break;
+                    case 'System':
+                        img.setAttribute('src', './assets/sandcastlerobot.jpg');
+                        img.setAttribute('alt', 'System');
+                        avatar.setAttribute('name', 'System');
+                        break;
+                    default:
+                        img.setAttribute('src', 'https://i.pravatar.cc/150?img=8');
+                        img.setAttribute('alt', 'Customer');
+                        avatar.setAttribute('name', 'Customer');
+                }
+
+                avatar.appendChild(img);
+                return avatar;
+            }
+
+            /**
+             * Get bubble CSS class
+             */
+            function getBubbleClass(senderType) {
+                switch (senderType) {
+                    case 'Agent': return 'message-bubble message-bubble--agent';
+                    case 'System': return 'message-bubble message-bubble--system';
+                    default: return 'message-bubble message-bubble--customer';
+                }
+            }
+
+            /**
+             * Get sender accent color
+             */
+            function getSenderAccent(senderType) {
+                switch (senderType) {
+                    case 'Agent': return '10';
+                    case 'System': return '2';
+                    default: return '3';
+                }
+            }
+
+            /**
+             * Scroll to bottom
+             */
+            function scrollToBottom() {
+                const panel = document.getElementById('conversationPanel');
+                setTimeout(() => {
+                    panel.scrollTop = panel.scrollHeight;
+                }, 100);
+            }
+
+            /**
+             * Load canned responses
+             */
+            function loadCannedResponses() {
+                const container = document.getElementById('cannedResponseContainer');
+
+                cannedResponses.forEach((response, index) => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'canned-response-card';
+
+                    const card = document.createElement('gux-selector-card-beta');
+                    card.setAttribute('draggable', 'true');
+                    card.setAttribute('variant', 'descriptive');
+                    card.addEventListener('dblclick', () => {
+                        document.getElementById('messageInput').value = response.text;
+                        document.getElementById('tabPanel').setAttribute('active-tab', '1-1');
+                    });
+
+                    const label = document.createElement('label');
+                    label.setAttribute('slot', 'label');
+                    label.setAttribute('for', `canned-${index}`);
+                    label.textContent = response.name;
+
+                    const input = document.createElement('input');
+                    input.setAttribute('slot', 'input');
+                    input.setAttribute('id', `canned-${index}`);
+                    input.setAttribute('type', 'radio');
+                    input.setAttribute('name', 'cannedResponse');
+
+                    const description = document.createElement('span');
+                    description.setAttribute('slot', 'description');
+                    description.textContent = response.text;
+
+                    card.appendChild(label);
+                    card.appendChild(input);
+                    card.appendChild(description);
+                    cardDiv.appendChild(card);
+                    container.appendChild(cardDiv);
+                });
+            }
+
+            /**
+             * Add random customer message
+             */
+            function addCustomerMessage() {
+                const sourceLang = document.getElementById('sourceLanguageDropdown').value;
+                const targetLang = document.getElementById('targetLanguageDropdown').value;
+
+                const sample = sampleMessages.customer[Math.floor(Math.random() * sampleMessages.customer.length)];
+                addMessage(sample.original, sample.translated, sourceLang, targetLang, 'Customer');
+            }
+
+            /**
+             * Add random agent message
+             */
+            function addAgentMessage() {
+                const sourceLang = document.getElementById('sourceLanguageDropdown').value;
+                const targetLang = document.getElementById('targetLanguageDropdown').value;
+
+                const sample = sampleMessages.agent[Math.floor(Math.random() * sampleMessages.agent.length)];
+                addMessage(sample.original, sample.translated, targetLang, sourceLang, 'Agent');
+            }
+
+            /**
+             * Add random system message
+             */
+            function addSystemMessage() {
+                const sourceLang = document.getElementById('sourceLanguageDropdown').value;
+                const targetLang = document.getElementById('targetLanguageDropdown').value;
+
+                const sample = sampleMessages.system[Math.floor(Math.random() * sampleMessages.system.length)];
+                addMessage(sample.original, sample.translated, targetLang, sourceLang, 'System');
+            }
+
+            /**
+             * Send message from input
+             */
+            function sendMessage() {
+                const input = document.getElementById('messageInput');
+                const text = input.value.trim();
+
+                if (!text) return;
+
+                const sourceLang = document.getElementById('targetLanguageDropdown').value;
+                const targetLang = document.getElementById('sourceLanguageDropdown').value;
+
+                // Simulate translation (just reverse for demo)
+                const translated = `[Translated: ${text}]`;
+
+                addMessage(text, translated, sourceLang, targetLang, 'Agent');
+                input.value = '';
+
+                // Show loading briefly
+                const loading = document.getElementById('loadingIndicator');
+                loading.style.visibility = 'visible';
+                setTimeout(() => {
+                    loading.style.visibility = 'hidden';
+                }, 500);
+            }
+
+            /**
+             * Clear all messages
+             */
+            function clearMessages() {
+                const conversation = document.getElementById('conversation');
+                conversation.innerHTML = '';
+                messageCounter = 0;
+            }
+
+            /**
+             * Update languages
+             */
+            function updateLanguages() {
+                const srcVal = document.getElementById('sourceLanguageDropdown').value;
+                const tgtVal = document.getElementById('targetLanguageDropdown').value;
+
+                // Validate languages are different
+                if (srcVal === tgtVal) {
+                    const warning = document.getElementById('warningMessage');
+                    warning.textContent = 'Source and target languages cannot be the same!';
+                    warning.style.visibility = 'visible';
+                    setTimeout(() => {
+                        warning.style.visibility = 'hidden';
+                    }, 3000);
+                    return;
+                }
+
+                const warning = document.getElementById('warningMessage');
+                warning.textContent = 'Languages updated!';
+                warning.style.visibility = 'visible';
+                setTimeout(() => {
+                    warning.style.visibility = 'hidden';
+                }, 3000);
+            }
+
+            /**
+             * Set up language dropdown validation
+             */
+            function setupLanguageValidation() {
+                const srcDropdown = document.getElementById('sourceLanguageDropdown');
+                const tgtDropdown = document.getElementById('targetLanguageDropdown');
+                const updateBtn = document.querySelector('.control-panel__button gux-button');
+
+                const enforceUnique = () => {
+                    const sourceVal = srcDropdown?.value;
+                    const targetVal = tgtDropdown?.value;
+
+                    if (sourceVal === targetVal) {
+                        updateBtn?.setAttribute('disabled', 'true');
+                    } else {
+                        updateBtn?.removeAttribute('disabled');
+                    }
+                };
+
+                srcDropdown?.addEventListener('input', enforceUnique);
+                tgtDropdown?.addEventListener('input', enforceUnique);
+            }
+
+            /**
+             * Toggle debug panel
+             */
+            function toggleDebug() {
+                const panel = document.getElementById('debugPanel');
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            }
+
+            /**
+             * Toggle config panel
+             */
+            function toggleConfig() {
+                const panel = document.getElementById('configPanel');
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            }
+
+            /**
+             * Apply config and show what headers/URLs would be generated
+             */
+            function applyConfig() {
+                const bearer = document.getElementById('configBearer').value.trim();
+                const addiHost = document.getElementById('configAddiHost').value.trim();
+                const output = document.getElementById('configOutput');
+
+                // Build headers
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (bearer) {
+                    headers['Authorization'] = `Bearer ${bearer}`;
+                }
+
+                // Build WebSocket URL
+                const wsHost = addiHost.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+                let wsUrl = `${wsHost}/services/api/ccaas/live/{transactionId}/ws`;
+                if (bearer) {
+                    wsUrl += `?bearer=${encodeURIComponent(bearer)}`;
+                }
+
+                // Build sample API URLs
+                const apiBase = `${addiHost}/services/api/ccaas`;
+
+                // Generate output
+                let html = '<span class="url-label">API Base URL:</span>\n';
+                html += `${apiBase}\n\n`;
+
+                html += '<span class="url-label">Sample Endpoints:</span>\n';
+                html += `GET  ${apiBase}/language_maps\n`;
+                html += `GET  ${apiBase}/translation_engines\n`;
+                html += `GET  ${apiBase}/transactions/{id}/languages\n`;
+                html += `POST ${apiBase}/transactions/{id}/translate\n\n`;
+
+                html += '<span class="url-label">WebSocket URL:</span>\n';
+                html += `${wsUrl}\n\n`;
+
+                html += '<span class="url-label">Request Headers:</span>\n';
+                Object.entries(headers).forEach(([key, value]) => {
+                    html += `<span class="header-key">${key}:</span> <span class="header-value">${value}</span>\n`;
+                });
+
+                // Add X-Translation-Only header note
+                html += '\n<span class="url-label">Additional Headers (for MESSAGE media):</span>\n';
+                html += '<span class="header-key">X-Translation-Only:</span> <span class="header-value">true</span>\n';
+
+                output.innerHTML = html;
+                output.style.display = 'block';
+
+                // Update debug panel values
+                document.getElementById('debugAddiHost').textContent = addiHost || '(not set)';
+                document.getElementById('debugBearer').textContent = bearer
+                    ? `${bearer.substring(0, 20)}...`
+                    : '(not set)';
+
+                // Show success message
+                const warning = document.getElementById('warningMessage');
+                warning.textContent = 'Configuration applied!';
+                warning.style.visibility = 'visible';
+                setTimeout(() => {
+                    warning.style.visibility = 'hidden';
+                }, 3000);
+            }
+
+            /**
+             * Initialize config from URL parameters (if any)
+             */
+            function initConfigFromUrl() {
+                const url = new URL(window.location.href);
+                const bearer = url.searchParams.get('bearer');
+                const addiHost = url.searchParams.get('addi_host');
+
+                if (bearer) {
+                    document.getElementById('configBearer').value = bearer;
+                    document.getElementById('debugBearer').textContent = `${bearer.substring(0, 20)}...`;
+                }
+                if (addiHost) {
+                    document.getElementById('configAddiHost').value = addiHost;
+                    document.getElementById('debugAddiHost').textContent = addiHost;
+                }
+            }
+
+            // Public API
+            return {
+                init,
+                addCustomerMessage,
+                addAgentMessage,
+                addSystemMessage,
+                sendMessage,
+                clearMessages,
+                updateLanguages,
+                toggleDebug,
+                toggleConfig,
+                applyConfig,
+                initConfigFromUrl
+            };
+        })();
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            Demo.init();
+            Demo.initConfigFromUrl();
+        });
+
+        // Allow Enter key to send
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('messageInput').addEventListener('keyup', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    Demo.sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

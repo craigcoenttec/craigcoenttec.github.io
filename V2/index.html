@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+    ============================================
+    ADDI POC Widget V2
+    ============================================
+    A Genesys Cloud widget for real-time translation
+    between agents and customers using ADDI services.
+
+    Version: 2.0.0
+    ============================================
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="robots" content="noindex">
+    <title>ADDI Translation Widget</title>
+
+    <!-- Genesys Spark Components CSS -->
+    <link
+        href="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.css"
+        rel="stylesheet"
+    >
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="./styles/main.css">
+</head>
+<body>
+    <!-- ============================================
+         Main Application Container
+         ============================================ -->
+    <div class="app-container">
+
+        <!-- ============================================
+             Header / Control Panel
+             ============================================ -->
+        <header class="app-header">
+            <div class="control-panel">
+                <!-- Customer Language Dropdown -->
+                <div class="control-panel__dropdown">
+                    <gux-form-field-dropdown>
+                        <gux-dropdown id="sourceLanguageDropdown" value="auto">
+                            <gux-listbox id="sourceListbox" aria-label="Customer Language">
+                                <!-- Options populated by JavaScript -->
+                            </gux-listbox>
+                        </gux-dropdown>
+                        <label slot="label">Customer Language</label>
+                    </gux-form-field-dropdown>
+                </div>
+
+                <!-- Agent Language Dropdown -->
+                <div class="control-panel__dropdown">
+                    <gux-form-field-dropdown>
+                        <gux-dropdown id="targetLanguageDropdown" value="english">
+                            <gux-listbox id="targetListbox" aria-label="Agent Language">
+                                <!-- Options populated by JavaScript -->
+                            </gux-listbox>
+                        </gux-dropdown>
+                        <label slot="label">Agent Language</label>
+                    </gux-form-field-dropdown>
+                </div>
+
+                <!-- Update Button -->
+                <div class="control-panel__button">
+                    <gux-button accent="primary" onclick="App.updateLanguages()">
+                        Update
+                    </gux-button>
+                </div>
+
+                <!-- Warning Message -->
+                <div id="warningMessage" class="control-panel__warning"></div>
+
+                <!-- Loading Indicator -->
+                <div class="control-panel__loading">
+                    <gux-radial-loading
+                        id="loadingIndicator"
+                        context="input"
+                        screenreader-text="Loading..."
+                    ></gux-radial-loading>
+                </div>
+            </div>
+        </header>
+
+        <!-- ============================================
+             Main Content / Conversation Panel
+             ============================================ -->
+        <main class="app-content">
+            <div id="conversationPanel" class="conversation-panel">
+                <div id="conversation" class="conversation-messages">
+                    <!-- Message bubbles inserted here by JavaScript -->
+                </div>
+            </div>
+        </main>
+
+        <!-- ============================================
+             Footer / Message Input
+             ============================================ -->
+        <footer id="footer" class="app-footer">
+            <gux-tabs id="tabPanel" active-tab="1-1">
+                <gux-tab-list slot="tab-list">
+                    <gux-tab tab-id="1-1">
+                        <span>Message</span>
+                    </gux-tab>
+                    <gux-tab tab-id="1-2">
+                        <span>Canned Responses</span>
+                    </gux-tab>
+                </gux-tab-list>
+
+                <!-- Message Input Tab -->
+                <gux-tab-panel tab-id="1-1">
+                    <div class="message-input-area">
+                        <div class="message-input-group">
+                            <textarea
+                                id="messageInput"
+                                class="message-input"
+                                placeholder="Enter message..."
+                                aria-label="Enter message"
+                                spellcheck="true"
+                                dir="auto"
+                            ></textarea>
+                            <button
+                                type="button"
+                                id="sendButton"
+                                class="send-button"
+                                aria-label="Send translated message"
+                                onclick="App.sendMessage()"
+                            >
+                                <gux-icon
+                                    icon-name="custom/arrows-retweet-regular"
+                                    decorative="true"
+                                ></gux-icon>
+                            </button>
+                        </div>
+                    </div>
+                </gux-tab-panel>
+
+                <!-- Canned Responses Tab -->
+                <gux-tab-panel tab-id="1-2">
+                    <div id="cannedResponseContainer" class="canned-response-container">
+                        <!-- Canned response cards inserted here by JavaScript -->
+                    </div>
+                </gux-tab-panel>
+            </gux-tabs>
+        </footer>
+    </div>
+
+    <!-- ============================================
+         Debug Panel (Collapsible)
+         ============================================ -->
+    <aside class="debug-panel">
+        <gux-accordion>
+            <gux-accordion-section>
+                <h2 slot="header">Debug Information</h2>
+                <div slot="content" class="debug-panel__content">
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Environment:</span>
+                        <span id="debugEnvironment" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Language:</span>
+                        <span id="debugLanguage" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">User:</span>
+                        <span id="debugUser" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Version:</span>
+                        <span id="debugVersion" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Client ID:</span>
+                        <span id="debugClientId" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Conversation ID:</span>
+                        <span id="debugConversation" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Participant ID:</span>
+                        <span id="debugParticipant" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Communication ID:</span>
+                        <span id="debugCommunication" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">Media Type:</span>
+                        <span id="debugMedia" class="debug-panel__value">-</span>
+                    </div>
+                    <div class="debug-panel__row">
+                        <span class="debug-panel__label">ADDI Transaction:</span>
+                        <span id="debugTransaction" class="debug-panel__value">-</span>
+                    </div>
+                </div>
+            </gux-accordion-section>
+        </gux-accordion>
+    </aside>
+
+    <!-- ============================================
+         External Scripts
+         ============================================ -->
+
+    <!-- Genesys Spark Components -->
+    <script
+        type="module"
+        src="https://app.usw2.pure.cloud/spark-components/build-assets/4.88.0-373/genesys-webcomponents/genesys-webcomponents.esm.js"
+    ></script>
+
+    <!-- Genesys Cloud Platform SDK -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+
+    <!-- ============================================
+         Application Scripts (Order matters!)
+         ============================================ -->
+    <script src="./scripts/config.js"></script>
+    <script src="./scripts/utils.js"></script>
+    <script src="./scripts/api.js"></script>
+    <script src="./scripts/ui.js"></script>
+    <script src="./scripts/websocket.js"></script>
+    <script src="./scripts/app.js"></script>
+</body>
+</html>
