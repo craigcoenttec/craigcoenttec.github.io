@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent PostMessage Viewer</title>
+  <title>Agent Embedded – Message Viewer</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -23,16 +23,8 @@
       border-bottom: 1px solid #0f3460;
       flex-shrink: 0;
     }
-    header h1 {
-      font-size: 14px;
-      font-weight: 600;
-      color: #e94560;
-    }
-    .controls {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+    header h1 { font-size: 14px; font-weight: 600; color: #e94560; }
+    .controls { display: flex; gap: 8px; align-items: center; }
     button {
       background: #0f3460;
       color: #e0e0e0;
@@ -53,12 +45,38 @@
       display: inline-block;
       width: 8px; height: 8px;
       border-radius: 50%;
-      background: #555;
+      background: #2ecc71;
       margin-right: 4px;
       vertical-align: middle;
     }
-    .status .dot.listening { background: #2ecc71; }
-    .status .dot.subscribed { background: #e94560; }
+    .count { font-size: 11px; color: #888; }
+
+    .filter-bar {
+      background: #16213e;
+      padding: 6px 16px;
+      border-bottom: 1px solid #0f3460;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .filter-bar label { font-size: 11px; color: #888; }
+    .filter-bar input[type="text"] {
+      background: #0f3460;
+      border: 1px solid #1a5276;
+      color: #e0e0e0;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      flex: 1;
+      max-width: 300px;
+    }
+    .filter-bar input::placeholder { color: #555; }
+    .filter-bar .filter-options { display: flex; gap: 12px; margin-left: 12px; }
+    .filter-bar .filter-options label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+    .filter-bar .filter-options input[type="checkbox"] { accent-color: #e94560; }
+
     #log {
       flex: 1;
       overflow-y: auto;
@@ -74,6 +92,7 @@
       margin-bottom: 6px;
       overflow: hidden;
     }
+    .entry.hidden { display: none; }
     .entry-header {
       display: flex;
       justify-content: space-between;
@@ -85,131 +104,192 @@
     }
     .entry-header:hover { background: #1a5276; }
     .entry-time { color: #888; font-size: 11px; }
-    .entry-origin { color: #e94560; font-size: 11px; }
-    .entry-type {
-      font-weight: 600;
-      color: #53c0f0;
-      font-size: 12px;
+    .entry-origin { color: #e94560; font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+    .entry-type { font-weight: 600; color: #53c0f0; font-size: 12px; }
+    .entry-direction {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-right: 6px;
     }
+    .entry-direction.inbound { background: #1a5276; color: #53c0f0; }
+    .entry-direction.outbound { background: #4a1942; color: #e94560; }
     .entry-body {
       padding: 8px 10px;
       white-space: pre-wrap;
       word-break: break-all;
       color: #b0c4de;
       display: none;
+      max-height: 400px;
+      overflow-y: auto;
     }
     .entry.open .entry-body { display: block; }
     .empty-state {
       text-align: center;
       color: #555;
-      margin-top: 60px;
+      margin-top: 40px;
       font-size: 13px;
     }
     .empty-state p { margin-top: 8px; }
-    .count { font-size: 11px; color: #888; }
+    .empty-state code {
+      background: #0f3460;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+      color: #53c0f0;
+    }
+    .info-bar {
+      background: #0f3460;
+      padding: 8px 16px;
+      font-size: 11px;
+      color: #888;
+      border-bottom: 1px solid #1a5276;
+      flex-shrink: 0;
+    }
+    .info-bar span { color: #53c0f0; }
   </style>
 </head>
 <body>
   <header>
-    <h1>PostMessage Viewer</h1>
+    <h1>Agent Embedded – Message Viewer</h1>
     <div class="controls">
       <span class="status">
-        <span class="dot listening" id="statusDot"></span>
-        <span id="statusText">Listening</span>
+        <span class="dot"></span>
+        <span>Listening</span>
       </span>
       <span class="count" id="countDisplay">0 events</span>
-      <button id="subscribeBtn" title="Send MAX subscription registration">Subscribe to MAX</button>
+      <button id="probeBtn" title="Send a test postMessage to parent window">Probe Parent</button>
       <button id="clearBtn">Clear</button>
       <button id="copyBtn">Copy All</button>
       <button id="autoScrollBtn" class="active">Auto-scroll</button>
     </div>
   </header>
+  <div class="info-bar">
+    Window: <span id="windowInfo"></span>
+    &nbsp;|&nbsp; Parent same-origin: <span id="parentInfo"></span>
+    &nbsp;|&nbsp; Referrer: <span id="referrerInfo"></span>
+  </div>
+  <div class="filter-bar">
+    <label>Filter:</label>
+    <input type="text" id="filterInput" placeholder="Type to filter by label, origin, or content..." />
+    <div class="filter-options">
+      <label><input type="checkbox" id="hideInternal" /> Hide browser-internal</label>
+    </div>
+  </div>
   <div id="log">
     <div class="empty-state" id="emptyState">
-      <div>📡</div>
-      <p>Waiting for postMessage events...</p>
-      <p>Embed this page as a custom workspace to see agent events.</p>
+      <div style="font-size: 24px;">📡</div>
+      <p>Waiting for messages...</p>
+      <p>This viewer captures all <code>postMessage</code> events on this window.</p>
+      <p style="margin-top: 16px; color: #666;">
+        Host this page and load it in a panel alongside Agent Embedded.<br>
+        Click <strong>Probe Parent</strong> to test communication with the parent frame.<br><br>
+        For richer ACD event data, use the <code>CXone Agent SDK</code><br>
+        to subscribe to contact and agent state events directly.
+      </p>
     </div>
   </div>
 
   <script>
-    const log = document.getElementById('log');
-    const emptyState = document.getElementById('emptyState');
-    const countDisplay = document.getElementById('countDisplay');
-    const statusDot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
+    // ── State ──
     let autoScroll = true;
     let eventCount = 0;
     let allEvents = [];
-    let subscribed = false;
 
-    // ── MAX Subscription Registration ──
-    // Sends a postMessage to the parent MAX window to subscribe
-    // to agent session events. Adjust subscriptionTypes as needed.
-    document.getElementById('subscribeBtn').addEventListener('click', () => {
-      const registration = {
-        issuer: 'PostMessageViewer',
-        messageType: 'N/A',
-        contactId: null,
-        subscriptionTypes: [
-          'AgentStateEvent',
-          'ContactEvent',
-          'AgentLegEvent',
-          'AgentSessionStart',
-          'AgentSessionEnd',
-          'MchAgentSettingsChangeEvent',
-          'CustomEvent'
-        ]
-      };
+    const log = document.getElementById('log');
+    const emptyState = document.getElementById('emptyState');
+    const countDisplay = document.getElementById('countDisplay');
+    const filterInput = document.getElementById('filterInput');
+    const hideInternal = document.getElementById('hideInternal');
 
-      try {
-        window.parent.postMessage(JSON.stringify(registration), '*');
-        subscribed = true;
-        statusDot.className = 'dot subscribed';
-        statusText.textContent = 'Subscribed';
-        addLogEntry('→ SENT', 'self', 'Subscription registration sent to parent', registration);
-      } catch (e) {
-        addLogEntry('⚠ ERROR', 'self', 'Failed to send registration: ' + e.message, null);
-      }
-    });
+    // ── Environment info ──
+    document.getElementById('windowInfo').textContent =
+      (window === window.top ? 'top-level' : 'iframe') +
+      ' | ' + window.location.origin;
 
-    // ── Listen for all postMessage events ──
+    try {
+      const parentLoc = window.parent.location.href;
+      document.getElementById('parentInfo').textContent = 'yes (' + window.parent.location.origin + ')';
+    } catch (e) {
+      document.getElementById('parentInfo').textContent = 'no (cross-origin)';
+    }
+
+    document.getElementById('referrerInfo').textContent = document.referrer || '(none)';
+
+    // ── Listen for ALL postMessage events ──
     window.addEventListener('message', (event) => {
       let parsed = null;
       let label = 'message';
       let raw = event.data;
 
-      // Try to parse as JSON
+      // Skip dev tooling noise if filter is on
+      if (hideInternal.checked) {
+        if (typeof raw === 'object' && raw !== null) {
+          if (raw.source && /react|webpack|vite|hmr|devtools/i.test(String(raw.source))) return;
+          if (raw.type && /webpack|hmr/i.test(String(raw.type))) return;
+        }
+        if (typeof raw === 'string' && /^\[.*(?:webpack|hmr|devtools)/i.test(raw)) return;
+      }
+
+      // Parse
       if (typeof raw === 'string') {
-        try {
-          parsed = JSON.parse(raw);
-        } catch (e) {
-          parsed = null;
-        }
-      } else if (typeof raw === 'object') {
+        try { parsed = JSON.parse(raw); } catch (e) { parsed = null; }
+      } else if (typeof raw === 'object' && raw !== null) {
         parsed = raw;
-        raw = JSON.stringify(raw, null, 2);
+        try { raw = JSON.stringify(raw, null, 2); } catch (e) { raw = String(raw); }
+      } else {
+        raw = String(raw);
       }
 
-      // Try to extract a meaningful type label
+      // Extract a meaningful label
       if (parsed) {
-        if (parsed.messageType) {
-          label = parsed.messageType;
-        } else if (parsed.type) {
-          label = parsed.type;
-        } else if (parsed.events && Array.isArray(parsed.events) && parsed.events.length > 0) {
-          const types = [...new Set(parsed.events.map(e => e.type || e.Type || 'unknown'))];
+        if (parsed.messageType) label = parsed.messageType;
+        else if (parsed.type) label = parsed.type;
+        else if (parsed.eventName) label = 'CustomEvent: ' + parsed.eventName;
+        else if (parsed.events && Array.isArray(parsed.events) && parsed.events.length > 0) {
+          const types = [...new Set(parsed.events.map(e => e.type || e.Type || '?'))];
           label = types.join(', ');
-        } else if (parsed.eventName) {
-          label = 'CustomEvent: ' + parsed.eventName;
+        }
+        else if (parsed.action) label = 'action: ' + parsed.action;
+        else if (parsed.method) label = 'method: ' + parsed.method;
+        else if (parsed.command) label = 'command: ' + parsed.command;
+        else {
+          const keys = Object.keys(parsed);
+          if (keys.length > 0 && keys.length <= 3) label = keys.join(', ');
         }
       }
 
-      addLogEntry(label, event.origin, raw, parsed);
+      addLogEntry('inbound', label, event.origin, raw, parsed);
     });
 
-    // ── Render a log entry ──
-    function addLogEntry(label, origin, raw, parsed) {
+    // ── Probe: send test message to parent ──
+    document.getElementById('probeBtn').addEventListener('click', () => {
+      const probe = {
+        source: 'PostMessageViewer',
+        action: 'probe',
+        timestamp: new Date().toISOString(),
+        message: 'Hello from embedded message viewer'
+      };
+
+      try {
+        window.parent.postMessage(JSON.stringify(probe), '*');
+        addLogEntry('outbound', '→ probe to parent', window.location.origin,
+          JSON.stringify(probe, null, 2), probe);
+      } catch (e) {
+        addLogEntry('outbound', '⚠ probe failed', 'self', e.message, null);
+      }
+
+      if (window.opener) {
+        try {
+          window.opener.postMessage(JSON.stringify(probe), '*');
+          addLogEntry('outbound', '→ probe to opener', window.location.origin,
+            JSON.stringify(probe, null, 2), probe);
+        } catch (e) { /* ignore */ }
+      }
+    });
+
+    // ── Render log entry ──
+    function addLogEntry(direction, label, origin, raw, parsed) {
       emptyState.style.display = 'none';
       eventCount++;
       countDisplay.textContent = eventCount + ' event' + (eventCount !== 1 ? 's' : '');
@@ -222,13 +302,21 @@
         ? JSON.stringify(parsed, null, 2)
         : (typeof raw === 'string' ? raw : String(raw));
 
-      allEvents.push({ timestamp, label, origin, data: formatted });
+      allEvents.push({ timestamp, direction, label, origin, data: formatted });
 
       const entry = document.createElement('div');
       entry.className = 'entry';
+      entry.dataset.searchText = (label + ' ' + origin + ' ' + formatted).toLowerCase();
+
+      const dirClass = direction === 'outbound' ? 'outbound' : 'inbound';
+      const dirLabel = direction === 'outbound' ? 'OUT' : 'IN';
+
       entry.innerHTML = `
         <div class="entry-header">
-          <span class="entry-type">${escapeHtml(label)}</span>
+          <span>
+            <span class="entry-direction ${dirClass}">${dirLabel}</span>
+            <span class="entry-type">${escapeHtml(label)}</span>
+          </span>
           <span>
             <span class="entry-origin">${escapeHtml(origin)}</span>
             <span class="entry-time">${timestamp}</span>
@@ -240,6 +328,11 @@
       entry.querySelector('.entry-header').addEventListener('click', () => {
         entry.classList.toggle('open');
       });
+
+      const filterText = filterInput.value.toLowerCase();
+      if (filterText && !entry.dataset.searchText.includes(filterText)) {
+        entry.classList.add('hidden');
+      }
 
       log.appendChild(entry);
 
@@ -254,6 +347,18 @@
       return div.innerHTML;
     }
 
+    // ── Filter ──
+    filterInput.addEventListener('input', () => {
+      const text = filterInput.value.toLowerCase();
+      log.querySelectorAll('.entry').forEach(entry => {
+        if (!text || entry.dataset.searchText.includes(text)) {
+          entry.classList.remove('hidden');
+        } else {
+          entry.classList.add('hidden');
+        }
+      });
+    });
+
     // ── Controls ──
     document.getElementById('clearBtn').addEventListener('click', () => {
       log.innerHTML = '';
@@ -266,7 +371,7 @@
 
     document.getElementById('copyBtn').addEventListener('click', () => {
       const text = allEvents.map(e =>
-        `[${e.timestamp}] ${e.label} (${e.origin})\n${e.data}`
+        `[${e.timestamp}] [${e.direction.toUpperCase()}] ${e.label} (${e.origin})\n${e.data}`
       ).join('\n\n---\n\n');
       navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('copyBtn');
