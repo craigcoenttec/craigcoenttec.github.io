@@ -1,0 +1,559 @@
+/**
+ * ADDI POC Widget V2 - Main Stylesheet
+ *
+ * Modern, clean CSS using CSS Custom Properties (variables)
+ * and contemporary layout techniques (Flexbox).
+ */
+
+/* ============================================
+   CSS Custom Properties (Variables)
+   ============================================ */
+:root {
+    /* Color Palette */
+    --color-primary: #2a60c8;
+    --color-primary-dark: #2455a3;
+    --color-primary-light: #deeaff;
+
+    --color-success: #69c083;
+    --color-warning: #e77d1a;
+    --color-error: #d32f2f;
+
+    --color-customer: #767c8d;
+    --color-agent: #e77d1a;
+    --color-system: #69c083;
+
+    --color-customer-bg: #faebd7;
+    --color-agent-bg: #deeaff;
+    --color-system-bg: #e8f5e9;
+
+    /* Neutrals */
+    --color-white: #ffffff;
+    --color-background: #f4f4f4;
+    --color-surface: #fcfcfc;
+    --color-border: #e1e1e1;
+    --color-text-primary: #1b2c48;
+    --color-text-secondary: #767c8d;
+    --color-text-muted: #9b9d9e;
+
+    /* Typography */
+    --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-size-sm: 12px;
+    --font-size-md: 14px;
+    --font-size-lg: 16px;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.12);
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+
+    /* Layout */
+    --header-height: 70px;
+    --footer-height: auto;
+    --message-max-width: 75%;
+    --message-min-width: 200px;
+}
+
+/* ============================================
+   Base Styles & Reset
+   ============================================ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
+}
+
+/* ============================================
+   Layout Structure
+   ============================================ */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+}
+
+.app-header {
+    flex-shrink: 0;
+    background-color: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--spacing-sm) var(--spacing-md);
+    z-index: 100;
+}
+
+.app-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.app-footer {
+    flex-shrink: 0;
+    background-color: var(--color-background);
+    border-top: 1px solid var(--color-border);
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+}
+
+/* ============================================
+   Control Panel (Header)
+   ============================================ */
+.control-panel {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.control-panel__dropdown {
+    flex: 1;
+    min-width: 150px;
+    max-width: 250px;
+}
+
+.control-panel__button {
+    flex-shrink: 0;
+}
+
+.control-panel__loading {
+    flex-shrink: 0;
+    visibility: hidden;
+}
+
+.control-panel__warning {
+    flex: 1;
+    color: var(--color-error);
+    font-size: var(--font-size-sm);
+    visibility: hidden;
+}
+
+/* ============================================
+   Conversation Panel
+   ============================================ */
+.conversation-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+    background-color: var(--color-surface);
+}
+
+.conversation-messages {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+/* ============================================
+   Message Bubbles
+   ============================================ */
+.message-bubble {
+    display: flex;
+    flex-direction: column;
+    max-width: var(--message-max-width);
+    min-width: var(--message-min-width);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    position: relative;
+}
+
+/* Customer messages - left aligned */
+.message-bubble--customer {
+    align-self: flex-start;
+    background-color: var(--color-customer-bg);
+}
+
+.message-bubble--customer::after {
+    content: '';
+    position: absolute;
+    left: var(--spacing-lg);
+    bottom: -12px;
+    border: 12px solid transparent;
+    border-top-color: var(--color-customer-bg);
+    border-left-color: var(--color-customer-bg);
+}
+
+/* Agent messages - right aligned */
+.message-bubble--agent {
+    align-self: flex-end;
+    background-color: var(--color-agent-bg);
+}
+
+.message-bubble--agent::after {
+    content: '';
+    position: absolute;
+    right: var(--spacing-lg);
+    bottom: -12px;
+    border: 12px solid transparent;
+    border-top-color: var(--color-agent-bg);
+    border-right-color: var(--color-agent-bg);
+}
+
+/* System/Workflow messages - right aligned */
+.message-bubble--system {
+    align-self: flex-end;
+    background-color: var(--color-system-bg);
+}
+
+.message-bubble--system::after {
+    content: '';
+    position: absolute;
+    right: var(--spacing-lg);
+    bottom: -12px;
+    border: 12px solid transparent;
+    border-top-color: var(--color-system-bg);
+    border-right-color: var(--color-system-bg);
+}
+
+/* Message content sections */
+.message-bubble__original,
+.message-bubble__translated {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    line-height: 1.5;
+}
+
+.message-bubble__original {
+    color: var(--color-text-secondary);
+}
+
+.message-bubble__translated {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.message-bubble__divider {
+    height: 1px;
+    background-color: var(--color-text-muted);
+    margin: 0 15%;
+    opacity: 0.5;
+}
+
+/* Flag icons */
+.message-bubble gux-flag-icon-beta {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* ============================================
+   Message Header (Avatar, Sender, Time)
+   ============================================ */
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.message-header--left {
+    justify-content: flex-start;
+}
+
+.message-header--right {
+    justify-content: flex-end;
+}
+
+.message-header__timestamp {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.message-header__sender {
+    font-size: var(--font-size-sm);
+}
+
+/* ============================================
+   Message Input Area
+   ============================================ */
+.message-input-area {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.message-input-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: stretch;
+}
+
+.message-input {
+    flex: 1;
+    min-height: 60px;
+    max-height: 150px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    color: var(--color-text-primary);
+    resize: vertical;
+    transition: border-color var(--transition-fast);
+}
+
+.message-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.message-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.send-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    border: 1px solid var(--color-primary-dark);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.send-button:hover {
+    background-color: var(--color-primary-dark);
+}
+
+.send-button:active {
+    transform: scale(0.98);
+}
+
+/* ============================================
+   Canned Responses
+   ============================================ */
+.canned-response-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.canned-response-card {
+    flex: 0 1 200px;
+}
+
+.canned-response-card gux-selector-card-beta {
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.canned-response-card gux-selector-card-beta:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ============================================
+   Debug Panel
+   ============================================ */
+.debug-panel {
+    background-color: var(--color-background);
+    border-top: 1px solid var(--color-border);
+}
+
+.debug-panel__content {
+    padding: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.debug-panel__row {
+    display: flex;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) 0;
+}
+
+.debug-panel__label {
+    font-weight: 500;
+    min-width: 150px;
+}
+
+.debug-panel__value {
+    color: var(--color-text-primary);
+    word-break: break-all;
+}
+
+/* ============================================
+   Tabs
+   ============================================ */
+gux-tabs {
+    width: 100%;
+}
+
+gux-tab-panel {
+    padding: var(--spacing-sm) 0;
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+.hidden {
+    display: none !important;
+}
+
+.invisible {
+    visibility: hidden !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+@media (max-width: 768px) {
+    :root {
+        --message-max-width: 90%;
+    }
+
+    .control-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .control-panel__dropdown {
+        max-width: none;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --spacing-md: 12px;
+        --spacing-lg: 16px;
+    }
+
+    .message-bubble {
+        min-width: 150px;
+    }
+}
+
+/* ============================================
+   Genesys Spark Component Overrides
+   ============================================ */
+:root {
+    --gse-ui-formControl-input-contentText-fontFamily: var(--font-family);
+    --gse-ui-formControl-label-textBold-fontFamily: var(--font-family);
+    --gse-ui-tag-text-fontFamily: var(--font-family);
+    --gse-core-typography-body-lg-fontFamily: var(--font-family);
+    --gse-ui-menu-option-label-active-text-fontFamily: var(--font-family);
+    --gse-ui-menu-option-label-default-text-fontFamily: var(--font-family);
+    --gse-ui-button-text-fontFamily: var(--font-family);
+}
+
+/* Ensure Spark components fill containers properly */
+gux-dropdown {
+    width: 100%;
+}
+
+gux-form-field-dropdown {
+    width: 100%;
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+.conversation-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.conversation-panel::-webkit-scrollbar-track {
+    background: var(--color-background);
+}
+
+.conversation-panel::-webkit-scrollbar-thumb {
+    background: var(--color-text-muted);
+    border-radius: var(--radius-sm);
+}
+
+.conversation-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary);
+}
+
+/* Firefox scrollbar */
+.conversation-panel {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-text-muted) var(--color-background);
+}
+
+/* ============================================
+   Loading Animation
+   ============================================ */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.loading-indicator {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+@media print {
+    .app-header,
+    .app-footer,
+    .debug-panel {
+        display: none;
+    }
+
+    .conversation-panel {
+        overflow: visible;
+        height: auto;
+    }
+
+    .message-bubble {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
