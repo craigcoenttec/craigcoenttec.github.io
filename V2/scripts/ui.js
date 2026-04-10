@@ -13,8 +13,9 @@ const UI = (() => {
 
     /**
      * Initialize UI by caching DOM element references
+     * @param {boolean} standaloneMode - Whether running in standalone ADDI mode
      */
-    function init() {
+    function init(standaloneMode = false) {
         elements = {
             // Dropdowns
             sourceLanguageDropdown: document.getElementById('sourceLanguageDropdown'),
@@ -38,6 +39,7 @@ const UI = (() => {
             warningMessage: document.getElementById('warningMessage'),
 
             // Debug Info
+            debugMode: document.getElementById('debugMode'),
             debugEnvironment: document.getElementById('debugEnvironment'),
             debugLanguage: document.getElementById('debugLanguage'),
             debugUser: document.getElementById('debugUser'),
@@ -53,7 +55,47 @@ const UI = (() => {
         // Set up event listeners
         setupEventListeners();
 
-        console.log('%cUI initialized', 'color: green');
+        // Apply standalone mode UI restrictions
+        if (standaloneMode) {
+            applyStandaloneUI();
+        }
+
+        console.log('%cUI initialized (standalone: ' + standaloneMode + ')', 'color: green');
+    }
+
+    /**
+     * Apply UI changes for standalone mode
+     * Hides elements that require Genesys Cloud (canned responses)
+     */
+    function applyStandaloneUI() {
+        // Hide canned responses tab (requires Genesys queues)
+        const cannedTab = document.querySelector('gux-tab[tab-id="1-2"]');
+        if (cannedTab) {
+            cannedTab.style.display = 'none';
+        }
+
+        // Show standalone banner
+        showStandaloneBanner();
+
+        console.log('%cStandalone UI applied', 'color: cyan');
+    }
+
+    /**
+     * Show a banner indicating standalone mode
+     */
+    function showStandaloneBanner() {
+        const banner = document.createElement('div');
+        banner.className = 'standalone-banner';
+        banner.innerHTML = `
+            <gux-icon icon-name="custom/info-circle" decorative="true"></gux-icon>
+            <span>Standalone Mode - Voice Transcription & TTS</span>
+        `;
+
+        // Insert at top of app container
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            appContainer.insertBefore(banner, appContainer.firstChild);
+        }
     }
 
     /**
@@ -537,6 +579,7 @@ const UI = (() => {
      */
     function updateDebugInfo(info) {
         const {
+            mode,
             environment,
             language,
             user,
@@ -549,6 +592,7 @@ const UI = (() => {
             transactionId
         } = info;
 
+        setDebugValue('debugMode', mode);
         setDebugValue('debugEnvironment', environment);
         setDebugValue('debugLanguage', language);
         setDebugValue('debugUser', user);

@@ -22,10 +22,21 @@ const API = (() => {
 
     /**
      * Initialize the Genesys Cloud SDK and authenticate
-     * @returns {Promise<Object>} User object after successful authentication
+     * @returns {Promise<Object|null>} User object after successful authentication, or null if in standalone mode
      */
     async function initGenesysCloud() {
+        // Skip if in standalone mode
+        if (Config.isStandalone()) {
+            Utils.log('Skipping Genesys Cloud init (standalone mode)', 'info');
+            return null;
+        }
+
         const gc = Config.gc;
+
+        // Validate required params for Genesys mode
+        if (!gc.clientId || !gc.region) {
+            throw new Error('Missing required Genesys Cloud configuration (gc_clientId, gc_region)');
+        }
 
         platformClient = require('platformClient');
         client = platformClient.ApiClient.instance;
@@ -53,6 +64,14 @@ const API = (() => {
 
         console.log('%cAuthenticated as: %s', 'color: green', user.name);
         return user;
+    }
+
+    /**
+     * Check if Genesys Cloud APIs are available
+     * @returns {boolean} True if Genesys Cloud is initialized
+     */
+    function isGenesysAvailable() {
+        return !Config.isStandalone() && client !== null;
     }
 
     // ============================================
@@ -368,6 +387,7 @@ const API = (() => {
     return {
         // Initialization
         initGenesysCloud,
+        isGenesysAvailable,
 
         // Genesys Cloud APIs
         getConversation,

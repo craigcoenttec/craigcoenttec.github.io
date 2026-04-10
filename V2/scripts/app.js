@@ -29,20 +29,25 @@ const App = (() => {
             // Initialize configuration from URL params
             Config.init();
 
-            // Initialize UI
-            UI.init();
+            // Detect operating mode based on available credentials
+            const mode = Config.detectOperatingMode();
 
-            // Load language definitions (ADDI API with JSON fallback)
+            // Initialize UI (mode-aware)
+            UI.init(Config.isStandalone());
+
+            // Load language definitions (ADDI API with JSON fallback - works in both modes)
             await loadLanguageDefinitions();
 
-            // Authenticate with Genesys Cloud
-            const user = await API.initGenesysCloud();
+            if (Config.isStandalone()) {
+                // Standalone ADDI-only initialization
+                await initStandaloneMode();
+            } else {
+                // Full Genesys-integrated initialization
+                await initGenesysMode();
+            }
 
             // Update debug panel
             updateDebugPanel();
-
-            // Load conversation details
-            await loadConversation();
 
             Utils.log('Application initialized successfully', 'success');
 
@@ -50,6 +55,53 @@ const App = (() => {
             Utils.log('Application initialization failed', 'error', error);
             console.error(error);
         }
+    }
+
+    /**
+     * Initialize in standalone ADDI mode
+     * No Genesys Cloud authentication or conversation loading
+     */
+    async function initStandaloneMode() {
+        Utils.log('Initializing in standalone ADDI mode...', 'info');
+
+        const transactionId = Config.conversation.transactionId;
+
+        if (!transactionId) {
+            throw new Error('Transaction ID required for standalone mode');
+        }
+
+        // Set media type to VOICE (standalone uses voice transcription/TTS)
+        Config.setConversationState({
+            mediaType: Config.MEDIA_TYPES.VOICE,
+            transactionId: transactionId
+        });
+
+        // Set default user info for standalone
+        Config.setUserInfo({
+            id: 'standalone-user',
+            name: 'Agent',
+            images: []
+        });
+
+        // Load language settings from ADDI transaction and connect WebSocket
+        await handleADDITransaction();
+
+        // Show footer for TTS message sending
+        UI.setFooterVisible(true);
+    }
+
+    /**
+     * Initialize in Genesys-integrated mode
+     * Full authentication and conversation loading
+     */
+    async function initGenesysMode() {
+        Utils.log('Initializing in Genesys-integrated mode...', 'info');
+
+        // Authenticate with Genesys Cloud
+        const user = await API.initGenesysCloud();
+
+        // Load conversation details
+        await loadConversation();
     }
 
     /**
@@ -589,10 +641,11 @@ const App = (() => {
         const mediaType = Config.conversation.mediaType;
 
         try {
-            if (mediaType === Config.MEDIA_TYPES.MESSAGE) {
-                await sendDigitalMessage(messageText);
-            } else if (mediaType === Config.MEDIA_TYPES.VOICE) {
+            // In standalone mode, always use voice/TTS
+            if (Config.isStandalone() || mediaType === Config.MEDIA_TYPES.VOICE) {
                 await sendVoiceMessage(messageText);
+            } else if (mediaType === Config.MEDIA_TYPES.MESSAGE) {
+                await sendDigitalMessage(messageText);
             }
         } catch (error) {
             Utils.log('Failed to send message', 'error', error);
@@ -694,16 +747,18 @@ const App = (() => {
         const addi = Config.addi;
         const user = Config.user;
         const conv = Config.conversation;
+        const isStandalone = Config.isStandalone();
 
         UI.updateDebugInfo({
-            environment: gc.region,
-            language: gc.language,
-            user: user.name,
+            mode: Config.mode,
+            environment: isStandalone ? 'Standalone' : gc.region,
+            language: gc.language || '-',
+            user: user.name || 'Agent',
             version: Config.VERSION,
-            clientId: gc.clientId,
-            conversationId: gc.conversationId,
-            participantId: conv.participantId,
-            communicationId: conv.communicationId,
+            clientId: isStandalone ? 'N/A (Standalone)' : gc.clientId,
+            conversationId: isStandalone ? 'N/A' : gc.conversationId,
+            participantId: conv.participantId || 'N/A',
+            communicationId: conv.communicationId || 'N/A',
             mediaType: conv.mediaType,
             transactionId: conv.transactionId,
             bearer: addi.bearer ? 'Present' : 'None',

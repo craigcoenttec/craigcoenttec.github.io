@@ -13,7 +13,7 @@ const Config = (() => {
 
     // Default ADDI Service Endpoints (can be overridden via URL params)
     const ADDI_DEFAULTS = {
-        API_HOST: 'https://addi-dev.ttec-cloudapps.com',
+        API_HOST: 'https://addi-demo.ttec-cloudapps.com',
         API_ROUTE: '/services/api/ccaas'
     };
 
@@ -43,6 +43,12 @@ const Config = (() => {
         MESSAGE: 'MESSAGE',
         VOICE: 'VOICE',
         OTHER: 'OTHER'
+    };
+
+    // Operating Modes
+    const OPERATING_MODES = {
+        GENESYS_INTEGRATED: 'genesys',
+        STANDALONE_ADDI: 'standalone'
     };
 
     // Message Sender Types
@@ -142,6 +148,11 @@ const Config = (() => {
     };
 
     /**
+     * Operating mode - determined after init based on available credentials
+     */
+    let operatingMode = OPERATING_MODES.GENESYS_INTEGRATED;
+
+    /**
      * Initialize configuration from URL parameters and session storage
      * @returns {Object} The initialized configuration
      */
@@ -163,8 +174,11 @@ const Config = (() => {
             addiConfig.apiHost = addiHost;
         }
 
-        // Derive WebSocket host from API host (replace https with wss)
-        const wsHost = addiConfig.apiHost.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+        // Get standalone transaction ID (allows bypassing Genesys auth)
+        const standaloneTransactionId = getOrStoreParam(url, 'transactionId', 'addi_transactionId');
+        if (standaloneTransactionId) {
+            conversationState.transactionId = standaloneTransactionId;
+        }
 
         console.log('%cConfig initialized', 'color: green', { gc: gcConfig, addi: addiConfig });
         return gcConfig;
@@ -273,6 +287,33 @@ const Config = (() => {
         return url;
     }
 
+    /**
+     * Detect and set the operating mode based on available credentials
+     * Call this after init() to determine if running in standalone or Genesys mode
+     * @returns {string} The detected operating mode
+     */
+    function detectOperatingMode() {
+        const hasAddiCredentials = addiConfig.bearer && conversationState.transactionId;
+        const hasGenesysCredentials = gcConfig.clientId && gcConfig.region;
+
+        if (hasAddiCredentials && !hasGenesysCredentials) {
+            operatingMode = OPERATING_MODES.STANDALONE_ADDI;
+        } else {
+            operatingMode = OPERATING_MODES.GENESYS_INTEGRATED;
+        }
+
+        console.log('%cOperating mode: ' + operatingMode, 'color: cyan');
+        return operatingMode;
+    }
+
+    /**
+     * Check if running in standalone ADDI mode (no Genesys Cloud)
+     * @returns {boolean} True if in standalone mode
+     */
+    function isStandalone() {
+        return operatingMode === OPERATING_MODES.STANDALONE_ADDI;
+    }
+
     // Public API
     return {
         VERSION,
@@ -284,6 +325,7 @@ const Config = (() => {
         SENDER_TYPES,
         MESSAGE_CLASSES,
         LANGUAGE_FLAG_MAP,
+        OPERATING_MODES,
 
         // Getters for configuration objects
         get gc() { return { ...gcConfig }; },
@@ -291,6 +333,7 @@ const Config = (() => {
         get user() { return { ...userInfo }; },
         get conversation() { return { ...conversationState }; },
         get languages() { return { ...languageSettings }; },
+        get mode() { return operatingMode; },
 
         // Initialization and setters
         init,
@@ -298,6 +341,10 @@ const Config = (() => {
         setConversationState,
         setLanguageDefinitions,
         updateLanguageSettings,
+
+        // Operating mode functions
+        detectOperatingMode,
+        isStandalone,
 
         // Utility functions
         resolveFlagId,
