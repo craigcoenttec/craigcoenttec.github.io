@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex" />
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Test Interaction Creator</title>
   <meta name="Template" content="" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Genesys CSS https://spark.genesys.com/ Using the client version for improved load time... change region and version as necessary. -->
@@ -42,7 +42,7 @@
     let flows = []
     let lastConversationId = null
     let lastConversationQuery = null
-    let lastWorkItemQuery = null
+    let lastWorkItemQuery = { tasks: [] }
     let lastConversationJson = {}
     const copyButtonLabel = "Copy JSON";
     //let schemas = []
@@ -100,6 +100,7 @@
           if (workItemAuthed) { createWorkItemForm(); } else document.getElementById('dynamicForm').innerText = 'You do not have access to create Work Items';
           createWorkItemUpdateControls();
           createEmailForm();
+          createCallbackForm();
           getActiveConversations();
         })
 
@@ -373,7 +374,7 @@
 
       await Promise.all([
         getWorkBins(),
-        agetWorkTypes(),
+        getWorkTypes(),
         getSchemas(),
       ]);
 
@@ -812,6 +813,288 @@
 
     }
 
+    function createCallbackForm() {
+      const form = document.getElementById('dynamicCallbackForm');
+      const formSchema = document.getElementById('dynamicCallbackFormSchema');
+      form.innerHTML = ''; // Clear existing form content
+      formSchema.innerHTML = ''; // Clear existing form content
+
+      // Callback Number
+      let itemName = document.createElement('gux-form-field-text-like')
+      let itemNameInput = document.createElement('input');
+      itemNameInput.setAttribute('type', 'tel');
+      itemNameInput.setAttribute('id', 'callbackNumber');
+      itemNameInput.setAttribute('name', 'callbackNumber');
+      itemNameInput.setAttribute('slot', 'input');
+      itemNameInput.setAttribute('maxlength', '20');
+      itemNameInput.setAttribute('placeholder', '+1234567890');
+      itemNameInput.setAttribute('required', 'true');
+      let itemNameLabel = document.createElement('label');
+      itemNameLabel.setAttribute('for', 'callbackNumber');
+      itemNameLabel.setAttribute('slot', 'label');
+      itemNameLabel.textContent = 'Callback Number: ';
+      itemName.appendChild(itemNameInput);
+      itemName.appendChild(itemNameLabel);
+      form.appendChild(itemName);
+      form.appendChild(document.createElement('br'));
+
+      // Callback User Name
+      itemName = document.createElement('gux-form-field-text-like')
+      itemNameInput = document.createElement('input');
+      itemNameInput.setAttribute('type', 'text');
+      itemNameInput.setAttribute('id', 'callbackUserName');
+      itemNameInput.setAttribute('name', 'callbackUserName');
+      itemNameInput.setAttribute('slot', 'input');
+      itemNameInput.setAttribute('maxlength', '100');
+      itemNameInput.setAttribute('placeholder', 'Enter caller name');
+      itemNameInput.setAttribute('required', 'true');
+      itemNameLabel = document.createElement('label');
+      itemNameLabel.setAttribute('for', 'callbackUserName');
+      itemNameLabel.setAttribute('slot', 'label');
+      itemNameLabel.textContent = 'Caller Name: ';
+      itemName.appendChild(itemNameInput);
+      itemName.appendChild(itemNameLabel);
+      form.appendChild(itemName);
+      form.appendChild(document.createElement('br'));
+
+      // Country Code
+      itemName = document.createElement('gux-form-field-text-like')
+      itemNameInput = document.createElement('input');
+      itemNameInput.setAttribute('type', 'text');
+      itemNameInput.setAttribute('id', 'countryCode');
+      itemNameInput.setAttribute('name', 'countryCode');
+      itemNameInput.setAttribute('slot', 'input');
+      itemNameInput.setAttribute('maxlength', '5');
+      itemNameInput.setAttribute('value', 'US');
+      itemNameInput.setAttribute('placeholder', 'US');
+      itemNameLabel = document.createElement('label');
+      itemNameLabel.setAttribute('for', 'countryCode');
+      itemNameLabel.setAttribute('slot', 'label');
+      itemNameLabel.textContent = 'Country Code: ';
+      itemName.appendChild(itemNameInput);
+      itemName.appendChild(itemNameLabel);
+      form.appendChild(itemName);
+      form.appendChild(document.createElement('br'));
+
+      // Priority
+      let itemPriority = document.createElement('gux-form-field-number')
+      let itemPriorityInput = document.createElement('input');
+      itemPriorityInput.setAttribute('type', 'number');
+      itemPriorityInput.setAttribute('id', 'callbackPriority');
+      itemPriorityInput.setAttribute('name', 'callbackPriority');
+      itemPriorityInput.setAttribute('slot', 'input');
+      itemPriorityInput.setAttribute('min', '0');
+      itemPriorityInput.setAttribute('max', '9999999999');
+      itemPriorityInput.setAttribute('placeholder', 'Enter Priority');
+      let itemPriorityLabel = document.createElement('label');
+      itemPriorityLabel.setAttribute('for', 'callbackPriority');
+      itemPriorityLabel.setAttribute('slot', 'label');
+      itemPriorityLabel.textContent = 'Priority: ';
+      itemPriority.appendChild(itemPriorityInput);
+      itemPriority.appendChild(itemPriorityLabel);
+      form.appendChild(itemPriority);
+      form.appendChild(document.createElement('br'));
+
+      // Scheduled Time (optional)
+      let scheduledDateDiv = document.createElement('div')
+      let scheduledDateInnerDiv = document.createElement('div');
+      scheduledDateInnerDiv.setAttribute('class', 'datePickerClass');
+      let scheduledDate = document.createElement('gux-datepicker');
+      scheduledDate.setAttribute('format', 'yyyy-mm-dd');
+      scheduledDate.setAttribute('id', 'callbackScheduledDate');
+      scheduledDate.setAttribute('name', 'callbackScheduledDate');
+      let scheduledTime = document.createElement('gux-time-picker');
+      scheduledTime.setAttribute('step', '1');
+      scheduledTime.setAttribute('clock-type', '12h');
+      scheduledTime.setAttribute('id', 'callbackScheduledTime');
+      scheduledDateInnerDiv.appendChild(scheduledDate);
+      scheduledDateInnerDiv.appendChild(scheduledTime);
+      let label = document.createElement('label');
+      label.setAttribute('for', 'callbackScheduledDate');
+      label.textContent = 'Scheduled Time (optional): ';
+      scheduledDateDiv.appendChild(label);
+      scheduledDateDiv.appendChild(scheduledDateInnerDiv);
+      form.appendChild(scheduledDateDiv);
+      form.appendChild(document.createElement('br'));
+
+      // Queue Selection
+      let queueField = document.createElement('gux-form-field-select')
+      let queueInput = document.createElement('select');
+      queueInput.setAttribute('id', 'callbackQueueSelection');
+      queueInput.setAttribute('name', 'callbackQueueSelection');
+      queueInput.setAttribute('slot', 'input');
+      queues.forEach(optionValue => {
+        const option = document.createElement('option');
+        option.setAttribute('value', optionValue.id);
+        option.textContent = optionValue.name;
+        queueInput.appendChild(option);
+      });
+      label = document.createElement('label');
+      label.setAttribute('for', 'callbackQueueSelection');
+      label.textContent = 'Queue: ';
+      label.setAttribute('slot', 'label');
+      queueField.appendChild(queueInput);
+      queueField.appendChild(label);
+      form.appendChild(queueField);
+      form.appendChild(document.createElement('br'));
+
+      // Buttons
+      let buttonDiv = document.createElement('div');
+      buttonDiv.setAttribute('class', 'buttonDiv');
+      const submitButton = document.createElement('gux-button');
+      submitButton.setAttribute('accent', 'primary');
+      submitButton.setAttribute('onClick', 'createCallback()')
+      submitButton.innerText = 'Create Callback';
+      let requestButton = document.createElement('gux-button');
+      requestButton.setAttribute('accent', 'secondary');
+      requestButton.setAttribute('onClick', 'showRequestCallback()')
+      requestButton.innerText = 'Show Request';
+      buttonDiv.appendChild(submitButton);
+      buttonDiv.appendChild(requestButton);
+
+      let resultCopyArea = document.createElement('gux-copy-to-clipboard');
+      let conversationIdDisplay = document.createElement('div');
+      conversationIdDisplay.setAttribute('id', 'callbackIdDisplay');
+      conversationIdDisplay.setAttribute('slot', 'content');
+      resultCopyArea.appendChild(conversationIdDisplay);
+      resultCopyArea.style.visibility = 'hidden';
+      buttonDiv.appendChild(resultCopyArea);
+
+      let footer = document.getElementById('dynamicCallbackFooter');
+      footer.appendChild(buttonDiv);
+
+      // Add key-value pair input for attributes
+      createCallbackKeyValuePairInput(formSchema);
+
+      buttonDiv = document.createElement('div');
+      buttonDiv.setAttribute('class', 'buttonDiv');
+      let createButton = document.createElement('gux-button');
+      createButton.setAttribute('accent', 'primary');
+      createButton.setAttribute('onClick', 'createCallbackKeyValuePairInput()')
+      createButton.innerText = '+ Add Attribute';
+
+      buttonDiv.appendChild(createButton);
+      document.getElementById('dynamicCallbackFormButton').appendChild(document.createElement('br'));
+      document.getElementById('dynamicCallbackFormButton').appendChild(buttonDiv);
+    }
+
+    async function createCallback() {
+      let ca = await createCustomAttributesCallback();
+      let body = await createCallbackBody(ca);
+      populateRequest(body);
+
+      // Create a callback conversation
+      capi.postConversationsCallbacks(body)
+        .then((data) => {
+          console.log(`postConversationsCallbacks success! data: ${JSON.stringify(data, null, 2)}`);
+          lastConversationId = data.conversation.id;
+          displayConversationIdCallback();
+        })
+        .catch((err) => {
+          console.log("There was a failure calling postConversationsCallbacks");
+          console.error(err);
+        });
+    }
+
+    async function createCallbackBody(customAttributes) {
+      return new Promise((resolve) => {
+        let body = {
+          "callbackNumbers": [document.getElementById('callbackNumber').value],
+          "callbackUserName": document.getElementById('callbackUserName').value,
+          "countryCode": document.getElementById('countryCode').value,
+          "queueId": document.getElementById('callbackQueueSelection').value,
+          "data": customAttributes
+        };
+
+        // Add priority if provided
+        let priority = document.getElementById('callbackPriority').value;
+        if (priority && priority.trim() !== '') {
+          body.priority = parseInt(priority);
+        }
+
+        // Add scheduled time if provided
+        let scheduledDate = document.getElementById('callbackScheduledDate').value;
+        let scheduledTime = document.getElementById('callbackScheduledTime').value;
+        if (scheduledDate && scheduledTime) {
+          body.callbackScheduledTime = `${scheduledDate}T${scheduledTime}:00.000Z`;
+        }
+
+        resolve(body);
+      });
+    }
+
+    function createCustomAttributesCallback() {
+      return new Promise((resolve) => {
+        let customAttributes = {};
+
+        [...document.getElementById('dynamicCallbackFormSchema').children].forEach((element) => {
+          if (element.classList.contains('KVPClass')) {
+            let keyElement = element.querySelector('input[name="key"]');
+            let key = keyElement.value;
+
+            let valueElement = element.querySelector('input[name="value"]');
+            let value = valueElement.value;
+
+            if (key && key.length > 0) {
+              customAttributes[key] = value;
+            }
+          }
+        });
+        console.log(customAttributes);
+        resolve(customAttributes);
+      });
+    }
+
+    async function showRequestCallback() {
+      let customAttributes = await createCustomAttributesCallback();
+      let body = await createCallbackBody(customAttributes);
+      populateRequest(body);
+      document.getElementById("Modal").showModal();
+    }
+
+    async function displayConversationIdCallback() {
+      const conversationIdDisplay = document.getElementById('callbackIdDisplay');
+      conversationIdDisplay.textContent = `${lastConversationId}`;
+      conversationIdDisplay.parentElement.style.visibility = 'visible';
+    }
+
+    async function createCallbackKeyValuePairInput(parentElement = document.getElementById('dynamicCallbackFormSchema')) {
+      let kvpDiv = document.createElement('div');
+      kvpDiv.setAttribute('class', 'KVPClass');
+      let key = document.createElement('gux-form-field-text-like')
+      key.setAttribute('label-position', 'screenreader');
+      let keyInput = document.createElement('input');
+      keyInput.setAttribute('type', 'text');
+      keyInput.setAttribute('id', 'key');
+      keyInput.setAttribute('name', 'key');
+      keyInput.setAttribute('slot', 'input');
+      keyInput.setAttribute('maxlength', '100');
+      keyInput.setAttribute('placeholder', 'Enter Key');
+
+      let value = document.createElement('gux-form-field-text-like')
+      let valueInput = document.createElement('input');
+      valueInput.setAttribute('type', 'text');
+      valueInput.setAttribute('id', 'value');
+      valueInput.setAttribute('name', 'value');
+      valueInput.setAttribute('slot', 'input');
+      valueInput.setAttribute('maxlength', '100');
+      valueInput.setAttribute('placeholder', 'Enter Value');
+
+      let createButton = document.createElement('gux-button');
+      createButton.setAttribute('class', 'removeButton');
+      createButton.setAttribute('accent', 'danger');
+      createButton.setAttribute('onClick', 'deletePair(this)')
+      createButton.innerText = 'Remove';
+
+      key.appendChild(keyInput);
+      value.appendChild(valueInput);
+      kvpDiv.appendChild(key);
+      kvpDiv.appendChild(value);
+      kvpDiv.appendChild(createButton);
+      kvpDiv.appendChild(document.createElement('br'));
+      parentElement.appendChild(kvpDiv);
+    }
+
     function deletePair(element) {
       const parent = element.parentElement;
       parent.parentElement.removeChild(parent);
@@ -1073,6 +1356,103 @@
 
     }
 
+    async function showRequestWorkItem() {
+      // Get the selected work item from the query results
+      let workItemId = document.getElementById('workItemSelection')?.value || document.getElementById('AdHocWorkItem')?.value;
+
+      if (!workItemId) {
+        console.log('No work item selected');
+        return;
+      }
+
+      // Fetch the full work item details
+      wapi.getTaskmanagementWorkitem(workItemId)
+        .then((data) => {
+          console.log(`getTaskmanagementWorkitem success! data: ${JSON.stringify(data, null, 2)}`);
+          populateRequest(data);
+          document.getElementById("Modal").showModal();
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getTaskmanagementWorkitem");
+          console.error(err);
+        });
+    }
+
+    async function queryWorkItem() {
+      let workItemId = document.getElementById('AdHocWorkItem').value;
+
+      if (!workItemId || workItemId.trim() === '') {
+        console.log('No work item ID provided');
+        return;
+      }
+
+      // Fetch the work item details
+      wapi.getTaskmanagementWorkitem(workItemId)
+        .then((data) => {
+          console.log(`getTaskmanagementWorkitem success! data: ${JSON.stringify(data, null, 2)}`);
+          populateRequest(data);
+          document.getElementById("Modal").showModal();
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getTaskmanagementWorkitem");
+          console.error(err);
+        });
+    }
+
+    async function queryConversation() {
+      let conversationId = document.getElementById('AdHocConversation').value;
+
+      if (!conversationId || conversationId.trim() === '') {
+        console.log('No conversation ID provided');
+        return;
+      }
+
+      // Fetch the conversation details
+      capi.getConversation(conversationId)
+        .then((data) => {
+          console.log(`getConversation success! data: ${JSON.stringify(data, null, 2)}`);
+          lastConversationJson = data;
+          createConversationDetails({ conversationId: conversationId });
+          createParticipantTable(data.participants);
+          populateRequest(data);
+          document.getElementById("Modal").showModal();
+        })
+        .catch((err) => {
+          console.log("There was a failure calling getConversation");
+          console.error(err);
+        });
+    }
+
+    async function getActiveWorkItems(pageSize = 25) {
+      let body = {
+        "pageSize": pageSize,
+        "filters": [
+          {
+            "name": "workitemStatusCategory",
+            "type": "String",
+            "operator": "IN",
+            "values": ["Open", "InProgress", "Waiting"]
+          }
+        ],
+        "sort": {
+          "name": "dateCreated",
+          "ascending": false
+        }
+      };
+
+      // Query for active work items
+      wapi.postTaskmanagementWorkitemsQuery(body)
+        .then((data) => {
+          console.log(`postTaskmanagementWorkitemsQuery success! data: ${JSON.stringify(data, null, 2)}`);
+          lastWorkItemQuery = { tasks: data.entities || [] };
+          createWorkItemUpdateControls(data);
+        })
+        .catch((err) => {
+          console.log("There was a failure calling postTaskmanagementWorkitemsQuery");
+          console.error(err);
+        });
+    }
+
     function populateRequest(jsonBody) {
       let codeblock = document.createElement("code");
       codeblock.setAttribute("class", "language-json");
@@ -1194,18 +1574,28 @@
       form.appendChild(document.createElement('br'));
       form.appendChild(document.createElement('br'));
 
-      // conversations
+      // Work items dropdown
       let schemafield = document.createElement('gux-form-field-select')
       let schemainput = document.createElement('select');
       schemainput.setAttribute('id', 'workItemSelection');
       schemainput.setAttribute('name', 'workItemSelection');
       schemainput.setAttribute('slot', 'input');
-      lastWorkItemQuery.tasks.forEach(optionValue => {
+
+      // Safely handle empty or undefined tasks array
+      if (lastWorkItemQuery && lastWorkItemQuery.tasks && lastWorkItemQuery.tasks.length > 0) {
+        lastWorkItemQuery.tasks.forEach(optionValue => {
+          const option = document.createElement('option');
+          option.setAttribute('value', optionValue.id);
+          option.textContent = optionValue.name || optionValue.id;
+          schemainput.appendChild(option);
+        });
+      } else {
         const option = document.createElement('option');
-        option.setAttribute('value', optionValue.conversationId);
-        option.textContent = optionValue.conversationId;
+        option.setAttribute('value', '');
+        option.textContent = 'No active work items found';
         schemainput.appendChild(option);
-      });
+      }
+
       let label = document.createElement('label');
       label.setAttribute('for', 'workItemSelection');
       label.setAttribute('slot', 'label');
@@ -1214,16 +1604,15 @@
       schemafield.appendChild(label);
       form.appendChild(schemafield);
       form.appendChild(document.createElement('br'));
-      //form.appendChild(document.createElement('br'));
 
-      //createParticipantTable(lastConversationQuery.conversations[0].participants);
-      // set up a listner for changes to schema
+      // Set up a listener for changes to work item selection
       schemainput.addEventListener('change', function () {
-        //selectedSchema = schemas.entities.find(schema => schema.id === schemainput.value);
-        createParticipantTable(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value).participants);
-        lastConversationJson = lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value);
-        //console.log(JSON.stringify(selectedSchema, null, 2));
-        ;
+        if (schemainput.value && lastWorkItemQuery.tasks.length > 0) {
+          let selectedWorkItem = lastWorkItemQuery.tasks.find(wi => wi.id === schemainput.value);
+          if (selectedWorkItem) {
+            lastConversationJson = selectedWorkItem;
+          }
+        }
       });
 
       buttonDiv = document.createElement('div');
@@ -1231,7 +1620,7 @@
       submitButton = document.createElement('gux-button');
       submitButton.setAttribute('accent', 'primary');
       submitButton.setAttribute('onClick', 'getActiveWorkItems()')
-      submitButton.innerText = 'Refresh Active Conversations';
+      submitButton.innerText = 'Refresh Active Work Items';
       let requestButton = document.createElement('gux-button');
       requestButton.setAttribute('accent', 'secondary');
       requestButton.setAttribute('onClick', 'showRequestWorkItem()')
@@ -1338,12 +1727,24 @@
       schemainput.setAttribute('id', 'conversationSelection');
       schemainput.setAttribute('name', 'conversationSelection');
       schemainput.setAttribute('slot', 'input');
-      lastConversationQuery.conversations.forEach(optionValue => {
+
+      // Safely handle empty or undefined conversations array
+      let hasConversations = lastConversationQuery && lastConversationQuery.conversations && lastConversationQuery.conversations.length > 0;
+
+      if (hasConversations) {
+        lastConversationQuery.conversations.forEach(optionValue => {
+          const option = document.createElement('option');
+          option.setAttribute('value', optionValue.conversationId);
+          option.textContent = optionValue.conversationId;
+          schemainput.appendChild(option);
+        });
+      } else {
         const option = document.createElement('option');
-        option.setAttribute('value', optionValue.conversationId);
-        option.textContent = optionValue.conversationId;
+        option.setAttribute('value', '');
+        option.textContent = 'No active conversations found';
         schemainput.appendChild(option);
-      });
+      }
+
       let label = document.createElement('label');
       label.setAttribute('for', 'conversationSelection');
       label.setAttribute('slot', 'label');
@@ -1352,17 +1753,23 @@
       schemafield.appendChild(label);
       form.appendChild(schemafield);
       form.appendChild(document.createElement('br'));
-      //form.appendChild(document.createElement('br'));
-      createConversationDetails(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value));
-      createParticipantTable(lastConversationQuery.conversations[0].participants);
-      // set up a listner for changes to schema
-      schemainput.addEventListener('change', function () {
-        //selectedSchema = schemas.entities.find(schema => schema.id === schemainput.value);
+
+      // Only populate details if we have conversations
+      if (hasConversations) {
         createConversationDetails(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value));
-        createParticipantTable(lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value).participants);
-        lastConversationJson = lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value);
-        //console.log(JSON.stringify(selectedSchema, null, 2));
-        ;
+        createParticipantTable(lastConversationQuery.conversations[0].participants);
+      }
+
+      // Set up a listener for changes to conversation selection
+      schemainput.addEventListener('change', function () {
+        if (schemainput.value && hasConversations) {
+          let selectedConversation = lastConversationQuery.conversations.find(conversation => conversation.conversationId === schemainput.value);
+          if (selectedConversation) {
+            createConversationDetails(selectedConversation);
+            createParticipantTable(selectedConversation.participants);
+            lastConversationJson = selectedConversation;
+          }
+        }
       });
 
       buttonDiv = document.createElement('div');
@@ -1784,6 +2191,10 @@
         <gux-icon icon-name="fa/envelope-regular" decorative="true"></gux-icon>
         Email Object
       </gux-tab>
+      <gux-tab tab-id="6-5">
+        <gux-icon icon-name="fa/phone-arrow-down-left-regular" decorative="true"></gux-icon>
+        Callback
+      </gux-tab>
 
       <gux-tab tab-id="6-3">
         <gux-icon icon-name="fa/people-group-regular" decorative="true"></gux-icon>
@@ -1840,6 +2251,23 @@
           </fieldset>
         </div>
         <div class="submit-container" id="dynamicEmailFooter"></div>
+      </div>
+    </gux-tab-panel>
+
+    <gux-tab-panel tab-id="6-5">
+      <div class="sabody">
+        <div class="form-container">
+          <fieldset>
+            <legend>Callback Values</legend>
+            <div id="dynamicCallbackForm"></div>
+          </fieldset>
+          <fieldset>
+            <legend>Attributes</legend>
+            <div id="dynamicCallbackFormSchema"></div>
+            <div id="dynamicCallbackFormButton"></div>
+          </fieldset>
+        </div>
+        <div class="submit-container" id="dynamicCallbackFooter"></div>
       </div>
     </gux-tab-panel>
 
@@ -1970,5 +2398,9 @@
     padding-top: 10px;
     text-align: center;
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  #flowField {
+    display: none;
   }
 </style>
