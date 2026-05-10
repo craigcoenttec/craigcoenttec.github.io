@@ -60,6 +60,7 @@
     const rapi = new platformClient.RoutingApi();
     const aapi = new platformClient.ArchitectApi();
     const capi = new platformClient.ConversationsApi();
+    const oapi = new platformClient.OutboundApi();
     let ClientApp = window.purecloud.apps.ClientApp;
     let myClientApp = null;
 
@@ -101,6 +102,7 @@
           createWorkItemUpdateControls();
           createEmailForm();
           createCallbackForm();
+          createDialerForm();
           getActiveConversations();
         })
 
@@ -2171,6 +2173,298 @@
 
     }
 
+    const dialerFirstNames = ['James', 'Mary', 'Robert', 'Patricia', 'John', 'Jennifer', 'Michael', 'Linda', 'David', 'Elizabeth', 'William', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Christopher', 'Karen'];
+    const dialerLastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
+    const dialerCompanies = ['Acme Corp', 'Globex Inc', 'Initech', 'Umbrella Co', 'Stark Industries', 'Wayne Enterprises', 'Wonka Industries', 'Cyberdyne Systems', 'Soylent Corp', 'Tyrell Corp', 'Massive Dynamic', 'Aperture Science', 'Oscorp', 'LexCorp', 'Hooli'];
+    const dialerStates = [
+      { name: 'California', zip: '90210' }, { name: 'Texas', zip: '75001' }, { name: 'New York', zip: '10001' },
+      { name: 'Florida', zip: '33101' }, { name: 'Illinois', zip: '60601' }, { name: 'Pennsylvania', zip: '19101' },
+      { name: 'Ohio', zip: '43001' }, { name: 'Georgia', zip: '30301' }, { name: 'Michigan', zip: '48201' },
+      { name: 'North Carolina', zip: '27501' }, { name: 'New Jersey', zip: '07001' }, { name: 'Virginia', zip: '22001' },
+      { name: 'Washington', zip: '98101' }, { name: 'Arizona', zip: '85001' }, { name: 'Massachusetts', zip: '02101' },
+      { name: 'Colorado', zip: '80201' }, { name: 'Minnesota', zip: '55101' }, { name: 'Wisconsin', zip: '53201' },
+      { name: 'Oregon', zip: '97201' }, { name: 'Nevada', zip: '89101' }
+    ];
+
+    function randomizeDialerFields() {
+      let first = dialerFirstNames[Math.floor(Math.random() * dialerFirstNames.length)];
+      let last = dialerLastNames[Math.floor(Math.random() * dialerLastNames.length)];
+      let stateObj = dialerStates[Math.floor(Math.random() * dialerStates.length)];
+      let company = dialerCompanies[Math.floor(Math.random() * dialerCompanies.length)];
+      let custId = 'CUST-' + Math.floor(Math.random() * 900000 + 100000);
+
+      document.getElementById('dialerCustomerId').value = custId;
+      document.getElementById('dialerName').value = first + ' ' + last;
+      document.getElementById('dialerEmail').value = first.toLowerCase() + '.' + last.toLowerCase() + '@example.com';
+      document.getElementById('dialerCompany').value = company;
+      document.getElementById('dialerZip').value = stateObj.zip;
+      document.getElementById('dialerState').value = stateObj.name;
+    }
+
+    function createDialerForm() {
+      const form = document.getElementById('dynamicDialerForm');
+      form.innerHTML = '';
+
+      // Contact List ID
+      let field = document.createElement('gux-form-field-text-like');
+      let input = document.createElement('input');
+      input.setAttribute('type', 'text');
+      input.setAttribute('id', 'dialerContactListId');
+      input.setAttribute('name', 'dialerContactListId');
+      input.setAttribute('slot', 'input');
+      input.setAttribute('maxlength', '100');
+      input.setAttribute('placeholder', 'Enter Contact List ID');
+      input.setAttribute('value', '1466b0a8-c9e6-40f3-bd84-460def2847a8');
+      input.setAttribute('required', 'true');
+      let lbl = document.createElement('label');
+      lbl.setAttribute('for', 'dialerContactListId');
+      lbl.setAttribute('slot', 'label');
+      lbl.textContent = 'Contact List ID: ';
+      field.appendChild(input);
+      field.appendChild(lbl);
+      form.appendChild(field);
+      form.appendChild(document.createElement('br'));
+
+      // Customer ID
+      field = document.createElement('gux-form-field-text-like');
+      input = document.createElement('input');
+      input.setAttribute('type', 'text');
+      input.setAttribute('id', 'dialerCustomerId');
+      input.setAttribute('name', 'dialerCustomerId');
+      input.setAttribute('slot', 'input');
+      input.setAttribute('maxlength', '100');
+      input.setAttribute('placeholder', 'Enter Customer ID');
+      input.setAttribute('required', 'true');
+      lbl = document.createElement('label');
+      lbl.setAttribute('for', 'dialerCustomerId');
+      lbl.setAttribute('slot', 'label');
+      lbl.textContent = 'Customer ID: ';
+      field.appendChild(input);
+      field.appendChild(lbl);
+      form.appendChild(field);
+      form.appendChild(document.createElement('br'));
+
+      // Phone
+      field = document.createElement('gux-form-field-text-like');
+      input = document.createElement('input');
+      input.setAttribute('type', 'tel');
+      input.setAttribute('id', 'dialerPhone');
+      input.setAttribute('name', 'dialerPhone');
+      input.setAttribute('slot', 'input');
+      input.setAttribute('maxlength', '20');
+      input.setAttribute('placeholder', '+1234567890');
+      input.setAttribute('value', '+14149156680');
+      input.setAttribute('required', 'true');
+      lbl = document.createElement('label');
+      lbl.setAttribute('for', 'dialerPhone');
+      lbl.setAttribute('slot', 'label');
+      lbl.textContent = 'Phone: ';
+      field.appendChild(input);
+      field.appendChild(lbl);
+      form.appendChild(field);
+      form.appendChild(document.createElement('br'));
+
+      // Name
+      field = document.createElement('gux-form-field-text-like');
+      input = document.createElement('input');
+      input.setAttribute('type', 'text');
+      input.setAttribute('id', 'dialerName');
+      input.setAttribute('name', 'dialerName');
+      input.setAttribute('slot', 'input');
+      input.setAttribute('maxlength', '100');
+      input.setAttribute('placeholder', 'Enter Name');
+      input.setAttribute('required', 'true');
+      lbl = document.createElement('label');
+      lbl.setAttribute('for', 'dialerName');
+      lbl.setAttribute('slot', 'label');
+      lbl.textContent = 'Name: ';
+      field.appendChild(input);
+      field.appendChild(lbl);
+      form.appendChild(field);
+      form.appendChild(document.createElement('br'));
+
+      // Email
+      field = document.createElement('gux-form-field-text-like');
+      input = document.createElement('input');
+      input.setAttribute('type', 'email');
+      input.setAttribute('id', 'dialerEmail');
+      input.setAttribute('name', 'dialerEmail');
+      input.setAttribute('slot', 'input');
+      input.setAttribute('maxlength', '100');
+      input.setAttribute('placeholder', 'Enter Email');
+      input.setAttribute('required', 'true');
+      lbl = document.createElement('label');
+      lbl.setAttribute('for', 'dialerEmail');
+      lbl.setAttribute('slot', 'label');
+      lbl.textContent = 'Email: ';
+      field.appendChild(input);
+      field.appendChild(lbl);
+      form.appendChild(field);
+      form.appendChild(document.createElement('br'));
+
+      // Company
+      field = document.createElement('gux-form-field-text-like');
+      input = document.createElement('input');
+      input.setAttribute('type', 'text');
+      input.setAttribute('id', 'dialerCompany');
+      input.setAttribute('name', 'dialerCompany');
+      input.setAttribute('slot', 'input');
+      input.setAttribute('maxlength', '100');
+      input.setAttribute('placeholder', 'Enter Company');
+      input.setAttribute('required', 'true');
+      lbl = document.createElement('label');
+      lbl.setAttribute('for', 'dialerCompany');
+      lbl.setAttribute('slot', 'label');
+      lbl.textContent = 'Company: ';
+      field.appendChild(input);
+      field.appendChild(lbl);
+      form.appendChild(field);
+      form.appendChild(document.createElement('br'));
+
+      // Zip
+      field = document.createElement('gux-form-field-text-like');
+      input = document.createElement('input');
+      input.setAttribute('type', 'text');
+      input.setAttribute('id', 'dialerZip');
+      input.setAttribute('name', 'dialerZip');
+      input.setAttribute('slot', 'input');
+      input.setAttribute('maxlength', '10');
+      input.setAttribute('placeholder', 'Enter Zip Code');
+      input.setAttribute('required', 'true');
+      lbl = document.createElement('label');
+      lbl.setAttribute('for', 'dialerZip');
+      lbl.setAttribute('slot', 'label');
+      lbl.textContent = 'Zip: ';
+      field.appendChild(input);
+      field.appendChild(lbl);
+      form.appendChild(field);
+      form.appendChild(document.createElement('br'));
+
+      // State
+      field = document.createElement('gux-form-field-text-like');
+      input = document.createElement('input');
+      input.setAttribute('type', 'text');
+      input.setAttribute('id', 'dialerState');
+      input.setAttribute('name', 'dialerState');
+      input.setAttribute('slot', 'input');
+      input.setAttribute('maxlength', '50');
+      input.setAttribute('placeholder', 'Enter State');
+      input.setAttribute('required', 'true');
+      lbl = document.createElement('label');
+      lbl.setAttribute('for', 'dialerState');
+      lbl.setAttribute('slot', 'label');
+      lbl.textContent = 'State: ';
+      field.appendChild(input);
+      field.appendChild(lbl);
+      form.appendChild(field);
+      form.appendChild(document.createElement('br'));
+
+      // Buttons
+      let buttonDiv = document.createElement('div');
+      buttonDiv.setAttribute('class', 'buttonDiv');
+      let randomizeButton = document.createElement('gux-button');
+      randomizeButton.setAttribute('accent', 'ghost');
+      randomizeButton.setAttribute('onClick', 'randomizeDialerFields()');
+      randomizeButton.innerText = 'Randomize';
+      const submitButton = document.createElement('gux-button');
+      submitButton.setAttribute('accent', 'primary');
+      submitButton.setAttribute('onClick', 'insertToDialer()');
+      submitButton.innerText = 'Insert to Dialer';
+      let requestButton = document.createElement('gux-button');
+      requestButton.setAttribute('accent', 'secondary');
+      requestButton.setAttribute('onClick', 'showRequestDialer()');
+      requestButton.innerText = 'Show Request';
+      buttonDiv.appendChild(randomizeButton);
+      buttonDiv.appendChild(submitButton);
+      buttonDiv.appendChild(requestButton);
+
+      let resultCopyArea = document.createElement('gux-copy-to-clipboard');
+      let idDisplay = document.createElement('div');
+      idDisplay.setAttribute('id', 'dialerIdDisplay');
+      idDisplay.setAttribute('slot', 'content');
+      resultCopyArea.appendChild(idDisplay);
+      resultCopyArea.style.visibility = 'hidden';
+      buttonDiv.appendChild(resultCopyArea);
+
+      let footer = document.getElementById('dynamicDialerFooter');
+      footer.appendChild(buttonDiv);
+
+      // Randomize fields on initial load
+      randomizeDialerFields();
+    }
+
+    function buildDialerPayload() {
+      let contactListId = document.getElementById('dialerContactListId').value;
+      let customerId = document.getElementById('dialerCustomerId').value;
+      let phone = document.getElementById('dialerPhone').value;
+      let name = document.getElementById('dialerName').value;
+      let email = document.getElementById('dialerEmail').value;
+      let company = document.getElementById('dialerCompany').value;
+      let zip = document.getElementById('dialerZip').value;
+      let state = document.getElementById('dialerState').value;
+
+      let data = {
+        customerId: customerId,
+        customerName: name,
+        customerPhone: phone,
+        customerEmail: email,
+        customerZip: zip,
+        customerCompany: company,
+        customerState: state,
+        customerStatus: "Pending",
+        customerPriority: "8L",
+        source: "CRM Sample",
+        language: "English"
+      };
+
+      let body = [{
+        id: customerId,
+        contactListId: contactListId,
+        data: data
+      }];
+
+      return { contactListId, body };
+    }
+
+    function insertToDialer() {
+      let fields = ['dialerContactListId', 'dialerCustomerId', 'dialerPhone', 'dialerName', 'dialerEmail', 'dialerCompany', 'dialerZip', 'dialerState'];
+      for (let fieldId of fields) {
+        if (!document.getElementById(fieldId).value) {
+          alert('All fields are required');
+          return;
+        }
+      }
+
+      let { contactListId, body } = buildDialerPayload();
+
+      let opts = {
+        priority: true,
+        clearSystemData: false,
+        doNotQueue: false
+      };
+
+      populateRequest({ contactListId, body, opts });
+
+      oapi.postOutboundContactlistContacts(contactListId, body, opts)
+        .then((data) => {
+          console.log(`postOutboundContactlistContacts success! data: ${JSON.stringify(data, null, 2)}`);
+          let idDisplay = document.getElementById('dialerIdDisplay');
+          idDisplay.textContent = 'Contact inserted successfully';
+          idDisplay.parentElement.style.visibility = 'visible';
+        })
+        .catch((err) => {
+          console.log("There was a failure calling postOutboundContactlistContacts");
+          console.error(err);
+          alert('Failed to insert contact: ' + (err.body?.message || err.message || err));
+        });
+    }
+
+    async function showRequestDialer() {
+      let { contactListId, body } = buildDialerPayload();
+      populateRequest({ contactListId, body, opts: { priority: true, clearSystemData: false, doNotQueue: false } });
+      document.getElementById("Modal").showModal();
+    }
+
     function navigateToDetails() {
       myClientApp.conversations.showInteractionDetails(document.getElementById('conversationSelection').value);
     }
@@ -2194,6 +2488,11 @@
       <gux-tab tab-id="6-5">
         <gux-icon icon-name="fa/phone-arrow-down-left-regular" decorative="true"></gux-icon>
         Callback
+      </gux-tab>
+
+      <gux-tab tab-id="6-6">
+        <gux-icon icon-name="fa/phone-office-regular" decorative="true"></gux-icon>
+        Dialer Insert
       </gux-tab>
 
       <gux-tab tab-id="6-3">
@@ -2268,6 +2567,18 @@
           </fieldset>
         </div>
         <div class="submit-container" id="dynamicCallbackFooter"></div>
+      </div>
+    </gux-tab-panel>
+
+    <gux-tab-panel tab-id="6-6">
+      <div class="sabody">
+        <div class="form-container">
+          <fieldset>
+            <legend>Dialer Contact Insert</legend>
+            <div id="dynamicDialerForm"></div>
+          </fieldset>
+        </div>
+        <div class="submit-container" id="dynamicDialerFooter"></div>
       </div>
     </gux-tab-panel>
 
