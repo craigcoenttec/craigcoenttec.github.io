@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Coen Family — London & York Countdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f0e6cf;
+    --paper-dark: #e3d6b3;
+    --paper-darker: #cbb98b;
+    --ink: #1a1410;
+    --ink-soft: #4a3d2e;
+    --navy: #15233f;
+    --navy-deep: #0c1729;
+    --brass: #b8893a;
+    --brass-bright: #d6a64c;
+    --oxblood: #7c2c1f;
+    --crimson: #a43423;
+    --moss: #4a5d3a;
+    --shadow: rgba(20, 15, 10, 0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    background: var(--paper);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(184, 137, 58, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(124, 44, 31, 0.06) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' /%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.05 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ========== HEADER ========== */
+  .masthead {
+    padding: 60px 20px 30px;
+    text-align: center;
+    position: relative;
+    border-bottom: 3px double var(--ink);
+    margin: 0 24px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .masthead::before, .masthead::after {
+    content: '✦';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--brass);
+    font-size: 1.2em;
+  }
+  .masthead::before { left: 30px; }
+  .masthead::after { right: 30px; }
+
+  .eyebrow {
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--oxblood);
+    margin-bottom: 18px;
+  }
+
+  .title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 800;
+    font-size: clamp(36px, 6vw, 64px);
+    line-height: 1.05;
+    color: var(--navy-deep);
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  .title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--oxblood);
+  }
+
+  .subtitle {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: clamp(15px, 2vw, 18px);
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+
+  .dates-line {
+    font-family: 'Special Elite', monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+    margin-top: 14px;
+    text-transform: uppercase;
+  }
+
+  /* ========== HERO COUNTDOWN ========== */
+  .hero-counter {
+    text-align: center;
+    padding: 36px 20px 30px;
+    margin: 0 auto;
+    max-width: 1280px;
+    position: relative;
+  }
+
+  .big-number {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: clamp(80px, 14vw, 160px);
+    line-height: 0.9;
+    color: var(--navy-deep);
+    letter-spacing: -0.04em;
+    position: relative;
+    display: inline-block;
+  }
+
+  .big-number-label {
+    font-family: 'Special Elite', monospace;
+    font-size: 13px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--oxblood);
+    margin-top: -8px;
+  }
+
+  .stats-strip {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+    min-width: 90px;
+  }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--navy);
+  }
+
+  .stat-label {
+    font-family: 'Special Elite', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  /* ========== INSTRUCTIONS ========== */
+  .instructions {
+    max-width: 760px;
+    margin: 30px auto 10px;
+    padding: 20px 28px;
+    background: var(--paper-dark);
+    border: 1px solid var(--paper-darker);
+    border-radius: 2px;
+    font-style: italic;
+    color: var(--ink-soft);
+    text-align: center;
+    font-size: 15px;
+    position: relative;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .instructions::before {
+    content: '✶';
+    color: var(--brass);
+    margin-right: 10px;
+  }
+  .instructions::after {
+    content: '✶';
+    color: var(--brass);
+    margin-left: 10px;
+  }
+
+  /* ========== CALENDAR GRID ========== */
+  .calendar {
+    max-width: 1280px;
+    margin: 40px auto 80px;
+    padding: 0 24px;
+  }
+
+  .month-section {
+    margin-bottom: 50px;
+  }
+
+  .month-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--paper-darker);
+    padding-bottom: 10px;
+  }
+
+  .month-name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--navy-deep);
+    letter-spacing: -0.01em;
+  }
+
+  .month-name em {
+    font-style: italic;
+    color: var(--oxblood);
+    font-weight: 400;
+  }
+
+  .month-meta {
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-left: auto;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+  }
+
+  /* ========== TILES ========== */
+  .tile {
+    aspect-ratio: 0.78;
+    position: relative;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    user-select: none;
+    overflow: hidden;
+    border: 1px solid;
+  }
+
+  .tile:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 3px;
+  }
+
+  /* Future / locked */
+  .tile.locked {
+    background: var(--paper-dark);
+    border-color: var(--paper-darker);
+    color: var(--ink-soft);
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+
+  .tile.locked .tile-inner {
+    filter: blur(0.4px);
+  }
+
+  /* Past or today, unopened */
+  .tile.unopened {
+    background: linear-gradient(160deg, #fff7e0 0%, var(--paper-dark) 100%);
+    border-color: var(--brass);
+    box-shadow: 0 3px 12px rgba(184, 137, 58, 0.25), inset 0 0 0 1px rgba(255,255,255,0.4);
+  }
+
+  .tile.unopened:hover {
+    transform: translateY(-3px) rotate(-0.5deg);
+    box-shadow: 0 6px 16px rgba(184, 137, 58, 0.35);
+  }
+
+  /* Today's tile - the special one */
+  .tile.today {
+    background: linear-gradient(160deg, #fffbe8 0%, #fff0c0 100%);
+    border: 2px solid var(--brass);
+    box-shadow: 0 0 0 4px rgba(214, 166, 76, 0.2), 0 6px 18px rgba(184, 137, 58, 0.4);
+    animation: glow 2.4s ease-in-out infinite;
+  }
+
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(214, 166, 76, 0.2), 0 6px 18px rgba(184, 137, 58, 0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(214, 166, 76, 0.35), 0 8px 22px rgba(184, 137, 58, 0.5); }
+  }
+
+  .tile.today::before {
+    content: 'TODAY';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    background: var(--oxblood);
+    color: var(--paper);
+    font-family: 'Special Elite', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    padding: 4px 8px;
+    z-index: 3;
+  }
+
+  /* Opened tiles - look stamped */
+  .tile.opened {
+    background: var(--paper-dark);
+    border-color: var(--paper-darker);
+  }
+
+  .tile.opened .tile-inner {
+    opacity: 0.55;
+  }
+
+  .tile.opened::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='38' fill='none' stroke='%237c2c1f' stroke-width='2.5' opacity='0.55'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%237c2c1f' stroke-width='1' opacity='0.35'/%3E%3Ctext x='50' y='44' text-anchor='middle' font-family='Special Elite, monospace' font-size='8' fill='%237c2c1f' opacity='0.7' letter-spacing='1'%3EOPENED%3C/text%3E%3Ctext x='50' y='58' text-anchor='middle' font-family='Special Elite, monospace' font-size='6.5' fill='%237c2c1f' opacity='0.6' letter-spacing='0.5'%3ECOEN FAMILY%3C/text%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 80%;
+    transform: rotate(-12deg);
+    pointer-events: none;
+  }
+
+  /* Tile interior layout */
+  .tile-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 10px 8px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .tile-day-label {
+    font-family: 'Special Elite', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+
+  .tile-num {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 36px;
+    line-height: 1;
+    color: var(--navy-deep);
+    letter-spacing: -0.02em;
+  }
+
+  .tile.locked .tile-num {
+    color: var(--ink-soft);
+  }
+
+  .tile-date {
+    font-family: 'Special Elite', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .tile-icon {
+    margin-top: auto;
+    margin-bottom: 4px;
+    font-size: 18px;
+    opacity: 0.85;
+  }
+
+  .tile-type {
+    font-family: 'Special Elite', monospace;
+    font-size: 7.5px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--oxblood);
+    padding-top: 2px;
+    border-top: 1px dotted var(--paper-darker);
+    width: 90%;
+    margin: 0 auto;
+  }
+
+  .tile.locked .tile-type {
+    color: var(--ink-soft);
+  }
+
+  /* Milestone tiles - bigger, special */
+  .tile.milestone {
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--paper);
+    border-color: var(--brass);
+  }
+  .tile.milestone .tile-num,
+  .tile.milestone .tile-day-label,
+  .tile.milestone .tile-date,
+  .tile.milestone .tile-type {
+    color: var(--paper);
+  }
+  .tile.milestone .tile-type {
+    color: var(--brass-bright);
+    border-top-color: rgba(184, 137, 58, 0.4);
+  }
+  .tile.milestone.locked {
+    opacity: 0.7;
+  }
+
+  /* ========== MODAL ========== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(12, 23, 41, 0.78);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    animation: fadeIn 0.25s ease;
+  }
+  .modal-overlay.active { display: flex; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--paper);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(184, 137, 58, 0.06) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' /%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.05 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    width: 100%;
+    max-width: 600px;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 4px;
+    border: 1px solid var(--paper-darker);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: rise 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-header {
+    padding: 28px 32px 18px;
+    border-bottom: 1px solid var(--paper-darker);
+    position: relative;
+  }
+
+  .modal-eyebrow {
+    font-family: 'Special Elite', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--oxblood);
+    margin-bottom: 6px;
+  }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 26px;
+    color: var(--navy-deep);
+    line-height: 1.2;
+  }
+
+  .modal-title em {
+    font-style: italic;
+    color: var(--oxblood);
+    font-weight: 400;
+  }
+
+  .modal-date {
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 22px;
+    right: 24px;
+    background: none;
+    border: 1px solid var(--paper-darker);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--ink-soft);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-close:hover {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+    transform: rotate(90deg);
+  }
+
+  .modal-body {
+    padding: 24px 32px 30px;
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+
+  .modal-body p { margin-bottom: 14px; }
+  .modal-body strong { color: var(--navy-deep); font-weight: 600; }
+  .modal-body em { font-style: italic; color: var(--oxblood); }
+
+  /* Prep task styling */
+  .prep-task {
+    background: var(--paper-dark);
+    border-left: 3px solid var(--brass);
+    padding: 16px 20px;
+    margin: 16px 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .prep-task-label {
+    font-family: 'Special Elite', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--oxblood);
+    margin-bottom: 6px;
+  }
+
+  .prep-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: var(--paper);
+    border: 1px solid var(--paper-darker);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .prep-checkbox:hover {
+    background: var(--paper-dark);
+  }
+  .prep-checkbox.checked {
+    background: var(--moss);
+    border-color: var(--moss);
+    color: var(--paper);
+  }
+  .prep-checkbox input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--brass);
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .prep-checkbox label {
+    font-size: 14px;
+    cursor: pointer;
+    flex: 1;
+    line-height: 1.4;
+  }
+
+  /* Puzzle styling */
+  .puzzle-area {
+    background: linear-gradient(180deg, #fffbef 0%, var(--paper-dark) 100%);
+    border: 1px dashed var(--brass);
+    padding: 22px;
+    margin: 16px 0;
+    border-radius: 3px;
+  }
+
+  .puzzle-question {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--navy-deep);
+    margin-bottom: 16px;
+    line-height: 1.35;
+  }
+
+  .puzzle-options {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0;
+  }
+
+  .puzzle-option {
+    background: var(--paper);
+    border: 1px solid var(--paper-darker);
+    padding: 11px 16px;
+    cursor: pointer;
+    border-radius: 2px;
+    text-align: left;
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink);
+    transition: all 0.2s;
+    font-style: normal;
+  }
+  .puzzle-option:hover {
+    background: var(--paper-dark);
+    transform: translateX(2px);
+  }
+  .puzzle-option.correct {
+    background: var(--moss);
+    color: var(--paper);
+    border-color: var(--moss);
+  }
+  .puzzle-option.wrong {
+    background: var(--oxblood);
+    color: var(--paper);
+    border-color: var(--oxblood);
+  }
+  .puzzle-option.disabled {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .puzzle-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--paper-darker);
+    background: var(--paper);
+    font-family: 'Lora', serif;
+    font-size: 17px;
+    border-radius: 2px;
+    margin: 6px 0 10px;
+  }
+  .puzzle-input:focus { outline: 2px solid var(--brass); border-color: var(--brass); }
+
+  .puzzle-btn {
+    background: var(--navy-deep);
+    color: var(--paper);
+    border: none;
+    padding: 11px 22px;
+    font-family: 'Special Elite', monospace;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .puzzle-btn:hover { background: var(--brass); }
+  .puzzle-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .puzzle-feedback {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 2px;
+    font-size: 14px;
+    line-height: 1.5;
+    display: none;
+  }
+  .puzzle-feedback.show { display: block; }
+  .puzzle-feedback.correct {
+    background: rgba(74, 93, 58, 0.15);
+    border-left: 3px solid var(--moss);
+    color: var(--moss);
+  }
+  .puzzle-feedback.wrong {
+    background: rgba(124, 44, 31, 0.1);
+    border-left: 3px solid var(--oxblood);
+    color: var(--oxblood);
+  }
+
+  .matching-pairs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .match-item {
+    background: var(--paper);
+    border: 1px solid var(--paper-darker);
+    padding: 10px 14px;
+    cursor: pointer;
+    border-radius: 2px;
+    font-size: 14px;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .match-item:hover { background: var(--paper-dark); }
+  .match-item.selected { background: var(--brass); color: var(--paper); border-color: var(--brass); }
+  .match-item.matched { background: var(--moss); color: var(--paper); border-color: var(--moss); pointer-events: none; }
+
+  /* Locked tile messaging */
+  .locked-msg {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--ink-soft);
+  }
+  .locked-msg .lock-icon {
+    font-size: 32px;
+    margin-bottom: 14px;
+    opacity: 0.5;
+  }
+  .locked-msg .lock-days {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    color: var(--navy-deep);
+    font-weight: 700;
+  }
+
+  /* ========== FOOTER ========== */
+  .footer {
+    text-align: center;
+    padding: 30px 20px 60px;
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-top: 2px dotted var(--paper-darker);
+    margin: 40px 24px 0;
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .footer-row { margin-top: 8px; }
+  .footer-controls { margin-top: 16px; }
+  .footer-btn {
+    background: transparent;
+    border: 1px solid var(--paper-darker);
+    color: var(--ink-soft);
+    padding: 6px 14px;
+    font-family: 'Special Elite', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    margin: 0 6px;
+    transition: all 0.2s;
+  }
+  .footer-btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  /* Trip days mini-section */
+  .trip-banner {
+    background: var(--navy-deep);
+    color: var(--paper);
+    padding: 22px 28px;
+    margin: 50px auto 24px;
+    max-width: 1232px;
+    border-radius: 3px;
+    text-align: center;
+    border: 1px solid var(--brass);
+    position: relative;
+  }
+  .trip-banner::before, .trip-banner::after {
+    content: '★';
+    color: var(--brass-bright);
+    margin: 0 12px;
+  }
+  .trip-banner h2 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 26px;
+    display: inline;
+  }
+  .trip-banner em { color: var(--brass-bright); font-style: italic; }
+  .trip-banner p {
+    margin-top: 6px;
+    font-style: italic;
+    font-size: 14px;
+    opacity: 0.85;
+  }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+    .tile-num { font-size: 28px; }
+    .modal-body { padding: 20px 24px; }
+    .modal-header { padding: 22px 24px 14px; }
+    .modal-title { font-size: 22px; }
+    .stats-strip { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="eyebrow">Coen Family Travel Almanack · MMXXVI</div>
+  <h1 class="title">London <em>&</em> York</h1>
+  <p class="subtitle">A daily countdown for Craig, Kelly, Atticus &amp; Isabelle</p>
+  <div class="dates-line">17 — 26 August 2026 · United UA920 · Heathrow</div>
+</div>
+
+<div class="hero-counter">
+  <div class="big-number" id="bigNumber">--</div>
+  <div class="big-number-label" id="bigNumberLabel">Days to Departure</div>
+  <div class="stats-strip">
+    <div class="stat"><div class="stat-num" id="statOpened">0</div><div class="stat-label">Opened</div></div>
+    <div class="stat"><div class="stat-num" id="statTasks">0</div><div class="stat-label">Tasks Done</div></div>
+    <div class="stat"><div class="stat-num" id="statPuzzles">0</div><div class="stat-label">Puzzles Solved</div></div>
+    <div class="stat"><div class="stat-num" id="statTotal">98</div><div class="stat-label">Days Total</div></div>
+  </div>
+</div>
+
+<div class="instructions">
+  Each day from now until Heathrow, one tile unlocks. Open it for a prep task, a mini-puzzle, or a slice of British curiosity. Past tiles stay open — pop back in any time. Today's tile is <strong>glowing</strong>.
+</div>
+
+<div class="calendar" id="calendar"></div>
+
+<div class="trip-banner">
+  <h2>The Trip <em>Itself</em></h2>
+  <p>Tiles below unlock when you board the plane on 16 August.</p>
+</div>
+
+<div class="calendar" id="tripCalendar"></div>
+
+<div class="footer">
+  <div>Made for the Coen family · ad astra per Heathrow</div>
+  <div class="footer-row">Confirmation M9WJ53 · ETA, Proms, Westminster, Tower — handle them daily</div>
+  <div class="footer-controls">
+    <button class="footer-btn" onclick="exportProgress()">Export Progress</button>
+    <button class="footer-btn" onclick="resetAllProgress()">Reset All</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+      <div class="modal-eyebrow" id="modalEyebrow">DAY ## · CATEGORY</div>
+      <h2 class="modal-title" id="modalTitle">Title</h2>
+      <div class="modal-date" id="modalDate">Date</div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ============ STORAGE LAYER ============
+// Use window.storage if available (Claude artifacts), else localStorage
+const STORAGE_KEY = 'coen-london-countdown-v1';
+
+async function loadState() {
+  try {
+    if (typeof window.storage !== 'undefined' && window.storage) {
+      const result = await window.storage.get(STORAGE_KEY);
+      if (result && result.value) return JSON.parse(result.value);
+    }
+  } catch (e) { /* fall through */ }
+  try {
+    const ls = localStorage.getItem(STORAGE_KEY);
+    if (ls) return JSON.parse(ls);
+  } catch (e) { /* ignore */ }
+  return { opened: {}, tasks: {}, puzzles: {} };
+}
+
+async function saveState(state) {
+  const json = JSON.stringify(state);
+  try {
+    if (typeof window.storage !== 'undefined' && window.storage) {
+      await window.storage.set(STORAGE_KEY, json);
+      return;
+    }
+  } catch (e) { /* fall through */ }
+  try { localStorage.setItem(STORAGE_KEY, json); } catch (e) { /* ignore */ }
+}
+
+let state = { opened: {}, tasks: {}, puzzles: {} };
+
+// ============ DATE HELPERS ============
+const TRIP_DEPART = new Date(2026, 7, 16); // Aug 16, 2026 (months are 0-indexed)
+const TODAY_BOOTSTRAP = new Date(2026, 4, 10); // May 10, 2026 - the day this was generated
+
+function todayLocal() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+// In case the user's clock is wonky, anchor "today" to whichever is later: real today or May 10, 2026
+function effectiveToday() {
+  const real = todayLocal();
+  return real > TODAY_BOOTSTRAP ? real : TODAY_BOOTSTRAP;
+}
+
+function dateKey(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function daysUntil(target, from) {
+  const ms = target - from;
+  return Math.round(ms / (1000 * 60 * 60 * 24));
+}
+
+function addDays(d, n) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+
+const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function formatTileDate(d) {
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+}
+
+function formatLongDate(d) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return `${days[d.getDay()]}, ${d.getDate()} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// ============ CONTENT ============
+// Indexed by days-from-departure (e.g. 98 = May 10, 0 = Aug 16)
+// Each entry: { type, icon, title, eyebrow?, body, puzzle? }
+
+const CONTENT = {
+  98: {
+    type: 'milestone', icon: '✦',
+    title: 'Welcome, <em>traveller</em>',
+    body: () => `
+      <p>Ninety-eight days. That's how long until United UA920 lifts off from O'Hare and points itself at Heathrow.</p>
+      <p>This little almanack is yours — Craig, Kelly, Atticus, Isabelle — for the whole runway. Each day a new tile unlocks. Some are <strong>prep tasks</strong> (the things that need doing before takeoff). Some are <strong>mini-puzzles</strong> (London anagrams, composer matches, the British word for "trunk of a car"). Some are just slivers of curiosity about the places you're going.</p>
+      <p>Open one tile per day. Past tiles stay open forever. Today's is glowing. Pull this up over morning coffee and chip away.</p>
+      <p style="font-style:italic; text-align:center; margin-top:20px;">— "Why, sir, you find no man, at all intellectual, who is willing to leave London."<br><span style="font-size:13px; opacity:0.7">Samuel Johnson, 1777</span></p>
+    `
+  },
+  97: {
+    type: 'prep', icon: '🛂', eyebrow: 'URGENT — DO TODAY',
+    title: 'Atticus needs his <em>UK ETA</em>',
+    body: () => `
+      <p>Three of you are sorted — but Atticus's UK Electronic Travel Authorisation is still outstanding. Without it, he doesn't board.</p>
+      <p>It's a quick application: about £16, processed in minutes to a few days. Apply through the official UK government site or app. Don't use a third-party "ETA service" — they charge double.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Action</div>
+        Apply for Atticus's UK ETA at <strong>gov.uk/guidance/apply-for-an-electronic-travel-authorisation-eta</strong> or via the UK ETA app.
+      </div>
+      ${prepCheckbox('Atticus UK ETA submitted', 'eta-atticus')}
+    `
+  },
+  96: { type: 'puzzle', icon: '🔤', title: 'Anagram: London <em>Landmarks</em>',
+    puzzle: { kind: 'anagram', items: [
+      { scrambled: 'OLDONN ETOY', answer: 'LONDON EYE', hint: 'A 135m wheel on the Thames' },
+      { scrambled: 'BEYBA ROAD', answer: 'ABBEY ROAD', hint: 'Studio + crossing made famous in 1969' },
+      { scrambled: 'TLBI BEN', answer: 'BIG BEN', hint: 'Technically the bell, not the tower' }
+    ]}
+  },
+  95: { type: 'fact', icon: '🔔', title: 'Big Ben is <em>not</em> the tower',
+    body: () => `
+      <p><strong>Big Ben</strong> is the nickname for the <em>Great Bell</em> inside the clock tower — not the tower itself.</p>
+      <p>The tower was just called "the Clock Tower" until 2012, when Parliament renamed it <strong>Elizabeth Tower</strong> for the Queen's Diamond Jubilee.</p>
+      <p>The bell is 13.5 tonnes. It cracked within months of its 1859 installation and has been struck slightly off-centre ever since — that's the famous resonance.</p>
+      <p style="font-size:13px; opacity:0.7; margin-top:20px;">Tuesday's walk past Westminster: now you know.</p>
+    `
+  },
+  94: { type: 'prep', icon: '🎟️', eyebrow: 'TWO DAYS UNTIL THE BIG ONE',
+    title: 'BBC Proms booking <em>opens Saturday</em>',
+    body: () => `
+      <p>Saturday 16 May, 9 AM London time = <strong>3 AM Central Saturday morning</strong>. That's when general booking opens for every Prom of the season.</p>
+      <p>Your target: <strong>American Classics, Mon 24 Aug</strong> — Marin Alsop conducting the Philharmonia Orchestra with the Marcus Roberts Trio. This is your last-night-in-London concert, the keystone of the music thread of the trip.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Set an alarm</div>
+        2:55 AM Central, Saturday 16 May. Have an account on bbc.co.uk/proms <em>created and logged in</em> beforehand. Have a card ready. The Proms moves fast.
+      </div>
+      ${prepCheckbox('Alarm set for 3 AM Central Saturday', 'proms-alarm')}
+      ${prepCheckbox('BBC Proms account created & logged in', 'proms-account')}
+    `
+  },
+  93: { type: 'puzzle', icon: '🇬🇧', title: 'British vs American · <em>Round 1</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'A British "lift" is what in American?', options: ['Hitchhike', 'Elevator', 'Backpack', 'Mood'], correct: 1 },
+      { q: 'What\'s a "biscuit" in Britain?', options: ['Gravy bread', 'A cookie', 'A scone', 'A muffin'], correct: 1 },
+      { q: 'A "boot" is the…', options: ['Trunk of a car', 'Rear-view mirror', 'Suitcase', 'Hood'], correct: 0 }
+    ]}
+  },
+  92: { type: 'milestone', icon: '★', eyebrow: 'TODAY · 3 AM CENTRAL',
+    title: 'BBC Proms booking <em>opens NOW</em>',
+    body: () => `
+      <p>This is the day. General booking for the entire Proms season is open as of 9 AM London / 3 AM Central.</p>
+      <p><strong>Your target seat:</strong> Royal Albert Hall, Mon 24 Aug, "American Classics" — Marin Alsop / Philharmonia / Marcus Roberts Trio.</p>
+      <p>Backup if seated tickets are gone: <strong>Promming</strong> — day-of standing tickets in the arena or gallery for ~£8 a head, available from 9 AM the morning of the concert.</p>
+      ${prepCheckbox('Proms tickets purchased — American Classics', 'proms-bought')}
+      ${prepCheckbox('Backup plan noted (Promming queue at RAH from 9 AM)', 'proms-backup')}
+      <p style="font-size:13px; opacity:0.7; margin-top:14px;">If you got the seats: an excellent omen for the trip.</p>
+    `
+  },
+  91: { type: 'prep', icon: '🎶', title: 'Other <em>music</em> for the trip',
+    body: () => `
+      <p>With the keystone Proms night locked (or at least targeted), look at the supporting cast.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Check today</div>
+        <strong>Cadogan Hall</strong> — official Proms chamber music venue. Monday lunchtime &amp; Saturday matinee Proms. cadoganhall.com<br><br>
+        <strong>St Martin-in-the-Fields</strong> — candlelit recitals nearly every evening. stmartin-in-the-fields.org<br><br>
+        <strong>Wigmore Hall</strong> — gold standard for piano recitals. Worth a glance for Atticus. wigmore-hall.org.uk
+      </div>
+      ${prepCheckbox('Cadogan Hall August schedule reviewed', 'cadogan-checked')}
+      ${prepCheckbox('Other recitals shortlisted', 'recitals-shortlist')}
+    `
+  },
+  90: { type: 'puzzle', icon: '🚇', title: 'Match the <em>Tube line</em>',
+    puzzle: { kind: 'match',
+      pairs: [
+        { left: 'Jubilee', right: 'Silver/Grey' },
+        { left: 'Central', right: 'Red' },
+        { left: 'Circle', right: 'Yellow' },
+        { left: 'District', right: 'Green' },
+        { left: 'Piccadilly', right: 'Dark Blue' }
+      ],
+      note: 'You\'ll be on the Jubilee daily from the Marriott. Worth knowing the colour at a glance.'
+    }
+  },
+  89: { type: 'fact', icon: '⚔️', title: 'York used to be <em>Jorvik</em>',
+    body: () => `
+      <p>The Vikings took York in <strong>866 AD</strong> and ran it as the capital of a Norse kingdom called <em>Jórvík</em>. The modern name "York" is a worn-down version of that.</p>
+      <p>The <strong>Jorvik Viking Centre</strong> sits on the actual archaeological dig site — Coppergate, where 1970s excavation found waterlogged tenth-century streets perfectly preserved in clay. Wooden buildings, leather shoes, dog turds. All of it.</p>
+      <p>Saturday's optional Jorvik visit is a 45-minute ride through that excavation, recreated. Not a kids' ride — an excellent one.</p>
+    `
+  },
+  88: { type: 'prep', icon: '📱', title: 'Apple Pay <em>Express Transit</em>',
+    body: () => `
+      <p>You're skipping Visitor Oyster cards in favour of Apple Pay tap-in/tap-out across all four phones. Smart — but only if Express Transit is set up <em>before</em> you land.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">On each iPhone</div>
+        Wallet → tap a card → Express Transit Card → set as default. Each person does their own. Try it on a US transit system to confirm tap behaviour.
+      </div>
+      ${prepCheckbox('Craig — Express Transit configured', 'transit-craig')}
+      ${prepCheckbox('Kelly — Express Transit configured', 'transit-kelly')}
+      ${prepCheckbox('Atticus — Express Transit configured', 'transit-atticus')}
+      ${prepCheckbox('Isabelle — Express Transit configured', 'transit-isabelle')}
+    `
+  },
+  87: { type: 'puzzle', icon: '🎹', title: 'Composer <em>match</em>',
+    puzzle: { kind: 'match',
+      pairs: [
+        { left: 'Aaron Copland', right: 'Appalachian Spring' },
+        { left: 'Leonard Bernstein', right: 'West Side Story' },
+        { left: 'George Gershwin', right: 'Rhapsody in Blue' },
+        { left: 'Marcus Roberts', right: 'Jazz piano (live trio)' }
+      ],
+      note: 'These four are the heart of the 24 August Prom. Atticus will know three of them already.'
+    }
+  },
+  86: { type: 'fact', icon: '🚆', title: 'About the <em>Heathrow Express</em>',
+    body: () => `
+      <p>You've already booked: 4 adults, Standard Class, ref <strong>cc61e09b</strong>, Mon 17 Aug, £40 for the lot. Tickets are PDFs in your phone — that's the ticket on board.</p>
+      <p>It runs <strong>every 15 minutes</strong> from Heathrow Central (T2/T3) and T5 directly to Paddington. Travel time: <strong>15 minutes</strong> from T2/T3, 21 from T5. No stops.</p>
+      <p>Important: Heathrow Express is <em>not</em> on the Tube/Elizabeth Line tap system. Don't try to tap your phone at the gate — show the QR codes from the email PDFs.</p>
+      <p>From Paddington, you walk to the Marriott Regent's Park via Little Venice and Abbey Road. About three miles. Bags on, slow pace, jet-lag-friendly.</p>
+    `
+  },
+  85: { type: 'prep', icon: '🎻', title: 'Cadogan Hall — <em>August lineup</em>',
+    body: () => `
+      <p>The August schedule should be visible by now — the Proms drop chamber music programmes a few weeks behind the main season announcement.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Check now</div>
+        <strong>cadoganhall.com</strong> — look for events between 18–25 August. Particularly Monday lunchtimes (Aug 18, Aug 25) and Saturday matinees.<br><br>
+        Bonus: Wigmore Hall (wigmore-hall.org.uk) for piano-heavy recitals during the same window.
+      </div>
+      ${prepCheckbox('Cadogan Hall August dates checked', 'cadogan-aug')}
+      ${prepCheckbox('Wigmore Hall August dates checked', 'wigmore-aug')}
+    `
+  },
+  84: { type: 'puzzle', icon: '🏰', title: 'London <em>landmark</em> trivia',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'Westminster Abbey has crowned every English monarch since…', options: ['1066', '1215', '1485', '1066 except two'], correct: 3 },
+      { q: 'The Tower of London was built by which king?', options: ['Henry VIII', 'William the Conqueror', 'Richard III', 'Edward I'], correct: 1 },
+      { q: 'St Paul\'s Cathedral (the current one) was designed by…', options: ['Christopher Wren', 'Inigo Jones', 'John Soane', 'Norman Foster'], correct: 0 }
+    ]}
+  },
+  83: { type: 'prep', icon: '⛪', eyebrow: 'BOOKING WINDOW OPENING',
+    title: 'Westminster Abbey — <em>book now</em>',
+    body: () => `
+      <p>Westminster's online ticket window opens roughly twelve weeks ahead, in rolling batches. Aug 18 is now <strong>well inside</strong> that window — book before morning slots vanish.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Today</div>
+        <strong>westminster-abbey.org</strong> · pick a Tue 18 Aug timed entry · ideally morning, around opening (~9:30) for thinner crowds · 4 adults · ~£31 each · keep the email.<br><br>
+        Direct booking includes a free annual pass — worth knowing if anyone wants a second visit.
+      </div>
+      ${prepCheckbox('Westminster Abbey tickets booked — Tue 18 Aug', 'westminster-booked')}
+    `
+  },
+  82: { type: 'fact', icon: '👑', title: 'Westminster <em>Abbey</em>',
+    body: () => `
+      <p>Every English (and later British) monarch since <strong>William the Conqueror in 1066</strong> has been crowned at Westminster Abbey, with two minor exceptions (Edward V and Edward VIII, who weren't crowned at all).</p>
+      <p>Seventeen monarchs are buried inside, plus Newton, Darwin, Stephen Hawking, Chaucer, Dickens, and the Unknown Warrior. <strong>Poets' Corner</strong> alone holds Tennyson, Hardy, Browning, Kipling, and dozens more.</p>
+      <p>The Coronation Chair (1300) is the oldest piece of furniture in Britain still used for its original purpose. You can see it.</p>
+    `
+  },
+  81: { type: 'puzzle', icon: '📋', title: 'How well do you know <em>your own trip</em>?',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'What night are you in York?', options: ['Aug 17–19', 'Aug 20–22', 'Aug 21–23', 'Aug 22–24'], correct: 2 },
+      { q: 'Which class on the LNER train to York?', options: ['Standard', 'First Class', 'Standard Premier', 'Sleeper'], correct: 1 },
+      { q: 'What hotel are you in for the final two nights?', options: ['Marriott Regent\'s Park', 'Bankside Hotel', 'Premier Inn County Hall', 'The Savoy'], correct: 1 }
+    ]}
+  },
+  80: { type: 'prep', icon: '🏰', eyebrow: 'BOOKING WINDOW OPEN',
+    title: 'Tower of London — <em>book now</em>',
+    body: () => `
+      <p>HRP releases tickets on a rolling 12-week basis. Aug 25 is squarely in window. Book today.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Today</div>
+        <strong>hrp.org.uk</strong> → Tower of London → <strong>9 AM slot Tue 25 Aug</strong> · 4 adults · ~£37 each.<br><br>
+        First slot of the day = empty Crown Jewels queue. The Jewel House is the experience to do first; everything else (White Tower, ravens, Yeoman Warder tour) flows around it.
+      </div>
+      ${prepCheckbox('Tower of London — booked, 9 AM Tue 25 Aug', 'tower-booked')}
+    `
+  },
+  79: { type: 'fact', icon: '🐦‍⬛', title: 'About the <em>ravens</em>',
+    body: () => `
+      <p>Legend says if the Tower's ravens ever leave, both the Tower and the kingdom will fall. So the Crown keeps a permanent flock of <strong>at least seven</strong> (six required, one spare).</p>
+      <p>The current ravens are named — <em>Jubilee, Harris, Poppy, Georgie, Edgar, Branwen, Rocky</em> — and looked after by the Ravenmaster, a Yeoman Warder. Their flight feathers are trimmed. It's not cruel, just not enough to migrate. They live longer in custody than wild ravens.</p>
+      <p>One ran away during WWII and was found "drinking with sailors" near the Rose &amp; Crown pub. He was returned. The kingdom held.</p>
+    `
+  },
+  78: { type: 'puzzle', icon: '🔍', title: 'London <em>neighbourhoods</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'Borough Market is in which neighbourhood?', options: ['Mayfair', 'Southwark', 'Chelsea', 'Fitzrovia'], correct: 1 },
+      { q: 'Which neighbourhood will your Marriott be in?', options: ['Mayfair', 'Swiss Cottage', 'South Bank', 'Bloomsbury'], correct: 1 },
+      { q: 'The British Museum is in…', options: ['Bloomsbury', 'Soho', 'Westminster', 'Camden'], correct: 0 }
+    ]}
+  },
+  77: { type: 'prep', icon: '⛪', title: 'Confirm <em>Westminster Abbey</em>',
+    body: () => `
+      <p>Quick follow-up. Did the booking go through? Tickets in the right email? Date and time correct?</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Verify</div>
+        Open the confirmation email. Cross-check: <strong>Tue 18 Aug</strong>, 4 adults, morning slot. Add to phone calendar with a 2-hour-prior reminder.
+      </div>
+      ${prepCheckbox('Westminster confirmation in calendar', 'westminster-cal')}
+    `
+  },
+  76: { type: 'fact', icon: '🚸', title: 'About the <em>Abbey Road</em> crossing',
+    body: () => `
+      <p>The zebra crossing outside Abbey Road Studios got <strong>Grade II listed status</strong> in 2010 — the first road feature in Britain to receive heritage protection.</p>
+      <p>It's still a working public road. Pilgrims pose, drivers wait. Nobody minds much; it's been like this since 8 August 1969 when Iain Macmillan took six photos in ten minutes for the album sleeve. <strong>Photo number five</strong> was the one used.</p>
+      <p>Plan: walk over, photograph it, walk on. Less crowded mid-morning on weekdays. Day 1 of your trip — about 0.4 miles from the Marriott.</p>
+    `
+  },
+  75: { type: 'puzzle', icon: '🎼', title: 'Name that <em>American piece</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: '"Rhapsody in Blue" famously opens with which instrument?', options: ['Trumpet', 'Clarinet glissando', 'Piano', 'Solo violin'], correct: 1 },
+      { q: 'Copland\'s "Fanfare for the Common Man" was written in which decade?', options: ['1920s', '1930s', '1940s', '1950s'], correct: 2 },
+      { q: 'Bernstein conducted the New York Philharmonic for how many years as music director?', options: ['5', '11', '20', '25'], correct: 1 }
+    ]}
+  },
+  74: { type: 'prep', icon: '🏰', title: 'Confirm <em>Tower of London</em>',
+    body: () => `
+      <p>Same drill as Westminster — verify the booking, drop into calendar.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Check</div>
+        Confirmation email: <strong>Tue 25 Aug, 9 AM</strong>, 4 adults. Calendar with a 90-min-prior alarm. Tower opens at 9 — don't be late or the Crown Jewels queue forms behind you.
+      </div>
+      ${prepCheckbox('Tower confirmation in calendar', 'tower-cal')}
+    `
+  },
+  73: { type: 'fact', icon: '⛪', title: 'York Minster — <em>250 years</em>',
+    body: () => `
+      <p>Construction of <strong>York Minster</strong> began in <strong>1220</strong> and finished in <strong>1472</strong>. That's seven generations of stonemasons handing the same chisel forward.</p>
+      <p>The <strong>Great East Window</strong> is the largest expanse of medieval stained glass in the world — about the size of a tennis court. Painted in 1408 by John Thornton of Coventry. He was paid £56 over three years.</p>
+      <p>The Minster sits on top of a Roman <em>principia</em> (the headquarters of the legionary fortress where Constantine was proclaimed emperor in AD 306). You can walk down into the foundations and see Roman columns supporting the medieval cathedral.</p>
+    `
+  },
+  72: { type: 'puzzle', icon: '🇬🇧', title: 'British vs American · <em>Round 2</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: '"Pavement" in Britain is what in American?', options: ['Roadway', 'Sidewalk', 'Asphalt', 'Driveway'], correct: 1 },
+      { q: 'A "queue" is a…', options: ['Question', 'Line of people', 'Clue', 'Tail of an animal'], correct: 1 },
+      { q: '"Knackered" means…', options: ['Brilliant', 'Exhausted', 'Drunk', 'Lost'], correct: 1 }
+    ]}
+  },
+  71: { type: 'fact', icon: '🦇', title: 'Whitby and <em>Dracula</em>',
+    body: () => `
+      <p>Bram Stoker spent a week in Whitby in summer 1890 and wrote a chunk of <em>Dracula</em> in a guesthouse on the West Cliff. He pulled the name from a book of Wallachian history he found in the Whitby library.</p>
+      <p>The <strong>199 Steps</strong> from the harbour up to <strong>Whitby Abbey</strong> appear in the novel — that's where the Demeter runs aground and the Count, in dog form, leaps ashore and bounds up.</p>
+      <p>Sunday's Mountain Goat tour gets you up there. Wear shoes that can handle wet stone.</p>
+    `
+  },
+  70: { type: 'prep', icon: '🪖', title: 'Churchill War Rooms <em>availability</em>',
+    body: () => `
+      <p>Six weeks out is the right time. Churchill War Rooms doesn't sell out far in advance — but slots <em>do</em> sell out the day-of, especially summer afternoons.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Check</div>
+        <strong>iwm.org.uk</strong> · Churchill War Rooms · timed entry · Tue 18 Aug afternoon · 4 adults · 2–3 hours on site, including the Churchill Museum.<br><br>
+        It's a 5-minute walk from Westminster Abbey, which fits Day 2 perfectly: morning Abbey, lunch, afternoon War Rooms.
+      </div>
+      ${prepCheckbox('Churchill War Rooms — booked, Tue 18 Aug PM', 'churchill-booked')}
+    `
+  },
+  69: { type: 'puzzle', icon: '🎻', title: 'Match composer to <em>their instrument</em>',
+    puzzle: { kind: 'match',
+      pairs: [
+        { left: 'Rachmaninoff', right: 'Piano (a giant)' },
+        { left: 'Heifetz', right: 'Violin' },
+        { left: 'Casals', right: 'Cello' },
+        { left: 'Marcus Roberts', right: 'Jazz piano' },
+        { left: 'Glenn Gould', right: 'Piano (eccentric)' }
+      ],
+      note: 'A working knowledge of the giants — useful at any London piano recital intermission.'
+    }
+  },
+  68: { type: 'fact', icon: '🥖', title: 'Borough Market is <em>1,000 years old</em>',
+    body: () => `
+      <p>Borough Market has been in roughly its current location since the eleventh century. The <strong>1014 charter</strong> from a Saxon king is the earliest documented mention.</p>
+      <p>Today: about 100 stalls under the Victorian wrought-iron roof at the south end of London Bridge. Tuesday is the quietest weekday — you've got that built into the itinerary correctly. Saturday is mobbed.</p>
+      <p>Eat: Bread Ahead doughnuts, Kappacasein toasted cheese (life-changing), Padella for pasta if the wait is reasonable.</p>
+    `
+  },
+  67: { type: 'prep', icon: '⛪', title: 'York Minster <em>tickets</em>',
+    body: () => `
+      <p>The Minster sells advance tickets but rarely sells out except for evensong on big feast days. Saturday 22 Aug is fine.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Decide</div>
+        <strong>yorkminster.org</strong> — pick a Sat 22 Aug morning slot. ~£18 adult, includes the tower climb (extra £6, 275 steps, narrow). Atticus will want the tower.
+      </div>
+      ${prepCheckbox('York Minster — booked', 'minster-booked')}
+      ${prepCheckbox('Tower climb decided (yes/no)', 'minster-tower')}
+    `
+  },
+  66: { type: 'puzzle', icon: '🔤', title: 'Anagram: <em>York</em> landmarks',
+    puzzle: { kind: 'anagram', items: [
+      { scrambled: 'EHT BLAMSESH', answer: 'THE SHAMBLES', hint: 'Medieval butchers\' street' },
+      { scrambled: 'IFCDLOFR\'S WROTE', answer: 'CLIFFORD\'S TOWER', hint: 'Stone keep on a mound' },
+      { scrambled: 'IKVOJR', answer: 'JORVIK', hint: 'York\'s Viking name' }
+    ]}
+  },
+  65: { type: 'fact', icon: '📜', title: 'The Shambles is in the <em>Domesday Book</em>',
+    body: () => `
+      <p><strong>The Shambles</strong> appears in the 1086 Domesday Book — making it possibly the oldest shopping street in Europe, certainly the most photographed timber-framed street in Britain.</p>
+      <p>The name comes from <em>shamel</em>, an Old English word for "bench" or "stall" — specifically the meat-stall butchers used. The street was wholly butchers as recently as the 1900s. The buildings overhang because butchers needed shaded fronts to keep meat from spoiling.</p>
+      <p>It's now mostly tea shops and Harry Potter merch (the street inspired Diagon Alley). The buildings, though, are real medieval. Look up.</p>
+    `
+  },
+  64: { type: 'prep', icon: '🚄', title: '16-25 <em>Railcards</em> — decide',
+    body: () => `
+      <p>Atticus and Isabelle qualify for 16-25 Railcards: ~£35 each, 1/3 off most rail fares for a year. Marginal value if you're only doing the booked LNER legs (already First Class, already paid).</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Decision</div>
+        <strong>Buy if:</strong> any chance of additional rail trips (day-trips out of London, e.g. Cambridge, Bath, Brighton).<br>
+        <strong>Skip if:</strong> sticking to the booked itinerary plus Tube/walking only.<br><br>
+        Honestly: probably skip. The break-even is around three additional fares.
+      </div>
+      ${prepCheckbox('Railcard decision made', 'railcard-decided')}
+    `
+  },
+  63: { type: 'puzzle', icon: '🕰️', title: 'Time zone <em>maths</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'When it\'s 9 AM in London, what time is it in Sun Prairie, WI?', options: ['2 AM', '3 AM', '4 AM', '5 AM'], correct: 1 },
+      { q: 'Your flight UA920 lands at 9 AM Aug 17 London. What time is that in Wisconsin?', options: ['1 AM Aug 17', '3 AM Aug 17', '4 AM Aug 17', '6 AM Aug 17'], correct: 1 },
+      { q: 'BBC Proms booking opens at 9 AM London on Sat May 16. That is…', options: ['1 AM Sat Central', '3 AM Sat Central', '5 AM Sat Central', '8 PM Fri Central'], correct: 1 }
+    ]}
+  },
+  62: { type: 'fact', icon: '🌹', title: 'Regent\'s Park has <em>12,000 roses</em>',
+    body: () => `
+      <p>Queen Mary's Gardens, in the inner circle of Regent's Park, holds <strong>around 12,000 roses</strong> across 85 varieties. It's the largest rose collection in London.</p>
+      <p>Mid-August is past the peak (June) but still very much in bloom. You'll be staying a fifteen-minute walk away. Worth a morning detour on Day 1 between the Abbey Road photo and lunch.</p>
+      <p>Also in the park: the open-air theatre (Shakespeare in summer), London Zoo on the north edge, and a view down Broad Walk that is one of the city's loveliest unmarked vistas.</p>
+    `
+  },
+  61: { type: 'puzzle', icon: '🚇', title: 'Underground <em>anagram</em>',
+    puzzle: { kind: 'anagram', items: [
+      { scrambled: 'TAKSGNI SCSRO', answer: 'KING\'S CROSS', hint: 'Where you board the LNER for York' },
+      { scrambled: 'SISWS GACTOET', answer: 'SWISS COTTAGE', hint: 'Your Tube stop for the Marriott' },
+      { scrambled: 'TWSWAOREK', answer: 'WATERLOO', hint: 'Largest Tube interchange in the network' }
+    ]}
+  },
+  60: { type: 'prep', icon: '🍽️', title: 'Restaurant <em>shortlist</em> review',
+    body: () => `
+      <p>Eight weeks out — the right window for popular London tables. Reservations open up around now for late August.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Shortlist (yours)</div>
+        <strong>Near Marriott:</strong> Cinder, Bradley's<br>
+        <strong>York:</strong> Roots, Bow Room<br>
+        <strong>South Bank (last night, Aug 25 — special):</strong> Lasdun, Forza Wine
+      </div>
+      ${prepCheckbox('Final picks chosen (2 London + 1 York + 1 last-night)', 'restaurants-picked')}
+      <p style="font-size:13px; opacity:0.7;">Forza Wine and Lasdun are both at the National Theatre. Forza is rooftop, looser, killer Aperol. Lasdun is the proper restaurant, brutalist room, longer dinner.</p>
+    `
+  },
+  59: { type: 'fact', icon: '🏭', title: 'Tate Modern is a <em>power station</em>',
+    body: () => `
+      <p>Bankside Power Station was designed by <strong>Giles Gilbert Scott</strong> (also responsible for the red phone box) and opened in 1952. It generated electricity until 1981, sat empty for fifteen years, and reopened as Tate Modern in 2000.</p>
+      <p>The Turbine Hall — that giant central space the size of a cathedral — used to house the oil-fired turbines. Now it's the world's most ambitious commission space. Past pieces: Olafur Eliasson's giant sun, Carsten Höller's slides you could ride.</p>
+      <p>It's <strong>fifty metres</strong> from your Bankside Hotel. Free to enter.</p>
+    `
+  },
+  58: { type: 'puzzle', icon: '🗺️', title: 'Trip <em>trivia</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'How many nights in London total (both stays combined)?', options: ['4', '5', '6', '7'], correct: 2 },
+      { q: 'Which day is the North York Moors / Whitby tour?', options: ['Fri 21 Aug', 'Sat 22 Aug', 'Sun 23 Aug', 'Mon 24 Aug'], correct: 2 },
+      { q: 'What time does UA928 (return) depart Heathrow?', options: ['11:30 AM', '12:50 PM', '2:10 PM', '3:45 PM'], correct: 2 }
+    ]}
+  },
+  57: { type: 'prep', icon: '📔', title: 'Passport <em>expiration</em> check',
+    body: () => `
+      <p>UK rule: passport must be valid for the duration of your stay. (No 6-month rule for the UK specifically — but airlines often enforce one anyway.) For all four of you, valid through at least <strong>27 August 2026</strong>.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Verify</div>
+        Pull all four passports, check expiry date. Anything inside February 2027 deserves a renewal conversation. Anything earlier — drop everything.
+      </div>
+      ${prepCheckbox('All four passports — expiry checked', 'passports')}
+    `
+  },
+  56: { type: 'fact', icon: '🎵', title: 'BBC Proms — every year since <em>1895</em>',
+    body: () => `
+      <p>The Proms started in 1895 as <em>Mr Robert Newman's Promenade Concerts</em> at the Queen's Hall. The conductor was a 26-year-old <strong>Henry Wood</strong>. He stayed for 50 years.</p>
+      <p>The Proms have run <strong>every year since</strong> — through both world wars, the Spanish flu, the 2020 pandemic (with no audience), and several conducting strikes. Eight weeks of nightly classical music, every summer, since Victoria was queen.</p>
+      <p>The "Promming" tradition — £8 standing tickets in the arena, available the day of every concert — is older than the Royal Albert Hall venue itself.</p>
+    `
+  },
+  55: { type: 'puzzle', icon: '🇬🇧', title: 'British <em>slang</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: '"Dodgy" means…', options: ['Quick', 'Suspicious / unreliable', 'Wet', 'Tasty'], correct: 1 },
+      { q: 'A "fortnight" is…', options: ['A week', 'Two weeks', 'A month', 'A 14th of a year'], correct: 1 },
+      { q: '"Cheers" can mean…', options: ['Thanks', 'Toast', 'Goodbye', 'All of the above'], correct: 3 }
+    ]}
+  },
+  54: { type: 'prep', icon: '✈️', title: 'TSA PreCheck <em>verification</em>',
+    body: () => `
+      <p>You all have PreCheck. But the magic only happens if it's <em>printed on your boarding pass</em>. United usually pulls it correctly from your MileagePlus profile if your KTN is saved there.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Today</div>
+        Log into United → MileagePlus profile → Travel Documents → confirm Known Traveller Number (KTN) is saved for all four passengers. If not, add it now (don't wait for check-in).
+      </div>
+      ${prepCheckbox('All four KTNs in United profiles', 'ktn-saved')}
+    `
+  },
+  53: { type: 'fact', icon: '🎼', title: 'Cadogan Hall and the <em>Proms</em>',
+    body: () => `
+      <p>Cadogan Hall, in Chelsea, has been the official Proms chamber music venue since <strong>2005</strong>. While the Royal Albert Hall handles the orchestral firepower, Cadogan does the chamber programming on Monday lunchtimes and Saturday matinees.</p>
+      <p>It used to be a Christian Science church (1907). The interior is austere stone with brilliant acoustics — better, frankly, than the Albert Hall for solo piano or string quartet.</p>
+      <p>Worth checking the August Monday-lunchtime slot during your trip window. Particularly Mon 24 Aug — there might be a 1 PM lead-up to your evening Prom.</p>
+    `
+  },
+  52: { type: 'puzzle', icon: '🚇', title: 'Tube <em>line</em> identification',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'You\'re going from Swiss Cottage to King\'s Cross. Which line?', options: ['Northern', 'Jubilee', 'Metropolitan', 'Piccadilly'], correct: 1 },
+      { q: 'From the Bankside Hotel to Tower of London — closest Tube?', options: ['Walk it (~25 min)', 'District line', 'Northern line', 'Either Tube or walk'], correct: 3 },
+      { q: 'Heathrow → central London via the Elizabeth Line takes about…', options: ['25 min', '40 min', '60 min', '90 min'], correct: 1 }
+    ]}
+  },
+  51: { type: 'prep', icon: '👟', title: 'Whitby — <em>shoes</em>',
+    body: () => `
+      <p>The Mountain Goat tour day involves cliff paths, the 199 steps to Whitby Abbey, wet cobbles by the harbour. Sneakers are fine. Sandals will betray you.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Plan</div>
+        Pack one pair of waterproof or grippy walking shoes per person. <strong>Light rain layer</strong> in everyone's bag for that day even if forecast is clear — the Yorkshire moors decide weather democratically.
+      </div>
+      ${prepCheckbox('Whitby-day shoes confirmed', 'whitby-shoes')}
+    `
+  },
+  50: { type: 'milestone', icon: '🎯',
+    title: 'Halfway. <em>Fifty days</em> to go.',
+    body: () => `
+      <p>You've covered the first half of the runway. The next half goes faster — most of the booking work is behind you, and now it's about logistics tightening up.</p>
+      <p>Quick check-in: Are these locked?</p>
+      <ul style="list-style: none; padding-left: 0; margin: 14px 0; line-height: 2;">
+        <li>✦ Atticus's UK ETA</li>
+        <li>✦ BBC Proms American Classics tickets (or Promming plan)</li>
+        <li>✦ Westminster Abbey timed entry · Tue 18 Aug</li>
+        <li>✦ Tower of London 9 AM slot · Tue 25 Aug</li>
+        <li>✦ Churchill War Rooms · Tue 18 Aug PM</li>
+        <li>✦ York Minster · Sat 22 Aug</li>
+      </ul>
+      <p>Anything missing? Today's the day to fix it. From here, the next big push is <strong>restaurant reservations</strong> in early July and <strong>final prep</strong> in August.</p>
+    `
+  },
+  49: { type: 'puzzle', icon: '🧩', title: 'Crossword-style <em>clues</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: '"Gothic cathedral, 250 years to build, world\'s biggest medieval window" — which?', options: ['Westminster Abbey', 'York Minster', 'Canterbury', 'St Paul\'s'], correct: 1 },
+      { q: '"Victorian iron-and-glass food market under London Bridge approach" — which?', options: ['Covent Garden', 'Borough Market', 'Camden Market', 'Spitalfields'], correct: 1 },
+      { q: '"Power station turned art museum, 1947 to 2000" — which?', options: ['V&A', 'Tate Britain', 'Tate Modern', 'Saatchi'], correct: 2 }
+    ]}
+  },
+  48: { type: 'fact', icon: '🎹', title: '<em>Marcus Roberts</em>',
+    body: () => `
+      <p>Marcus Roberts has been blind since age five. He learned piano by ear, became Wynton Marsalis's pianist at 21, and built one of the most distinctive voices in jazz piano of the last forty years.</p>
+      <p>His trio (with Rodney Jordan on bass and Jason Marsalis on drums) is the kind of unit that can play Gershwin's <em>Rhapsody in Blue</em> from inside the score and outside it at the same time. The Aug 24 Prom is exactly that kind of programme.</p>
+      <p>Atticus, in particular, will want to listen to Roberts's recording of <em>Rhapsody in Blue</em> with the Berlin Philharmonic before the concert. It's on streaming.</p>
+    `
+  },
+  47: { type: 'prep', icon: '🍷', title: '<em>Last-night</em> dinner — South Bank',
+    body: () => `
+      <p>This is the keystone meal of the trip. Tue 25 Aug, after Tower of London + Borough Market + Tate Modern. Final evening before the flight home.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Choose</div>
+        <strong>Lasdun</strong> — proper restaurant, National Theatre, brutalist room with Thames views. Modern British. Slower meal.<br><br>
+        <strong>Forza Wine</strong> — rooftop next door, Italian, looser, sunset over the river. Fewer courses, more atmosphere.<br><br>
+        Both excellent. Forza if the weather holds; Lasdun if not. Book <em>now</em>.
+      </div>
+      ${prepCheckbox('Last-night dinner reserved · Tue 25 Aug', 'last-dinner')}
+    `
+  },
+  46: { type: 'puzzle', icon: '👨‍👩‍👧‍👦', title: 'Family <em>quiz</em> — itinerary',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'On Day 1 (arrival), what\'s the plan?', options: ['Tower of London', 'Walk Paddington → Marriott via Abbey Road', 'Westminster Abbey', 'Theatre matinee'], correct: 1 },
+      { q: 'How long is the LNER ride from King\'s Cross to York?', options: ['1 hr', '2 hrs', '2 hrs 3 min', '3 hrs 15 min'], correct: 2 },
+      { q: 'What\'s on the morning of Day 8 (Mon 24 Aug)?', options: ['Tower of London', 'LNER back to London', 'Whitby tour', 'Departure'], correct: 1 }
+    ]}
+  },
+  45: { type: 'fact', icon: '🌳', title: 'Primrose <em>Hill</em>',
+    body: () => `
+      <p>Primrose Hill is 63 metres high. From the top: a protected sightline of central London — Westminster, the Shard, the City, St Paul's, all of it laid out. Six of London's <strong>Protected Vistas</strong> include this view.</p>
+      <p>It's a 12-minute walk from your Marriott on Day 1. Go up at sunset.</p>
+      <p>Famous past residents of Primrose Hill village (the streets at the foot of the hill): H.G. Wells, Sylvia Plath, Friedrich Engels, Alan Bennett, Liam Gallagher. Half the books on your shelf were written within five blocks of where you'll be standing.</p>
+    `
+  },
+  44: { type: 'prep', icon: '☔', title: 'August in the UK — <em>weather</em>',
+    body: () => `
+      <p>Average August: <strong>22°C / 72°F</strong> high, <strong>14°C / 57°F</strong> low, rain on roughly <strong>10–12 days</strong> out of 31. Whitby is colder and wetter than London. York's in between.</p>
+      <p>Pack: layerable (T-shirt + light cardigan/jumper), one packable rain shell each, sunglasses (yes, even here), one slightly nicer outfit per person for Lasdun/Forza/Proms.</p>
+      <p>Heat-wave fallback: London touches 30°C maybe twice in August. The Tube has no air-con on most lines — keep a water bottle on you and avoid Bakerloo midday.</p>
+    `
+  },
+  43: { type: 'fact', icon: '🇺🇸', title: 'Independence Day — and your <em>Prom</em>',
+    body: () => `
+      <p>Today, in roughly seven weeks, you'll be in the Royal Albert Hall watching <strong>American Classics</strong>. That's not coincidence — the BBC Proms always programme an "American" night around mid-to-late August.</p>
+      <p>Marin Alsop, who's conducting yours, is a Bernstein protégée and one of the few American conductors with a permanent Proms presence. She brings West Side Story and Rhapsody in Blue alive in a way conductors raised in the European tradition often miss.</p>
+      <p>Happy 4th. The Proms know what they're doing.</p>
+    `
+  },
+  42: { type: 'puzzle', icon: '🎼', title: 'Music <em>theory</em> — for the pianist',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'C-E-G is what kind of chord?', options: ['C major', 'C minor', 'C7', 'C diminished'], correct: 0 },
+      { q: 'How many sharps in A major?', options: ['2', '3', '4', '5'], correct: 1 },
+      { q: 'Which is NOT a Beethoven piano sonata nickname?', options: ['Moonlight', 'Pathétique', 'Hammerklavier', 'Goldberg'], correct: 3 }
+    ]}
+  },
+  41: { type: 'prep', icon: '🔌', title: 'Chargers, adapters, <em>battery banks</em>',
+    body: () => `
+      <p>UK uses <strong>Type G</strong> three-pin plugs, 230V. Most modern chargers (phones, laptops) are universal voltage — only the plug needs adapting.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Bring</div>
+        ✦ At least 4 Type G adapters (one per person)<br>
+        ✦ One small UK power strip + 1 adapter — turns one outlet into many<br>
+        ✦ One battery pack per person — for long museum days<br>
+        ✦ Lightning/USB-C cables × extras (they always vanish)<br>
+        ✦ Heathrow Express tickets are PDFs — phones must be alive when you land
+      </div>
+      ${prepCheckbox('Adapters & battery banks ready', 'chargers')}
+    `
+  },
+  40: { type: 'fact', icon: '🚂', title: 'Platform <em>9¾</em>',
+    body: () => `
+      <p>King's Cross has a wall-mounted <em>Platform 9¾</em> trolley — half of it disappearing into the bricks — for Harry Potter pilgrims.</p>
+      <p>It used to be on the actual platform between 9 and 10. Crowds got too big. Now it's just outside the platforms in the main concourse, with a managed photo queue and a Harry Potter shop next door. Free to photograph.</p>
+      <p>You'll be there at 9:30ish on Fri 21 Aug, boarding LNER to York. If Isabelle wants the photo, factor 15 minutes for the queue. (You're in First Class, lounge access if you want, plenty of time.)</p>
+    `
+  },
+  39: { type: 'puzzle', icon: '🇬🇧', title: 'British vs American · <em>Round 3</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: '"Trolley" in a UK supermarket is what in American?', options: ['Cart', 'Basket', 'Wagon', 'Cooler'], correct: 0 },
+      { q: '"Chips" in Britain are…', options: ['Crisps', 'French fries', 'Microchips', 'Snacks'], correct: 1 },
+      { q: '"Crisps" in Britain are…', options: ['Bacon', 'Potato chips', 'Toast', 'Cookies'], correct: 1 }
+    ]}
+  },
+  38: { type: 'prep', icon: '📲', title: 'Offline <em>maps</em>',
+    body: () => `
+      <p>Mobile data abroad is fine if your plan covers it — but offline maps are insurance. Tube stations have notoriously bad signal.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Download now</div>
+        ✦ <strong>Google Maps</strong> → search London → tap your name → Offline maps → Download<br>
+        ✦ Same for York<br>
+        ✦ <strong>Citymapper</strong> — best transit app for London. Download &amp; pre-search a few routes (Marriott → King's Cross, Bankside → Heathrow)<br>
+        ✦ <strong>LNER app</strong> — has your tickets and live train info<br>
+        ✦ <strong>Heathrow Express app</strong> — backup access to your tickets
+      </div>
+      ${prepCheckbox('All four phones — offline maps & apps ready', 'offline-maps')}
+    `
+  },
+  37: { type: 'fact', icon: '🏨', title: 'Moxy York — <em>where exactly</em>',
+    body: () => `
+      <p>Moxy York is at the south edge of the old town, on Black Horse Lane (near Tower Street, between the river and Clifford's Tower). <strong>9-minute walk to York Minster</strong>. <strong>18 minutes from York railway station</strong>, mostly along the river.</p>
+      <p>It's a Marriott budget brand — small rooms, fun lobby, good bar. You have two rooms (75393553, 75393555) which means doubling up: probably parents/kids split. Either configuration works.</p>
+      <p>It's in the <em>middle</em> of medieval York. Step out the door, you're in it.</p>
+    `
+  },
+  36: { type: 'puzzle', icon: '🍽️', title: 'Match restaurant to <em>neighbourhood</em>',
+    puzzle: { kind: 'match',
+      pairs: [
+        { left: 'Cinder', right: 'Belsize Park (near Marriott)' },
+        { left: 'Bradley\'s', right: 'Swiss Cottage (near Marriott)' },
+        { left: 'Roots', right: 'York' },
+        { left: 'Forza Wine', right: 'South Bank (last night)' }
+      ],
+      note: 'Rough geography helps you slot dinners into the right day.'
+    }
+  },
+  35: { type: 'prep', icon: '🍷', title: 'Book the <em>London</em> dinners',
+    body: () => `
+      <p>~6 weeks out is the right window for the popular spots. Don't drift past today.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Book</div>
+        Two London dinners (probably one near Marriott, one in the city). Plus one in York. Plus the Forza/Lasdun last-night.<br><br>
+        Use <strong>OpenTable</strong>, <strong>Resy</strong>, or call directly. Some places (Lasdun, hot spots) only release tables on a rolling 4–6 week basis — perfect timing now.
+      </div>
+      ${prepCheckbox('Dinner 1 booked (London, near Marriott)', 'dinner-1')}
+      ${prepCheckbox('Dinner 2 booked (London or City)', 'dinner-2')}
+      ${prepCheckbox('Dinner 3 booked (York)', 'dinner-3')}
+    `
+  },
+  34: { type: 'fact', icon: '🏛️', title: 'Bankside Hotel — <em>where you sleep</em>',
+    body: () => `
+      <p>Bankside Hotel opened in 2018 — built on the footprint of an old warehouse on Upper Ground, between Blackfriars and Waterloo Bridges. The architects (Dexter Moren) gave it a sawtooth-glass façade that catches the Thames light at certain angles.</p>
+      <p>It's a Marriott Autograph Collection property — meaning Marriott-branded but designed to feel independent. The lobby has a working art studio for residencies. Tate Modern is fifty metres away. The Globe is a hundred.</p>
+      <p>You're walking distance to: Tower of London (25 min along the river), Borough Market (10 min), South Bank Centre (8 min), Westminster (15 min). Best located you've ever stayed in London.</p>
+    `
+  },
+  33: { type: 'prep', icon: '🥖', title: 'Bastille Day — and <em>Borough Market</em>',
+    body: () => `
+      <p>Today's Bastille Day. Doesn't change anything, but it's a nudge to remind yourself: Borough Market on Tue 25 Aug is your <em>lunch plan</em>. Don't fill up on hotel breakfast.</p>
+      <p>Hits: Bread Ahead doughnuts. Kappacasein toasted Montgomery cheese. Padella for pasta if the queue is short. Neal's Yard for a cheese to bring home (security-allowed at airport — no liquid).</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Note</div>
+        Tuesday is the quietest weekday at Borough. Open from 10 AM, busiest 12–2.
+      </div>
+    `
+  },
+  32: { type: 'puzzle', icon: '🧮', title: 'Logic — <em>seat assignments</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'Your LNER seats from London to York are 21–24 in Coach D. If the family takes them in age order from window…', options: ['Craig 21, Kelly 22, Atticus 23, Isabelle 24', 'Order of preference, doesn\'t matter', 'Kids together, parents together', 'All of the above'], correct: 3 },
+      { q: 'On the return (York→London), Coach L Seats 41–44 — what direction does Coach L typically face?', options: ['Always forward', 'Depends on the train\'s orientation that day', 'Always backward', 'Sideways'], correct: 1 },
+      { q: 'First Class on LNER includes…', options: ['Wider seats only', 'Wider seats + complimentary food/drink', 'Lounge access only', 'Wifi only'], correct: 1 }
+    ]}
+  },
+  31: { type: 'fact', icon: '🧱', title: 'York city walls — <em>longest in England</em>',
+    body: () => `
+      <p>York's city walls are <strong>3.4 km</strong> end-to-end — the longest medieval town walls in England, mostly intact.</p>
+      <p>The walk takes 1.5–2 hours at a relaxed pace, with views into back gardens of medieval houses and over the Minster. Four "bars" (gatehouses) — Bootham Bar, Monk Bar, Walmgate Bar, Micklegate Bar — punctuate the circuit.</p>
+      <p>Friday Day 5 afternoon is your slot. Allow 90 minutes minimum, in good shoes. Some sections have low parapets; not for the vertigo-inclined.</p>
+    `
+  },
+  30: { type: 'milestone', icon: '🌟',
+    title: 'Thirty days. <em>One month out.</em>',
+    body: () => `
+      <p>Thirty days. The trip is now in the close-in zone. Final logistics tighten up from here.</p>
+      <p><strong>Should be locked already:</strong> all bookings (hotels, flights, trains, attractions, restaurants, Atticus's ETA, BBC Proms).</p>
+      <p><strong>From here on, the tiles shift to:</strong> packing, charging, downloading, confirming, double-checking. Less excitement, more list-making — but every checkbox on this side of the runway is one fewer worry on the plane.</p>
+      <p>If anything's still open from the booking phase: today is the day to chase it down. Tomorrow it's a problem.</p>
+    `
+  },
+  29: { type: 'prep', icon: '🎒', title: 'Start the <em>pack list</em>',
+    body: () => `
+      <p>You're going backpack-only. That's a constraint — embrace it.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">First pass — clothes</div>
+        Per person, for 10 days: <strong>5 shirts</strong> (rotate), <strong>2 trousers/jeans</strong>, <strong>1 light jumper</strong>, <strong>1 rain shell</strong>, <strong>5 underwear</strong>, <strong>3 socks</strong>, <strong>1 nice outfit for Proms/dinners</strong>, <strong>2 pairs shoes</strong> (one walking, one casual).<br><br>
+        Unbound Merino is your friend — the wool re-wears for days without smelling. Worth it for backpack travel.
+      </div>
+      ${prepCheckbox('Pack list drafted per person', 'pack-list')}
+    `
+  },
+  28: { type: 'puzzle', icon: '⏰', title: 'What time is it <em>in London</em>?',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'It\'s 2 PM Wednesday in Sun Prairie. What time in London?', options: ['6 PM Wed', '7 PM Wed', '8 PM Wed', '9 PM Wed'], correct: 2 },
+      { q: 'BST (British Summer Time) — when does it apply?', options: ['Year-round', 'Late March → late October', 'Just summer', 'Just July & August'], correct: 1 },
+      { q: 'You\'re in BST during your trip. So London is how many hours ahead of Wisconsin?', options: ['5', '6', '7', '8'], correct: 1 }
+    ]}
+  },
+  27: { type: 'fact', icon: '🌅', title: 'York Minster\'s <em>Great East Window</em>',
+    body: () => `
+      <p>Painted by John Thornton of Coventry between <strong>1405 and 1408</strong>, the Great East Window is the size of a tennis court — <strong>76 sq m of stained glass</strong>. It's the largest single expanse of medieval stained glass anywhere in the world.</p>
+      <p>It depicts the beginning and end of the world, top to bottom: Genesis at the top, Revelation at the bottom. Thornton was paid £56 over three years, with bonuses for finishing on time. He did.</p>
+      <p>It survived the English Reformation, the Civil War, both World Wars, and a 2007–2018 restoration that took longer than its original creation.</p>
+    `
+  },
+  26: { type: 'puzzle', icon: '🎹', title: 'Anagram: <em>composers</em>',
+    puzzle: { kind: 'anagram', items: [
+      { scrambled: 'OPDLNAC', answer: 'COPLAND', hint: 'Quintessentially American' },
+      { scrambled: 'NTRESBNIE', answer: 'BERNSTEIN', hint: 'West Side Story' },
+      { scrambled: 'WSGRENIH', answer: 'GERSHWIN', hint: 'Rhapsody in Blue' }
+    ]}
+  },
+  25: { type: 'prep', icon: '🛤️', title: '<em>Sunday LNER</em> — engineering check',
+    body: () => `
+      <p>Sundays on the East Coast Main Line carry elevated risk of weekend engineering work. You aren't travelling on Sunday — but you <em>are</em> travelling Friday and Monday, both fine.</p>
+      <p>Worth a check anyway, this close to the trip:</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Check</div>
+        <strong>nationalrail.co.uk/journey-planner</strong> — search KGX → YRK on Fri 21 Aug, and YRK → KGX on Mon 24 Aug. Look for service alerts. Engineering work is announced 8–12 weeks out.
+      </div>
+      ${prepCheckbox('Both LNER legs — no service alerts', 'lner-check')}
+    `
+  },
+  24: { type: 'fact', icon: '🐟', title: 'Whitby fish <em>and chips</em>',
+    body: () => `
+      <p>Whitby has been argued to have <strong>the best fish &amp; chips in England</strong> for about a century. The fishing fleet is just metres from the chippies. The fish was swimming yesterday.</p>
+      <p>The contenders: <strong>Magpie Café</strong> (the famous one, expect a queue), <strong>Trenchers</strong> (the local favourite, faster), <strong>Quayside</strong> (the one that won the National Fish &amp; Chip Award in 2014).</p>
+      <p>Mountain Goat will give you about an hour in Whitby town. Eat the cod, walk by the harbour, climb the 199 steps if there's time. Don't dawdle on the chips.</p>
+    `
+  },
+  23: { type: 'puzzle', icon: '📅', title: 'Memory — <em>your itinerary</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'Day 6 (Sat 22 Aug) — what\'s the main thing?', options: ['Whitby', 'York Minster', 'Travel from London', 'BBC Proms'], correct: 1 },
+      { q: 'How many cities on this trip?', options: ['One', 'Two', 'Three', 'Four'], correct: 1 },
+      { q: 'How many evenings of music are tentatively planned?', options: ['1', '2', '3+', 'None'], correct: 2 }
+    ]}
+  },
+  22: { type: 'prep', icon: '💳', title: '<em>Apple Pay</em> — practice',
+    body: () => `
+      <p>Three weeks out — practice a real tap-to-pay on a US transit system if you have one nearby (Chicago L, MKE bus). Confirms Express Transit really does the right thing on each phone.</p>
+      <p>Then practice contactless on a coffee at a US merchant. UK is overwhelmingly contactless — knowing your phone behaves correctly under £100 spends is critical.</p>
+      ${prepCheckbox('Express Transit verified — Craig', 'verify-craig')}
+      ${prepCheckbox('Express Transit verified — Kelly', 'verify-kelly')}
+      ${prepCheckbox('Express Transit verified — Atticus', 'verify-atticus')}
+      ${prepCheckbox('Express Transit verified — Isabelle', 'verify-isabelle')}
+    `
+  },
+  21: { type: 'fact', icon: '🚇', title: 'London has <em>270</em> Tube stations',
+    body: () => `
+      <p>The London Underground has <strong>270 stations</strong> across <strong>11 lines</strong>, totalling <strong>402 km</strong> of track. About <strong>45%</strong> of it is actually underground; the rest is surface and elevated, especially in the outer zones.</p>
+      <p>Oldest: <strong>Baker Street</strong>, 1863. The world's first underground railway.</p>
+      <p>Deepest: <strong>Hampstead</strong> on the Northern Line, 58 m below ground. The Bank Northern Line platform is also famously deep — has its own ecosystem of mosquitoes that evolved into a separate species during WWII.</p>
+    `
+  },
+  20: { type: 'puzzle', icon: '💱', title: 'Pounds and <em>pence</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'A pint of beer in a London pub is roughly…', options: ['£3', '£5–£7', '£10', '£15'], correct: 1 },
+      { q: 'Tube single fare in central London (zone 1) is roughly…', options: ['£1', '£2.80', '£5', '£8'], correct: 1 },
+      { q: 'Standard tip in a London cab is…', options: ['No tip expected', '~10%', '20%', '25%'], correct: 1 }
+    ]}
+  },
+  19: { type: 'prep', icon: '✈️', title: 'Verify <em>seat assignments</em>',
+    body: () => `
+      <p>You all booked Economy Plus — Row 32-33 outbound, similar return. Worth double-checking United didn't quietly reshuffle.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Today</div>
+        Log into United → My Trips → confirmation M9WJ53 → seat map. Confirm all 4 are still in Economy Plus together.
+      </div>
+      ${prepCheckbox('Outbound seats confirmed (UA920)', 'seats-out')}
+      ${prepCheckbox('Return seats confirmed (UA928)', 'seats-back')}
+    `
+  },
+  18: { type: 'fact', icon: '🎭', title: 'The Globe Theatre — a <em>reconstruction</em>',
+    body: () => `
+      <p>Shakespeare's Globe (the open-air thatched theatre across from your Bankside Hotel) is a 1997 reconstruction — the original, where Shakespeare worked, burned down in 1613 during a performance of Henry VIII. A replacement was built and demolished in 1644.</p>
+      <p>Sam Wanamaker, an American actor, spent 23 years lobbying to rebuild it on roughly the original site (about 230 m from where you'll be sleeping). He died three years before it opened.</p>
+      <p>You can do an open-air evening performance, a tour, or just walk by and look at it. It's two minutes from your hotel.</p>
+    `
+  },
+  17: { type: 'puzzle', icon: '🧮', title: 'How many <em>days</em>?',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'How many days from arrival (Aug 17) to BBC Proms night (Aug 24)?', options: ['6', '7', '8', '9'], correct: 1 },
+      { q: 'How many days from arrival to departure?', options: ['9', '10', '11', '12'], correct: 0 },
+      { q: 'Travel time London→York on LNER?', options: ['1 hr', '1 hr 30', '2 hr 3 min', '2 hr 30 min'], correct: 2 }
+    ]}
+  },
+  16: { type: 'prep', icon: '🚌', title: 'Confirm <em>Whitby tour</em>',
+    body: () => `
+      <p>Two weeks out, time to verify the Mountain Goat reservation (Viator ref <strong>1379144733</strong>, operator confirmation <strong>XMT2YHKC</strong>).</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Verify</div>
+        ✦ Pickup: <strong>Leeman Road Coach Stops (Stop A)</strong>, York YO1 6FZ<br>
+        ✦ what3words: <strong>///rocks.defend.dive</strong><br>
+        ✦ Departure 9:00 AM — arrive by 8:50<br>
+        ✦ Save the Viator confirmation as a PDF on phones<br>
+        ✦ Calendar entry with 60-min-prior alarm
+      </div>
+      ${prepCheckbox('Whitby tour — calendar + saved PDF', 'whitby-cal')}
+    `
+  },
+  15: { type: 'fact', icon: '🗓️', title: 'Sixteen <em>days</em>',
+    body: () => `
+      <p>This is the part where the trip stops being abstract. The forecast comes into range. The packing starts to feel real. The currency conversion in your head gets faster.</p>
+      <p>From here, the tiles shift to mostly prep — these last 15 days carry the most worry-load if anything's been deferred. If everything's done, you get to enjoy the runway.</p>
+      <p>One small ritual: from today, start checking the London weather forecast every couple of days. By Day 5 it'll be largely accurate, and you'll be packing on solid information.</p>
+    `
+  },
+  14: { type: 'puzzle', icon: '🇬🇧', title: 'British vs American · <em>Round 4 (final)</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: '"Gobsmacked" means…', options: ['Punched', 'Astonished', 'Drunk', 'Hurt'], correct: 1 },
+      { q: '"Faff" means…', options: ['Fall', 'Fuss / pointless effort', 'Forget', 'Run'], correct: 1 },
+      { q: '"Bollocks" can mean nonsense or…', options: ['Brilliant', 'Damnit (expletive)', 'Both', 'Neither'], correct: 2 }
+    ]}
+  },
+  13: { type: 'prep', icon: '📄', title: 'Save <em>all tickets</em> to phones',
+    body: () => `
+      <p>Two weeks. This is when offline access matters most.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Each phone</div>
+        ✦ <strong>United boarding passes</strong> — added to Wallet at T-24h, but you can pre-fetch e-tickets now<br>
+        ✦ <strong>Heathrow Express</strong> — 4 PDFs (HXBN3Y5EYQM/P/R/T), saved to Files<br>
+        ✦ <strong>LNER tickets</strong> — both legs, both refs (LG770066, BM040304), in the LNER app<br>
+        ✦ <strong>Hotel confirmations</strong> — Marriott 74018603, Moxy 75393553+75393555, Bankside 73983358<br>
+        ✦ <strong>Viator Whitby</strong> — ref 1379144733<br>
+        ✦ <strong>UK ETAs</strong> — accessible offline (screenshot the approval emails)
+      </div>
+      ${prepCheckbox('All tickets and confirmations saved offline', 'tickets-saved')}
+    `
+  },
+  12: { type: 'fact', icon: '🌉', title: 'Tower Bridge ≠ <em>London Bridge</em>',
+    body: () => `
+      <p>Tower Bridge — the Victorian one with the two towers and the lifting middle, completed 1894 — is the iconic one tourists photograph. <strong>London Bridge</strong> is the unspectacular concrete one just upstream, opened 1973 (replacing several earlier London Bridges going back to Roman times).</p>
+      <p>The 1831 stone London Bridge was sold to an American oil tycoon and shipped — block by block — to Lake Havasu, Arizona, where it stands today. Persistent rumour: he thought he was buying Tower Bridge. <em>Apocryphal</em>, but a great story.</p>
+      <p>Plan: walk Tower Bridge after Tower of London on Day 9. Skip London Bridge unless you find yourself crossing it.</p>
+    `
+  },
+  11: { type: 'puzzle', icon: '🚉', title: 'Tube station <em>match</em>',
+    puzzle: { kind: 'match',
+      pairs: [
+        { left: 'Swiss Cottage', right: 'Marriott Regent\'s Park' },
+        { left: 'Southwark', right: 'Bankside Hotel' },
+        { left: 'King\'s Cross', right: 'LNER to York' },
+        { left: 'Westminster', right: 'Big Ben / Abbey' },
+        { left: 'Tower Hill', right: 'Tower of London' }
+      ],
+      note: 'Five stations cover ~80% of your travel.'
+    }
+  },
+  10: { type: 'prep', icon: '📔', title: 'Ten days. <em>Passport check.</em>',
+    body: () => `
+      <p>Last passport sweep before the home stretch. You did this once already (Day 57), do it again now — physical condition this time.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">All four passports</div>
+        ✦ Photo page intact, not water-damaged<br>
+        ✦ Cover not separating<br>
+        ✦ Pages not loose<br>
+        ✦ Located in a known place (drawer / safe)<br>
+        ✦ Plan for storing them on the trip — secured pocket / hotel safe
+      </div>
+      ${prepCheckbox('Passports checked & ready', 'passport-final')}
+    `
+  },
+  9: { type: 'fact', icon: '🎶', title: 'Royal Albert Hall — <em>5,272 seats</em>',
+    body: () => `
+      <p>The Royal Albert Hall opened in <strong>1871</strong>, named for Prince Albert (who'd died ten years earlier). Capacity: <strong>5,272</strong>. Acoustically interesting — it had famous echoing problems for ninety years until 109 fibreglass diffusers (the "mushrooms") were hung from the ceiling in 1969.</p>
+      <p>The Proms moved here in 1941 after Queen's Hall was destroyed in the Blitz. Eight weeks every summer since.</p>
+      <p>Aug 24 plan: arrive 30 min early. Outside vendors and a lawn for pre-concert. The arena (standing) and gallery are atmospheric in their own way; seated is more comfortable for the full programme.</p>
+    `
+  },
+  8: { type: 'puzzle', icon: '🧠', title: 'One last <em>memory check</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'Which night is the BBC Proms?', options: ['Tue 18 Aug', 'Sat 22 Aug', 'Mon 24 Aug', 'Tue 25 Aug'], correct: 2 },
+      { q: 'How long is the Heathrow Express to Paddington?', options: ['7 min', '15 min', '25 min', '40 min'], correct: 1 },
+      { q: 'On Day 9 (Aug 25), what does the day include?', options: ['Tower of London + Borough Market', 'Westminster + Churchill', 'Travel to York', 'Just relaxation'], correct: 0 }
+    ]}
+  },
+  7: { type: 'prep', icon: '⚡', title: 'One week. <em>Charge everything.</em>',
+    body: () => `
+      <p>You're at one week. Beyond this, the prep gets very tactical.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">This week</div>
+        ✦ Charge all 4 phones to 100% the night before flight<br>
+        ✦ Charge all battery banks<br>
+        ✦ Test each Type G adapter (plug something into it)<br>
+        ✦ Pack chargers in carry-on, not checked (you're carry-on only anyway, but)<br>
+        ✦ Set "Do Not Disturb" exception for emergency contacts on flight day
+      </div>
+      ${prepCheckbox('Charging plan ready', 'charging')}
+    `
+  },
+  6: { type: 'fact', icon: '🌊', title: 'A <em>week</em> from today',
+    body: () => `
+      <p>One week from today, you'll be on UA920, somewhere over the Atlantic, watching a movie with surprisingly mediocre subtitling, eating something that's mostly carbs.</p>
+      <p>Sleep on the plane if you can. The 6:45 PM departure means a 1 AM landing in your body's time, but a 9 AM London arrival. The full Day 1 will be a slow-walk recovery — Heathrow Express, the walk via Abbey Road, Regent's Park, hotel check-in, an early dinner, an early bed.</p>
+      <p>One week.</p>
+    `
+  },
+  5: { type: 'puzzle', icon: '🎒', title: 'Pack <em>list</em> match',
+    puzzle: { kind: 'match',
+      pairs: [
+        { left: 'Type G adapter', right: 'UK plug' },
+        { left: 'Rain shell', right: 'Whitby + insurance' },
+        { left: 'Comfortable shoes', right: 'You\'ll average 8+ miles/day' },
+        { left: 'One nice outfit', right: 'Proms / Lasdun-Forza' },
+        { left: 'Battery bank', right: 'Long museum days' }
+      ]
+    }
+  },
+  4: { type: 'prep', icon: '💊', title: 'Refill <em>prescriptions</em>',
+    body: () => `
+      <p>Anything anyone takes daily — refill now, with a buffer for the trip plus delays.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Calculate</div>
+        Days needed = trip length (10) + buffer (5) = <strong>15 days minimum</strong>. Carry in original containers in carry-on, with the prescription paperwork accessible if customs asks.
+      </div>
+      ${prepCheckbox('Prescriptions refilled with buffer', 'rx')}
+    `
+  },
+  3: { type: 'puzzle', icon: '✈️', title: 'Travel <em>trivia</em>',
+    puzzle: { kind: 'multiple', questions: [
+      { q: 'TSA PreCheck shoe-removal rule…', options: ['Always remove', 'Remove only if metal-detector beeps', 'Keep on', 'Depends on the airport'], correct: 2 },
+      { q: 'Liquids rule for international: each container max…', options: ['1 oz', '3.4 oz / 100 ml', '6 oz', 'No limit'], correct: 1 },
+      { q: 'A backpack as your one personal item — must fit…', options: ['Under the seat in front', 'Anywhere overhead', 'In your lap', 'Anywhere'], correct: 0 }
+    ]}
+  },
+  2: { type: 'prep', icon: '🧺', title: 'Pack day. <em>Lay it all out.</em>',
+    body: () => `
+      <p>Two days out. Today: laundry done, clothes on the bed in stacks, packs ready to load tomorrow.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Today</div>
+        ✦ Lay out clothes per person — confirm full pack-list<br>
+        ✦ Charge battery banks fully<br>
+        ✦ Pack everything <em>except</em> what you're using tomorrow (toothbrush, charger)<br>
+        ✦ Confirm bag fits airline carry-on dims (United: 22" × 14" × 9")
+      </div>
+      ${prepCheckbox('Bags packed except daily-use items', 'packed')}
+    `
+  },
+  1: { type: 'prep', icon: '⏰', eyebrow: 'TOMORROW',
+    title: 'One day. <em>Final checks.</em>',
+    body: () => `
+      <p>Tomorrow is travel day. Today is the last quiet day. Use it.</p>
+      <div class="prep-task">
+        <div class="prep-task-label">Final checklist</div>
+        ✦ All 4 passports — physical, located, in carry-on tomorrow<br>
+        ✦ All 4 UK ETAs — confirmed approved (especially Atticus)<br>
+        ✦ Boarding passes downloaded to Wallet (T-24h)<br>
+        ✦ Heathrow Express PDFs accessible offline<br>
+        ✦ All phones charged to 100%, all battery banks charged<br>
+        ✦ Alarm set for 4 PM departure prep — flight is 6:45 PM out of ORD<br>
+        ✦ Plan to leave for ORD by 3:30 PM<br>
+        ✦ Hotel confirmation numbers in Notes app<br>
+        ✦ Last meal at home — something easy<br>
+        ✦ Sleep early. You'll be glad on the plane.
+      </div>
+      ${prepCheckbox('Final checks complete · ready for tomorrow', 'final')}
+    `
+  },
+  0: { type: 'milestone', icon: '🛫',
+    title: 'Today is the day. <em>Bon voyage.</em>',
+    body: () => `
+      <p>UA920 departs O'Hare at <strong>6:45 PM</strong>. Lands Heathrow at <strong>9:00 AM</strong> tomorrow. Eight hours over the Atlantic, with the sun chasing you east.</p>
+      <p>Confirmation <strong>M9WJ53</strong>. Seats 32–33. PreCheck on all four boarding passes (you checked).</p>
+      <p>This calendar carried you here for fourteen weeks. From here, it's the trip itself: ten days of London, York, Whitby, Westminster, the Tower, Marin Alsop and Marcus Roberts at the Royal Albert Hall, fish &amp; chips on a Whitby harbour, the Shambles at dusk.</p>
+      <p style="font-style:italic; text-align:center; margin-top:24px; font-size:18px; color:var(--oxblood);">Have the best one. — C, K, A &amp; I</p>
+      <p style="text-align:center; font-size:13px; opacity:0.7; margin-top:14px;">Send a postcard from Whitby.</p>
+    `
+  }
+};
+
+// Default content generator for any day not explicitly defined
+function defaultContent(daysOut, date) {
+  const facts = [
+    { title: 'A note on <em>queueing</em>', body: 'The British queue is a serious cultural artefact. Stand single-file, no edging, eye contact rare, conversation lower than at home. Cutting is grounds for visible disapproval. You\'ll see this everywhere — bus stops, the post office, the Tube during disruptions. Embrace it.' },
+    { title: 'About the <em>black cab</em>', body: 'London black cab drivers must pass <strong>The Knowledge</strong> — memorising 25,000 streets and 20,000 landmarks. It takes 3–4 years, on average. They\'re among the best-trained taxi drivers anywhere. They\'re also pricey. Use them sparingly, mostly for late-night returns to the hotel. Tip 10% — not 20%.' },
+    { title: 'The <em>Routemaster</em>', body: 'The classic red double-decker bus you picture is the <strong>Routemaster</strong> — designed in 1956, retired from regular service in 2005, with two heritage routes (15 and 9) running occasional summer services. The current red buses are New Routemasters or simply standard double-deckers. Still a great way to see the city.' },
+    { title: '<em>Pubs</em>: a primer', body: 'No table service in most British pubs — order at the bar, pay then, find a table. Bartenders won\'t flag you down. Tipping the bartender isn\'t standard, though "and one for yourself" (an offer to buy them a drink) is appreciated for excellent service. Pub closes when the landlord rings the bell. "Last orders!" comes 10–15 minutes earlier.' },
+    { title: 'The <em>Bobbies</em>', body: 'British police don\'t routinely carry firearms — they have batons, pepper spray, sometimes Tasers. Armed Response Units exist for serious incidents. The unarmed beat-policing tradition is one of the oldest features of British policing, dating to the 1829 Metropolitan Police Act. They\'re also unusually friendly to lost tourists.' }
+  ];
+  const puzzles = [
+    { q: 'Which neighbourhood is closest to the British Museum?', options: ['Bloomsbury', 'Camden', 'Soho', 'Westminster'], correct: 0 },
+    { q: 'Which is older?', options: ['Tower of London', 'Westminster Abbey', 'Same century', 'Hard to say'], correct: 1 },
+    { q: 'Which famous walking route is 627 miles long?', options: ['Pennine Way', 'South West Coast Path', 'Hadrian\'s Wall', 'Coast to Coast'], correct: 1 }
+  ];
+  // Use the day number to pick a deterministic fact
+  const idx = daysOut % facts.length;
+  return { type: 'fact', icon: '✦', title: facts[idx].title, body: () => `<p>${facts[idx].body}</p>` };
+}
+
+// ============ HELPERS FOR CONTENT ============
+function prepCheckbox(label, id) {
+  return `<div class="prep-checkbox" data-task-id="${id}">
+    <input type="checkbox" id="task-${id}">
+    <label for="task-${id}">${label}</label>
+  </div>`;
+}
+
+// ============ RENDER CALENDAR ============
+function buildCalendar() {
+  const cal = document.getElementById('calendar');
+  cal.innerHTML = '';
+  const today = effectiveToday();
+  const daysToTrip = daysUntil(TRIP_DEPART, today);
+
+  // Update hero counter
+  document.getElementById('bigNumber').textContent = Math.max(0, daysToTrip);
+  document.getElementById('bigNumberLabel').textContent = daysToTrip === 1 ? 'Day to Departure' : daysToTrip === 0 ? 'Today is the Day!' : daysToTrip < 0 ? 'On the Trip!' : 'Days to Departure';
+
+  // Group tiles by month
+  const monthsMap = {};
+  // Generate from May 10 (day 98) through Aug 16 (day 0)
+  for (let d = 98; d >= 0; d--) {
+    const tileDate = addDays(TRIP_DEPART, -d);
+    const monthKey = `${tileDate.getFullYear()}-${tileDate.getMonth()}`;
+    if (!monthsMap[monthKey]) {
+      monthsMap[monthKey] = { date: new Date(tileDate.getFullYear(), tileDate.getMonth(), 1), tiles: [] };
+    }
+    monthsMap[monthKey].tiles.push({ daysOut: d, date: tileDate });
+  }
+
+  // Render each month
+  Object.values(monthsMap).forEach(month => {
+    const section = document.createElement('div');
+    section.className = 'month-section';
+
+    const header = document.createElement('div');
+    header.className = 'month-header';
+    const monthName = MONTHS_LONG[month.date.getMonth()];
+    const isAug = month.date.getMonth() === 7;
+    header.innerHTML = `
+      <div class="month-name">${monthName}${isAug ? ' <em>· The Departure</em>' : ''}</div>
+      <div class="month-meta">${month.tiles.length} day${month.tiles.length !== 1 ? 's' : ''}</div>
+    `;
+    section.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+
+    month.tiles.forEach(tile => {
+      grid.appendChild(makeTile(tile.daysOut, tile.date, today));
+    });
+
+    section.appendChild(grid);
+    cal.appendChild(section);
+  });
+
+  // Stats
+  updateStats();
+
+  // Trip-day tiles (Aug 17–26)
+  const tripCal = document.getElementById('tripCalendar');
+  tripCal.innerHTML = '';
+  const tripSection = document.createElement('div');
+  tripSection.className = 'month-section';
+  const tripGrid = document.createElement('div');
+  tripGrid.className = 'grid';
+
+  for (let i = 1; i <= 10; i++) {
+    const tripDay = addDays(TRIP_DEPART, i);
+    const tile = makeTripDayTile(i, tripDay, today);
+    tripGrid.appendChild(tile);
+  }
+  tripSection.appendChild(tripGrid);
+  tripCal.appendChild(tripSection);
+}
+
+function makeTile(daysOut, date, today) {
+  const tile = document.createElement('button');
+  tile.className = 'tile';
+  tile.setAttribute('aria-label', `Day with ${daysOut} days remaining, ${formatLongDate(date)}`);
+
+  const isToday = date.getTime() === today.getTime();
+  const isPast = date < today;
+  const isFuture = date > today;
+  const dKey = dateKey(date);
+  const isOpened = !!state.opened[dKey];
+  const content = CONTENT[daysOut] || defaultContent(daysOut, date);
+
+  if (isFuture) tile.classList.add('locked');
+  else if (isToday && !isOpened) tile.classList.add('today', 'unopened');
+  else if (isOpened) tile.classList.add('opened');
+  else tile.classList.add('unopened');
+
+  if (content.type === 'milestone') tile.classList.add('milestone');
+
+  const dayLabel = daysOut === 0 ? 'DEPART' : daysOut === 1 ? 'TOMORROW' : `T−${daysOut}`;
+
+  tile.innerHTML = `
+    <div class="tile-inner">
+      <div class="tile-day-label">${dayLabel}</div>
+      <div class="tile-num">${daysOut}</div>
+      <div class="tile-date">${formatTileDate(date)}</div>
+      <div class="tile-icon">${content.icon || '✦'}</div>
+      <div class="tile-type">${content.type}</div>
+    </div>
+  `;
+
+  tile.addEventListener('click', () => {
+    if (isFuture) {
+      openLockedModal(date, daysOut);
+    } else {
+      openTileModal(daysOut, date, content);
+    }
+  });
+
+  return tile;
+}
+
+function makeTripDayTile(tripDayNum, date, today) {
+  const tile = document.createElement('button');
+  tile.className = 'tile';
+  const isFuture = date > today;
+  const dKey = dateKey(date);
+  const isOpened = !!state.opened['trip-' + dKey];
+  if (isFuture) tile.classList.add('locked');
+  else if (isOpened) tile.classList.add('opened');
+  else tile.classList.add('unopened');
+
+  const tripDays = [
+    'Arrival · Abbey Road & Regent\'s Park',
+    'Westminster · Churchill',
+    'British Museum · Soho',
+    'Music · South Ken',
+    'York · City Walls',
+    'York Minster · The Shambles',
+    'Whitby & Moors',
+    'Back to London · BBC Proms',
+    'Tower · Borough · Last Dinner',
+    'Departure'
+  ];
+
+  tile.innerHTML = `
+    <div class="tile-inner">
+      <div class="tile-day-label">DAY ${tripDayNum}</div>
+      <div class="tile-num">${date.getDate()}</div>
+      <div class="tile-date">${MONTHS_SHORT[date.getMonth()]}</div>
+      <div class="tile-icon">${['✈️','🏛️','🏺','🎻','🚆','⛪','🌊','🎼','🏰','🛬'][tripDayNum-1]}</div>
+      <div class="tile-type" style="font-size:6.5px;">${tripDays[tripDayNum-1]}</div>
+    </div>
+  `;
+
+  tile.addEventListener('click', () => {
+    if (isFuture) {
+      openLockedModal(date, daysUntil(date, today));
+    } else {
+      openTripDayModal(tripDayNum, date);
+    }
+  });
+
+  return tile;
+}
+
+// ============ MODAL ============
+function openTileModal(daysOut, date, content) {
+  const modal = document.getElementById('modal');
+  const overlay = document.getElementById('modalOverlay');
+
+  document.getElementById('modalEyebrow').textContent = `T MINUS ${daysOut} · ${content.eyebrow || content.type.toUpperCase()}`;
+  document.getElementById('modalTitle').innerHTML = content.title;
+  document.getElementById('modalDate').textContent = formatLongDate(date);
+
+  const body = document.getElementById('modalBody');
+  if (content.puzzle) {
+    body.innerHTML = renderPuzzle(content.puzzle, date);
+    bindPuzzleHandlers(date);
+  } else if (typeof content.body === 'function') {
+    body.innerHTML = content.body();
+    bindCheckboxHandlers(date);
+  } else {
+    body.innerHTML = `<p>${content.body || ''}</p>`;
+  }
+
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Mark as opened
+  state.opened[dateKey(date)] = new Date().toISOString();
+  saveState(state);
+  updateStats();
+  // Update tile state
+  setTimeout(buildCalendar, 600);
+}
+
+function openLockedModal(date, daysOut) {
+  const overlay = document.getElementById('modalOverlay');
+  document.getElementById('modalEyebrow').textContent = 'LOCKED';
+  document.getElementById('modalTitle').innerHTML = 'Patience, traveller';
+  document.getElementById('modalDate').textContent = formatLongDate(date);
+  document.getElementById('modalBody').innerHTML = `
+    <div class="locked-msg">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-days">${daysOut}</div>
+      <p style="margin-top:10px;">day${daysOut !== 1 ? 's' : ''} until this tile unlocks.</p>
+      <p style="font-size:14px; opacity:0.7; margin-top:14px;">One a day. The runway pays off.</p>
+    </div>
+  `;
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function openTripDayModal(tripDayNum, date) {
+  const overlay = document.getElementById('modalOverlay');
+  document.getElementById('modalEyebrow').textContent = `TRIP DAY ${tripDayNum}`;
+  document.getElementById('modalDate').textContent = formatLongDate(date);
+
+  const tripDayContent = [
+    {
+      title: 'Day 1 · <em>Arrival</em>',
+      body: `<p>UA920 lands Heathrow 9 AM. Heathrow Express to Paddington (refs HXBN3Y5EYQM/P/R/T). Walk to Marriott Regent's Park via Little Venice and Abbey Road — about 3 miles, slow pace, jet-lag-friendly.</p>
+      <p>Drop bags. Walk to <strong>Abbey Road crossing</strong>, then through <strong>Regent's Park</strong> to <strong>Primrose Hill</strong>. Lunch nearby. Early dinner. Early bed.</p>`
+    },
+    {
+      title: 'Day 2 · <em>Westminster</em>',
+      body: `<p><strong>Morning:</strong> Big Ben + Houses of Parliament (exterior), <strong>Westminster Abbey</strong> (timed entry).</p>
+      <p>Walk through St James's Park to Buckingham Palace area.</p>
+      <p><strong>Afternoon:</strong> <strong>Churchill War Rooms</strong> (timed entry, 5-min walk from Abbey).</p>
+      <p><strong>Evening:</strong> West End or recital.</p>`
+    },
+    {
+      title: 'Day 3 · <em>British Museum</em>',
+      body: `<p><strong>Morning:</strong> British Museum — Rosetta Stone, Egyptian galleries, Parthenon sculptures. Free entry.</p>
+      <p><strong>Afternoon:</strong> Covent Garden &amp; Soho. Lunch. Optional: Piccadilly Circus.</p>
+      <p><strong>Evening:</strong> Camden Market (near hotel) or music option.</p>`
+    },
+    {
+      title: 'Day 4 · <em>South Ken & Music</em>',
+      body: `<p><strong>Morning:</strong> Natural History or Science Museum (free). Royal College of Music Museum (great for Atticus).</p>
+      <p><strong>Afternoon:</strong> V&amp;A / Hyde Park / King's Road.</p>
+      <p><strong>Evening:</strong> BBC Proms or St Martin-in-the-Fields recital.</p>`
+    },
+    {
+      title: 'Day 5 · <em>To York</em>',
+      body: `<p>Check out Marriott ~8:30 AM. Jubilee Line to King's Cross.</p>
+      <p><strong>LNER 09:47 → 11:50</strong>, First Class, Coach D Seats 21–24, ref LG770066.</p>
+      <p>Arrive York 11:50. Walk to Moxy (~10 min). Drop bags. Lunch in old town.</p>
+      <p><strong>Afternoon:</strong> Walk the city walls (~2 mi, 90 min). Explore the Shambles. Dinner in old town.</p>`
+    },
+    {
+      title: 'Day 6 · <em>York Minster</em>',
+      body: `<p><strong>Morning:</strong> York Minster (90 min–2 hr).</p>
+      <p>Clifford's Tower. Optional: Jorvik Viking Centre.</p>
+      <p>Wander. Relaxed evening.</p>`
+    },
+    {
+      title: 'Day 7 · <em>Whitby</em>',
+      body: `<p><strong>Mountain Goat tour.</strong> Pickup 9 AM at Leeman Road Coach Stops (Stop A), YO1 6FZ. Arrive 8:50.</p>
+      <p>Viator ref 1379144733 · op conf XMT2YHKC · what3words ///rocks.defend.dive</p>
+      <p>Moorland scenery, Whitby Abbey ruins, Whitby harbour, fish &amp; chips. Return to York for the evening.</p>`
+    },
+    {
+      title: 'Day 8 · <em>To London + the Prom</em>',
+      body: `<p><strong>LNER 09:55 → 12:01</strong>, First Class, Coach L Seats 41–44, ref BM040304.</p>
+      <p>King's Cross → Bankside Hotel via Thameslink (Blackfriars stop). ~20 min.</p>
+      <p>Check in. Afternoon: South Bank — Tate Modern, Globe Theatre area, walk along the Thames.</p>
+      <p><strong>Evening: BBC Proms — American Classics.</strong> Marin Alsop / Philharmonia / Marcus Roberts Trio. Royal Albert Hall.</p>`
+    },
+    {
+      title: 'Day 9 · <em>Tower & last dinner</em>',
+      body: `<p><strong>Morning:</strong> Tower of London — 9 AM slot, Crown Jewels first. Walk Tower Bridge.</p>
+      <p><strong>Lunch:</strong> Borough Market.</p>
+      <p><strong>Afternoon:</strong> Tate Modern (free, next to hotel) or St Paul's.</p>
+      <p><strong>Evening:</strong> Last dinner — Lasdun or Forza Wine on the South Bank.</p>`
+    },
+    {
+      title: 'Day 10 · <em>Home</em>',
+      body: `<p>Leave hotel 10:00–10:30 AM.</p>
+      <p>Blackfriars → Thameslink to Farringdon → Elizabeth Line to Heathrow. ~50 min.</p>
+      <p>Heathrow by ~11 AM. UA928 departs 2:10 PM, lands ORD 5:15 PM.</p>
+      <p style="margin-top:18px; font-style:italic; opacity:0.8;">Home before bedtime.</p>`
+    }
+  ];
+
+  const c = tripDayContent[tripDayNum-1];
+  document.getElementById('modalTitle').innerHTML = c.title;
+  document.getElementById('modalBody').innerHTML = c.body;
+  state.opened['trip-' + dateKey(date)] = new Date().toISOString();
+  saveState(state);
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  setTimeout(buildCalendar, 600);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ============ PUZZLE RENDERING ============
+function renderPuzzle(puzzle, date) {
+  if (puzzle.kind === 'multiple') {
+    return renderMultiple(puzzle, date);
+  } else if (puzzle.kind === 'anagram') {
+    return renderAnagram(puzzle, date);
+  } else if (puzzle.kind === 'match') {
+    return renderMatch(puzzle, date);
+  }
+  return '<p>Puzzle.</p>';
+}
+
+function renderMultiple(puzzle, date) {
+  let html = '<div class="puzzle-area" data-puzzle-type="multiple">';
+  puzzle.questions.forEach((q, i) => {
+    html += `<div class="puzzle-q-block" data-q-idx="${i}" style="${i > 0 ? 'margin-top:22px; padding-top:18px; border-top:1px dashed var(--paper-darker);' : ''}">
+      <div class="puzzle-question">${i+1}. ${q.q}</div>
+      <div class="puzzle-options">
+        ${q.options.map((opt, j) => `<button class="puzzle-option" data-correct="${j === q.correct}" data-q="${i}">${opt}</button>`).join('')}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderAnagram(puzzle, date) {
+  let html = '<div class="puzzle-area" data-puzzle-type="anagram"><p style="font-size:14px; margin-bottom:14px; opacity:0.8;">Unscramble each phrase. Type your answer.</p>';
+  puzzle.items.forEach((item, i) => {
+    html += `<div style="margin-top:${i>0?'18px':'0'};">
+      <div class="puzzle-question" style="font-size:22px; letter-spacing:0.1em;">${item.scrambled}</div>
+      ${item.hint ? `<div style="font-size:13px; opacity:0.7; font-style:italic; margin-bottom:6px;">Hint: ${item.hint}</div>` : ''}
+      <input type="text" class="puzzle-input" data-answer="${item.answer.toUpperCase()}" placeholder="Your answer..." autocomplete="off">
+      <div class="puzzle-feedback" data-fb="${i}"></div>
+    </div>`;
+  });
+  html += `<button class="puzzle-btn" onclick="checkAnagrams(this)">Check Answers</button></div>`;
+  return html;
+}
+
+function renderMatch(puzzle, date) {
+  // Shuffle right column for the puzzle
+  const lefts = puzzle.pairs.map((p, i) => ({ text: p.left, pairId: i }));
+  const rights = puzzle.pairs.map((p, i) => ({ text: p.right, pairId: i }));
+  const shuffled = [...rights].sort(() => Math.random() - 0.5);
+
+  let html = `<div class="puzzle-area" data-puzzle-type="match">
+    <p style="font-size:14px; margin-bottom:14px; opacity:0.8;">Click a card on the left, then its match on the right.</p>
+    <div class="matching-pairs">
+      <div>
+        ${lefts.map(l => `<button class="match-item" data-side="left" data-pair="${l.pairId}" style="margin-bottom:8px; width:100%;">${l.text}</button>`).join('')}
+      </div>
+      <div>
+        ${shuffled.map(r => `<button class="match-item" data-side="right" data-pair="${r.pairId}" style="margin-bottom:8px; width:100%;">${r.text}</button>`).join('')}
+      </div>
+    </div>
+    ${puzzle.note ? `<p style="font-size:13px; opacity:0.7; font-style:italic; margin-top:14px;">${puzzle.note}</p>` : ''}
+    <div class="puzzle-feedback" data-fb="match"></div>
+  </div>`;
+  return html;
+}
+
+function bindPuzzleHandlers(date) {
+  // Multiple choice
+  document.querySelectorAll('.puzzle-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const correct = btn.dataset.correct === 'true';
+      const qIdx = btn.dataset.q;
+      const block = btn.closest('.puzzle-q-block');
+      block.querySelectorAll('.puzzle-option').forEach(b => {
+        b.classList.add('disabled');
+        if (b.dataset.correct === 'true') b.classList.add('correct');
+        else if (b === btn && !correct) b.classList.add('wrong');
+      });
+      // Track puzzle solved
+      const dKey = dateKey(date);
+      state.puzzles[dKey] = state.puzzles[dKey] || {};
+      state.puzzles[dKey][qIdx] = correct;
+      saveState(state);
+      updateStats();
+    });
+  });
+
+  // Match game
+  let leftSelected = null;
+  let matchedCount = 0;
+  const totalMatches = document.querySelectorAll('.match-item[data-side="left"]').length;
+  document.querySelectorAll('.match-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (item.classList.contains('matched')) return;
+      if (item.dataset.side === 'left') {
+        document.querySelectorAll('.match-item[data-side="left"]').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        leftSelected = item;
+      } else if (leftSelected) {
+        if (leftSelected.dataset.pair === item.dataset.pair) {
+          leftSelected.classList.add('matched');
+          leftSelected.classList.remove('selected');
+          item.classList.add('matched');
+          matchedCount++;
+          if (matchedCount === totalMatches) {
+            const fb = document.querySelector('.puzzle-feedback[data-fb="match"]');
+            if (fb) {
+              fb.classList.add('show', 'correct');
+              fb.textContent = '✓ All matched. Well done.';
+            }
+            const dKey = dateKey(date);
+            state.puzzles[dKey] = { all: true };
+            saveState(state);
+            updateStats();
+          }
+        } else {
+          // Brief flash then reset
+          item.classList.add('selected');
+          setTimeout(() => {
+            item.classList.remove('selected');
+            if (leftSelected) leftSelected.classList.remove('selected');
+            leftSelected = null;
+          }, 500);
+        }
+        if (matchedCount < totalMatches) leftSelected = null;
+      }
+    });
+  });
+}
+
+window.checkAnagrams = function(btn) {
+  const area = btn.closest('.puzzle-area');
+  const inputs = area.querySelectorAll('.puzzle-input');
+  let allCorrect = true;
+  inputs.forEach((inp, i) => {
+    const expected = inp.dataset.answer.replace(/[^A-Z]/g, '');
+    const got = inp.value.toUpperCase().replace(/[^A-Z]/g, '');
+    const fb = area.querySelectorAll('.puzzle-feedback')[i];
+    if (got === expected) {
+      fb.className = 'puzzle-feedback show correct';
+      fb.textContent = `✓ Correct: ${inp.dataset.answer}`;
+    } else {
+      fb.className = 'puzzle-feedback show wrong';
+      fb.textContent = got ? `✗ Not quite. Answer: ${inp.dataset.answer}` : `Answer: ${inp.dataset.answer}`;
+      allCorrect = false;
+    }
+  });
+  btn.textContent = allCorrect ? 'All Correct!' : 'Revealed';
+  btn.disabled = true;
+  // Track
+  const date = btn.closest('.modal').querySelector('.modal-date').textContent;
+  // Mark as solved-attempted
+  state.puzzles['anagram-' + Date.now().toString().slice(0,6)] = { attempted: true, allCorrect };
+  saveState(state);
+  updateStats();
+};
+
+// ============ CHECKBOX HANDLERS ============
+function bindCheckboxHandlers(date) {
+  const dKey = dateKey(date);
+  document.querySelectorAll('.prep-checkbox').forEach(box => {
+    const taskId = box.dataset.taskId;
+    const cb = box.querySelector('input[type="checkbox"]');
+    const fullId = `${dKey}-${taskId}`;
+    if (state.tasks[fullId]) {
+      cb.checked = true;
+      box.classList.add('checked');
+    }
+    box.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'INPUT') {
+        cb.checked = !cb.checked;
+      }
+      if (cb.checked) {
+        state.tasks[fullId] = new Date().toISOString();
+        box.classList.add('checked');
+      } else {
+        delete state.tasks[fullId];
+        box.classList.remove('checked');
+      }
+      saveState(state);
+      updateStats();
+    });
+  });
+}
+
+// ============ STATS ============
+function updateStats() {
+  document.getElementById('statOpened').textContent = Object.keys(state.opened).length;
+  document.getElementById('statTasks').textContent = Object.keys(state.tasks).length;
+  document.getElementById('statPuzzles').textContent = Object.keys(state.puzzles).length;
+}
+
+// ============ EXPORT / RESET ============
+window.exportProgress = function() {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    opened: state.opened,
+    tasks: state.tasks,
+    puzzles: state.puzzles
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `coen-london-countdown-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+window.resetAllProgress = async function() {
+  if (!confirm('Reset all progress — opened tiles, completed tasks, solved puzzles? This cannot be undone.')) return;
+  state = { opened: {}, tasks: {}, puzzles: {} };
+  await saveState(state);
+  buildCalendar();
+};
+
+// ============ INIT ============
+(async function init() {
+  state = await loadState();
+  buildCalendar();
+})();
+</script>
+</body>
+</html>
