@@ -700,6 +700,219 @@
   .match-item.selected { background: var(--brass); color: var(--paper); border-color: var(--brass); }
   .match-item.matched { background: var(--moss); color: var(--paper); border-color: var(--moss); pointer-events: none; }
 
+  /* ========== WORDLE ========== */
+  .wordle-section {
+    max-width: 480px;
+    margin: 50px auto 24px;
+    padding: 0 24px;
+  }
+
+  .wordle-header {
+    text-align: center;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--paper-darker);
+    padding-bottom: 14px;
+  }
+
+  .wordle-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 26px;
+    color: var(--navy-deep);
+  }
+
+  .wordle-header h2 em {
+    font-style: italic;
+    color: var(--oxblood);
+    font-weight: 400;
+  }
+
+  .wordle-header p {
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .wordle-board {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .wordle-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .wordle-cell {
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--paper-darker);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 24px;
+    text-transform: uppercase;
+    color: var(--navy-deep);
+    background: var(--paper);
+    transition: transform 0.1s;
+    border-radius: 2px;
+  }
+
+  .wordle-cell.filled {
+    border-color: var(--ink-soft);
+    animation: wordle-pop 0.1s ease;
+  }
+
+  .wordle-cell.correct {
+    background: var(--moss);
+    border-color: var(--moss);
+    color: var(--paper);
+  }
+
+  .wordle-cell.present {
+    background: var(--brass);
+    border-color: var(--brass);
+    color: var(--paper);
+  }
+
+  .wordle-cell.absent {
+    background: var(--ink-soft);
+    border-color: var(--ink-soft);
+    color: var(--paper);
+    opacity: 0.75;
+  }
+
+  .wordle-cell.reveal {
+    animation: wordle-flip 0.5s ease forwards;
+  }
+
+  @keyframes wordle-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes wordle-flip {
+    0% { transform: rotateX(0deg); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg); }
+  }
+
+  .wordle-keyboard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+  }
+
+  .wordle-kb-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .wordle-key {
+    min-width: 30px;
+    height: 44px;
+    border: 1px solid var(--paper-darker);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Special Elite', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  .wordle-key:hover {
+    background: var(--paper-dark);
+  }
+
+  .wordle-key.wide {
+    min-width: 52px;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+
+  .wordle-key.correct {
+    background: var(--moss);
+    border-color: var(--moss);
+    color: var(--paper);
+  }
+
+  .wordle-key.present {
+    background: var(--brass);
+    border-color: var(--brass);
+    color: var(--paper);
+  }
+
+  .wordle-key.absent {
+    background: var(--ink-soft);
+    border-color: var(--ink-soft);
+    color: var(--paper);
+    opacity: 0.6;
+  }
+
+  .wordle-message {
+    text-align: center;
+    font-family: 'Special Elite', monospace;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    min-height: 20px;
+    margin: 10px 0;
+    color: var(--oxblood);
+  }
+
+  .wordle-definition {
+    text-align: center;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    padding: 12px 16px;
+    background: var(--paper-dark);
+    border-radius: 3px;
+    border-left: 3px solid var(--brass);
+    display: none;
+  }
+
+  .wordle-definition.show {
+    display: block;
+  }
+
+  .wordle-controls {
+    text-align: center;
+    margin-top: 14px;
+  }
+
+  .wordle-stats {
+    text-align: center;
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  @media (max-width: 600px) {
+    .wordle-cell { width: 44px; height: 44px; font-size: 20px; }
+    .wordle-key { min-width: 24px; height: 40px; font-size: 11px; padding: 0 5px; }
+    .wordle-key.wide { min-width: 42px; font-size: 10px; }
+  }
+
   /* Locked tile messaging */
   .locked-msg {
     text-align: center;
@@ -803,7 +1016,7 @@
   <div class="eyebrow">Coen Family Travel Almanack · MMXXVI</div>
   <h1 class="title">London <em>&</em> York</h1>
   <p class="subtitle">A daily countdown for Craig, Kelly, Atticus &amp; Isabelle</p>
-  <div class="dates-line">17 — 26 August 2026 · United UA920 · Heathrow</div>
+  <div class="dates-line">17 — 26 August 2026 · Heathrow</div>
 </div>
 
 <div class="hero-counter">
@@ -830,9 +1043,25 @@
 
 <div class="calendar" id="tripCalendar"></div>
 
+<!-- BRITISH SLANG WORDLE -->
+<div class="wordle-section" id="wordleSection">
+  <div class="wordle-header">
+    <h2>British <em>Slang</em> Wordle</h2>
+    <p>Guess the British slang word in six tries. A new word each day.</p>
+  </div>
+  <div class="wordle-message" id="wordleMsg"></div>
+  <div class="wordle-board" id="wordleBoard"></div>
+  <div class="wordle-definition" id="wordleDef"></div>
+  <div class="wordle-keyboard" id="wordleKeyboard"></div>
+  <div class="wordle-stats" id="wordleStats"></div>
+  <div class="wordle-controls">
+    <button class="footer-btn" id="wordleNewBtn" style="display:none;" onclick="newWordleGame()">Next Word</button>
+  </div>
+</div>
+
 <div class="footer">
   <div>Made for the Coen family · ad astra per Heathrow</div>
-  <div class="footer-row">Confirmation M9WJ53 · ETA, Proms, Westminster, Tower — handle them daily</div>
+  <div class="footer-row">ETA, Proms, Westminster, Tower — handle them daily</div>
   <div class="footer-controls">
     <button class="footer-btn" onclick="exportProgress()">Export Progress</button>
     <button class="footer-btn" onclick="resetAllProgress()">Reset All</button>
@@ -935,7 +1164,7 @@ const CONTENT = {
     type: 'milestone', icon: '✦',
     title: 'Welcome, <em>traveller</em>',
     body: () => `
-      <p>Ninety-eight days. That's how long until United UA920 lifts off from O'Hare and points itself at Heathrow.</p>
+      <p>Ninety-eight days. That's how long until the plane lifts off and points itself at Heathrow.</p>
       <p>This little almanack is yours — Craig, Kelly, Atticus, Isabelle — for the whole runway. Each day a new tile unlocks. Some are <strong>prep tasks</strong> (the things that need doing before takeoff). Some are <strong>mini-puzzles</strong> (London anagrams, composer matches, the British word for "trunk of a car"). Some are just slivers of curiosity about the places you're going.</p>
       <p>Open one tile per day. Past tiles stay open forever. Today's is glowing. Pull this up over morning coffee and chip away.</p>
       <p style="font-style:italic; text-align:center; margin-top:20px;">— "Why, sir, you find no man, at all intellectual, who is willing to leave London."<br><span style="font-size:13px; opacity:0.7">Samuel Johnson, 1777</span></p>
@@ -1058,9 +1287,9 @@ const CONTENT = {
   },
   86: { type: 'fact', icon: '🚆', title: 'About the <em>Heathrow Express</em>',
     body: () => `
-      <p>You've already booked: 4 adults, Standard Class, ref <strong>cc61e09b</strong>, Mon 17 Aug, £40 for the lot. Tickets are PDFs in your phone — that's the ticket on board.</p>
+      <p>You've already booked: 4 adults, Standard Class, Mon 17 Aug, £40 for the lot. Tickets are PDFs in your phone — that's the ticket on board.</p>
       <p>It runs <strong>every 15 minutes</strong> from Heathrow Central (T2/T3) and T5 directly to Paddington. Travel time: <strong>15 minutes</strong> from T2/T3, 21 from T5. No stops.</p>
-      <p>Important: Heathrow Express is <em>not</em> on the Tube/Elizabeth Line tap system. Don't try to tap your phone at the gate — show the QR codes from the email PDFs.</p>
+      <p>Important: Heathrow Express is <em>not</em> on the Tube/Elizabeth Line tap system. Don't try to tap your phone at the gate — show the QR codes from your email PDFs.</p>
       <p>From Paddington, you walk to the Marriott Regent's Park via Little Venice and Abbey Road. About three miles. Bags on, slow pace, jet-lag-friendly.</p>
     `
   },
@@ -1259,8 +1488,8 @@ const CONTENT = {
   },
   63: { type: 'puzzle', icon: '🕰️', title: 'Time zone <em>maths</em>',
     puzzle: { kind: 'multiple', questions: [
-      { q: 'When it\'s 9 AM in London, what time is it in Sun Prairie, WI?', options: ['2 AM', '3 AM', '4 AM', '5 AM'], correct: 1 },
-      { q: 'Your flight UA920 lands at 9 AM Aug 17 London. What time is that in Wisconsin?', options: ['1 AM Aug 17', '3 AM Aug 17', '4 AM Aug 17', '6 AM Aug 17'], correct: 1 },
+      { q: 'When it\'s 9 AM in London, what time is it back home?', options: ['2 AM', '3 AM', '4 AM', '5 AM'], correct: 1 },
+      { q: 'Your flight lands at 9 AM Aug 17 London. What time is that back home?', options: ['1 AM Aug 17', '3 AM Aug 17', '4 AM Aug 17', '6 AM Aug 17'], correct: 1 },
       { q: 'BBC Proms booking opens at 9 AM London on Sat May 16. That is…', options: ['1 AM Sat Central', '3 AM Sat Central', '5 AM Sat Central', '8 PM Fri Central'], correct: 1 }
     ]}
   },
@@ -1302,7 +1531,7 @@ const CONTENT = {
     puzzle: { kind: 'multiple', questions: [
       { q: 'How many nights in London total (both stays combined)?', options: ['4', '5', '6', '7'], correct: 2 },
       { q: 'Which day is the North York Moors / Whitby tour?', options: ['Fri 21 Aug', 'Sat 22 Aug', 'Sun 23 Aug', 'Mon 24 Aug'], correct: 2 },
-      { q: 'What time does UA928 (return) depart Heathrow?', options: ['11:30 AM', '12:50 PM', '2:10 PM', '3:45 PM'], correct: 2 }
+      { q: 'What time does the return flight depart Heathrow?', options: ['11:30 AM', '12:50 PM', '2:10 PM', '3:45 PM'], correct: 2 }
     ]}
   },
   57: { type: 'prep', icon: '📔', title: 'Passport <em>expiration</em> check',
@@ -1485,7 +1714,7 @@ const CONTENT = {
   37: { type: 'fact', icon: '🏨', title: 'Moxy York — <em>where exactly</em>',
     body: () => `
       <p>Moxy York is at the south edge of the old town, on Black Horse Lane (near Tower Street, between the river and Clifford's Tower). <strong>9-minute walk to York Minster</strong>. <strong>18 minutes from York railway station</strong>, mostly along the river.</p>
-      <p>It's a Marriott budget brand — small rooms, fun lobby, good bar. You have two rooms (75393553, 75393555) which means doubling up: probably parents/kids split. Either configuration works.</p>
+      <p>It's a Marriott budget brand — small rooms, fun lobby, good bar. You have two rooms, which means doubling up: probably parents/kids split. Either configuration works.</p>
       <p>It's in the <em>middle</em> of medieval York. Step out the door, you're in it.</p>
     `
   },
@@ -1532,8 +1761,8 @@ const CONTENT = {
   },
   32: { type: 'puzzle', icon: '🧮', title: 'Logic — <em>seat assignments</em>',
     puzzle: { kind: 'multiple', questions: [
-      { q: 'Your LNER seats from London to York are 21–24 in Coach D. If the family takes them in age order from window…', options: ['Craig 21, Kelly 22, Atticus 23, Isabelle 24', 'Order of preference, doesn\'t matter', 'Kids together, parents together', 'All of the above'], correct: 3 },
-      { q: 'On the return (York→London), Coach L Seats 41–44 — what direction does Coach L typically face?', options: ['Always forward', 'Depends on the train\'s orientation that day', 'Always backward', 'Sideways'], correct: 1 },
+      { q: 'If the family takes their assigned LNER seats in age order from the window…', options: ['Oldest by the window', 'Order of preference, doesn\'t matter', 'Kids together, parents together', 'All of the above'], correct: 3 },
+      { q: 'On the return (York→London), what direction does your coach typically face?', options: ['Always forward', 'Depends on the train\'s orientation that day', 'Always backward', 'Sideways'], correct: 1 },
       { q: 'First Class on LNER includes…', options: ['Wider seats only', 'Wider seats + complimentary food/drink', 'Lounge access only', 'Wifi only'], correct: 1 }
     ]}
   },
@@ -1566,7 +1795,7 @@ const CONTENT = {
   },
   28: { type: 'puzzle', icon: '⏰', title: 'What time is it <em>in London</em>?',
     puzzle: { kind: 'multiple', questions: [
-      { q: 'It\'s 2 PM Wednesday in Sun Prairie. What time in London?', options: ['6 PM Wed', '7 PM Wed', '8 PM Wed', '9 PM Wed'], correct: 2 },
+      { q: 'It\'s 2 PM Wednesday at home. What time in London?', options: ['6 PM Wed', '7 PM Wed', '8 PM Wed', '9 PM Wed'], correct: 2 },
       { q: 'BST (British Summer Time) — when does it apply?', options: ['Year-round', 'Late March → late October', 'Just summer', 'Just July & August'], correct: 1 },
       { q: 'You\'re in BST during your trip. So London is how many hours ahead of Wisconsin?', options: ['5', '6', '7', '8'], correct: 1 }
     ]}
@@ -1636,13 +1865,13 @@ const CONTENT = {
   },
   19: { type: 'prep', icon: '✈️', title: 'Verify <em>seat assignments</em>',
     body: () => `
-      <p>You all booked Economy Plus — Row 32-33 outbound, similar return. Worth double-checking United didn't quietly reshuffle.</p>
+      <p>You all booked Economy Plus. Worth double-checking United didn't quietly reshuffle.</p>
       <div class="prep-task">
         <div class="prep-task-label">Today</div>
-        Log into United → My Trips → confirmation M9WJ53 → seat map. Confirm all 4 are still in Economy Plus together.
+        Log into United → My Trips → seat map. Confirm all 4 are still in Economy Plus together.
       </div>
-      ${prepCheckbox('Outbound seats confirmed (UA920)', 'seats-out')}
-      ${prepCheckbox('Return seats confirmed (UA928)', 'seats-back')}
+      ${prepCheckbox('Outbound seats confirmed', 'seats-out')}
+      ${prepCheckbox('Return seats confirmed', 'seats-back')}
     `
   },
   18: { type: 'fact', icon: '🎭', title: 'The Globe Theatre — a <em>reconstruction</em>',
@@ -1661,11 +1890,10 @@ const CONTENT = {
   },
   16: { type: 'prep', icon: '🚌', title: 'Confirm <em>Whitby tour</em>',
     body: () => `
-      <p>Two weeks out, time to verify the Mountain Goat reservation (Viator ref <strong>1379144733</strong>, operator confirmation <strong>XMT2YHKC</strong>).</p>
+      <p>Two weeks out, time to verify the Mountain Goat reservation. Check your Viator confirmation email for the reference numbers.</p>
       <div class="prep-task">
         <div class="prep-task-label">Verify</div>
-        ✦ Pickup: <strong>Leeman Road Coach Stops (Stop A)</strong>, York YO1 6FZ<br>
-        ✦ what3words: <strong>///rocks.defend.dive</strong><br>
+        ✦ Pickup: <strong>Leeman Road Coach Stops (Stop A)</strong>, York<br>
         ✦ Departure 9:00 AM — arrive by 8:50<br>
         ✦ Save the Viator confirmation as a PDF on phones<br>
         ✦ Calendar entry with 60-min-prior alarm
@@ -1693,10 +1921,10 @@ const CONTENT = {
       <div class="prep-task">
         <div class="prep-task-label">Each phone</div>
         ✦ <strong>United boarding passes</strong> — added to Wallet at T-24h, but you can pre-fetch e-tickets now<br>
-        ✦ <strong>Heathrow Express</strong> — 4 PDFs (HXBN3Y5EYQM/P/R/T), saved to Files<br>
-        ✦ <strong>LNER tickets</strong> — both legs, both refs (LG770066, BM040304), in the LNER app<br>
-        ✦ <strong>Hotel confirmations</strong> — Marriott 74018603, Moxy 75393553+75393555, Bankside 73983358<br>
-        ✦ <strong>Viator Whitby</strong> — ref 1379144733<br>
+        ✦ <strong>Heathrow Express</strong> — 4 PDFs from your confirmation email, saved to Files<br>
+        ✦ <strong>LNER tickets</strong> — both legs in the LNER app (check email for refs)<br>
+        ✦ <strong>Hotel confirmations</strong> — Marriott, Moxy, and Bankside refs from your Marriott account<br>
+        ✦ <strong>Viator Whitby</strong> — confirmation from your Viator email<br>
         ✦ <strong>UK ETAs</strong> — accessible offline (screenshot the approval emails)
       </div>
       ${prepCheckbox('All tickets and confirmations saved offline', 'tickets-saved')}
@@ -1765,7 +1993,7 @@ const CONTENT = {
   },
   6: { type: 'fact', icon: '🌊', title: 'A <em>week</em> from today',
     body: () => `
-      <p>One week from today, you'll be on UA920, somewhere over the Atlantic, watching a movie with surprisingly mediocre subtitling, eating something that's mostly carbs.</p>
+      <p>One week from today, you'll be somewhere over the Atlantic, watching a movie with surprisingly mediocre subtitling, eating something that's mostly carbs.</p>
       <p>Sleep on the plane if you can. The 6:45 PM departure means a 1 AM landing in your body's time, but a 9 AM London arrival. The full Day 1 will be a slow-walk recovery — Heathrow Express, the walk via Abbey Road, Regent's Park, hotel check-in, an early dinner, an early bed.</p>
       <p>One week.</p>
     `
@@ -1822,8 +2050,8 @@ const CONTENT = {
         ✦ Boarding passes downloaded to Wallet (T-24h)<br>
         ✦ Heathrow Express PDFs accessible offline<br>
         ✦ All phones charged to 100%, all battery banks charged<br>
-        ✦ Alarm set for 4 PM departure prep — flight is 6:45 PM out of ORD<br>
-        ✦ Plan to leave for ORD by 3:30 PM<br>
+        ✦ Alarm set for 4 PM departure prep — flight is 6:45 PM<br>
+        ✦ Plan to leave for the airport by 3:30 PM<br>
         ✦ Hotel confirmation numbers in Notes app<br>
         ✦ Last meal at home — something easy<br>
         ✦ Sleep early. You'll be glad on the plane.
@@ -1834,8 +2062,8 @@ const CONTENT = {
   0: { type: 'milestone', icon: '🛫',
     title: 'Today is the day. <em>Bon voyage.</em>',
     body: () => `
-      <p>UA920 departs O'Hare at <strong>6:45 PM</strong>. Lands Heathrow at <strong>9:00 AM</strong> tomorrow. Eight hours over the Atlantic, with the sun chasing you east.</p>
-      <p>Confirmation <strong>M9WJ53</strong>. Seats 32–33. PreCheck on all four boarding passes (you checked).</p>
+      <p>The flight departs at <strong>6:45 PM</strong>. Lands Heathrow at <strong>9:00 AM</strong> tomorrow. Eight hours over the Atlantic, with the sun chasing you east.</p>
+      <p>Confirmation in hand. PreCheck on all four boarding passes (you checked).</p>
       <p>This calendar carried you here for fourteen weeks. From here, it's the trip itself: ten days of London, York, Whitby, Westminster, the Tower, Marin Alsop and Marcus Roberts at the Royal Albert Hall, fish &amp; chips on a Whitby harbour, the Shambles at dusk.</p>
       <p style="font-style:italic; text-align:center; margin-top:24px; font-size:18px; color:var(--oxblood);">Have the best one. — C, K, A &amp; I</p>
       <p style="text-align:center; font-size:13px; opacity:0.7; margin-top:14px;">Send a postcard from Whitby.</p>
@@ -2081,7 +2309,7 @@ function openTripDayModal(tripDayNum, date) {
   const tripDayContent = [
     {
       title: 'Day 1 · <em>Arrival</em>',
-      body: `<p>UA920 lands Heathrow 9 AM. Heathrow Express to Paddington (refs HXBN3Y5EYQM/P/R/T). Walk to Marriott Regent's Park via Little Venice and Abbey Road — about 3 miles, slow pace, jet-lag-friendly.</p>
+      body: `<p>Flight lands Heathrow 9 AM. Heathrow Express to Paddington (tickets on your phones). Walk to Marriott Regent's Park via Little Venice and Abbey Road — about 3 miles, slow pace, jet-lag-friendly.</p>
       <p>Drop bags. Walk to <strong>Abbey Road crossing</strong>, then through <strong>Regent's Park</strong> to <strong>Primrose Hill</strong>. Lunch nearby. Early dinner. Early bed.</p>`
     },
     {
@@ -2106,7 +2334,7 @@ function openTripDayModal(tripDayNum, date) {
     {
       title: 'Day 5 · <em>To York</em>',
       body: `<p>Check out Marriott ~8:30 AM. Jubilee Line to King's Cross.</p>
-      <p><strong>LNER 09:47 → 11:50</strong>, First Class, Coach D Seats 21–24, ref LG770066.</p>
+      <p><strong>LNER 09:47 → 11:50</strong>, First Class (check LNER app for coach &amp; seats).</p>
       <p>Arrive York 11:50. Walk to Moxy (~10 min). Drop bags. Lunch in old town.</p>
       <p><strong>Afternoon:</strong> Walk the city walls (~2 mi, 90 min). Explore the Shambles. Dinner in old town.</p>`
     },
@@ -2118,13 +2346,13 @@ function openTripDayModal(tripDayNum, date) {
     },
     {
       title: 'Day 7 · <em>Whitby</em>',
-      body: `<p><strong>Mountain Goat tour.</strong> Pickup 9 AM at Leeman Road Coach Stops (Stop A), YO1 6FZ. Arrive 8:50.</p>
-      <p>Viator ref 1379144733 · op conf XMT2YHKC · what3words ///rocks.defend.dive</p>
+      body: `<p><strong>Mountain Goat tour.</strong> Pickup 9 AM at Leeman Road Coach Stops (Stop A). Arrive 8:50.</p>
+      <p>Check your Viator email for the confirmation details.</p>
       <p>Moorland scenery, Whitby Abbey ruins, Whitby harbour, fish &amp; chips. Return to York for the evening.</p>`
     },
     {
       title: 'Day 8 · <em>To London + the Prom</em>',
-      body: `<p><strong>LNER 09:55 → 12:01</strong>, First Class, Coach L Seats 41–44, ref BM040304.</p>
+      body: `<p><strong>LNER 09:55 → 12:01</strong>, First Class (check LNER app for coach &amp; seats).</p>
       <p>King's Cross → Bankside Hotel via Thameslink (Blackfriars stop). ~20 min.</p>
       <p>Check in. Afternoon: South Bank — Tate Modern, Globe Theatre area, walk along the Thames.</p>
       <p><strong>Evening: BBC Proms — American Classics.</strong> Marin Alsop / Philharmonia / Marcus Roberts Trio. Royal Albert Hall.</p>`
@@ -2140,7 +2368,7 @@ function openTripDayModal(tripDayNum, date) {
       title: 'Day 10 · <em>Home</em>',
       body: `<p>Leave hotel 10:00–10:30 AM.</p>
       <p>Blackfriars → Thameslink to Farringdon → Elizabeth Line to Heathrow. ~50 min.</p>
-      <p>Heathrow by ~11 AM. UA928 departs 2:10 PM, lands ORD 5:15 PM.</p>
+      <p>Heathrow by ~11 AM. Flight departs 2:10 PM, home by evening.</p>
       <p style="margin-top:18px; font-style:italic; opacity:0.8;">Home before bedtime.</p>`
     }
   ];
@@ -2376,10 +2604,353 @@ window.resetAllProgress = async function() {
   buildCalendar();
 };
 
+// ============ BRITISH SLANG WORDLE ============
+const SLANG_WORDS = [
+  { word: 'BLOKE', def: 'A man, a guy — "He\'s a good bloke."' },
+  { word: 'CHEEKY', def: 'Impudent or playfully rude — "a cheeky Nando\'s."' },
+  { word: 'DODGY', def: 'Suspicious, unreliable, or shady.' },
+  { word: 'GUTTED', def: 'Devastated, deeply disappointed.' },
+  { word: 'KNACK', def: 'A skill or talent — or to break something ("knackered").' },
+  { word: 'NAFF', def: 'Unfashionable, tacky, or uncool.' },
+  { word: 'PANTS', def: 'Rubbish, terrible — "That film was pants."' },
+  { word: 'QUID', def: 'One pound sterling — "Costs a few quid."' },
+  { word: 'SKINT', def: 'Broke, having no money.' },
+  { word: 'BRILL', def: 'Brilliant, excellent — shortened slang.' },
+  { word: 'DAFT', def: 'Silly or foolish — "Don\'t be daft."' },
+  { word: 'FAFF', def: 'To waste time on pointless activity.' },
+  { word: 'GRUB', def: 'Food — "Let\'s get some grub."' },
+  { word: 'JOLLY', def: 'Happy, cheerful — or an outing/trip.' },
+  { word: 'MANKY', def: 'Disgusting, dirty, or gross.' },
+  { word: 'NARKY', def: 'Irritable, bad-tempered.' },
+  { word: 'PLONK', def: 'Cheap wine, or to put down carelessly.' },
+  { word: 'SARKY', def: 'Sarcastic — "Don\'t be sarky with me."' },
+  { word: 'WONKY', def: 'Crooked, unstable, not quite right.' },
+  { word: 'BANTS', def: 'Short for banter — playful teasing.' },
+  { word: 'MINGE', def: 'To whinge or complain — a moaner.' },
+  { word: 'TATTY', def: 'Worn out, shabby, in poor condition.' },
+  { word: 'NITWIT', def: 'A stupid person — mild insult.' },
+  { word: 'JAMMY', def: 'Lucky — "You jammy dodger!"' },
+  { word: 'MUCKY', def: 'Dirty or filthy.' },
+  { word: 'NIFTY', def: 'Clever, handy, or skilfully done.' },
+  { word: 'POTTY', def: 'Slightly crazy — "She\'s gone potty."' },
+  { word: 'ROWDY', def: 'Noisy and disorderly.' },
+  { word: 'SOPPY', def: 'Overly sentimental or romantic.' },
+  { word: 'TOSSER', def: 'An annoying or contemptible person.' },
+  { word: 'WALLY', def: 'A silly person — mild, affectionate insult.' },
+  { word: 'CHUFF', def: 'Pleased, delighted — "Well chuffed!"' },
+  { word: 'DICKY', def: 'Not in good condition — "feeling a bit dicky."' },
+  { word: 'GAFFER', def: 'The boss, the person in charge.' },
+  { word: 'LEGIT', def: 'Legitimate, genuine, for real.' },
+  { word: 'MINGY', def: 'Mean, stingy, tight with money.' },
+  { word: 'PRANG', def: 'A minor car accident or collision.' },
+  { word: 'ROPEY', def: 'Of poor quality, or feeling unwell.' },
+  { word: 'SHIRTY', def: 'Irritated, annoyed, in a bad mood.' },
+  { word: 'TWEE', def: 'Excessively dainty or cute — affectedly so.' },
+  { word: 'BLAG', def: 'To scam, bluff, or talk your way into something.' },
+  { word: 'CORKER', def: 'Something outstandingly good.' },
+  { word: 'DINKY', def: 'Attractively small and neat.' },
+  { word: 'IFFY', def: 'Doubtful, uncertain, a bit suspect.' },
+  { word: 'LARK', def: 'A fun adventure, or a type of joke/scheme.' },
+  { word: 'NOSH', def: 'Food, or to eat.' },
+  { word: 'POSH', def: 'Upper class, fancy, or elegant.' },
+  { word: 'RUBBISH', def: 'Trash — or nonsense, terrible.' },
+  { word: 'STROP', def: 'A bad mood — "in a strop."' },
+  { word: 'WHINGE', def: 'To whine or complain persistently.' },
+  { word: 'BODGE', def: 'A clumsy or badly done repair.' },
+  { word: 'CRIKEY', def: 'Exclamation of surprise — "Crikey!"' },
+  { word: 'FLASK', def: 'A thermos — for tea, obviously.' },
+  { word: 'GEEZER', def: 'A man — London slang, sometimes tough.' },
+  { word: 'KERFUFFLE', def: 'A fuss, commotion, or bother.' },
+  { word: 'RANK', def: 'Disgusting, foul — "That\'s well rank."' },
+  { word: 'SNOG', def: 'To kiss passionately.' },
+  { word: 'TICKER', def: 'The heart — "good for the old ticker."' },
+  { word: 'YONKS', def: 'A very long time — "haven\'t seen you in yonks."' },
+  { word: 'BARMY', def: 'Crazy, insane — "absolutely barmy."' },
+];
+
+// Valid 5-letter words for guess validation (subset — allow any 5-letter input)
+const WORDLE_WORD_LENGTH_MIN = 4;
+const WORDLE_WORD_LENGTH_MAX = 9;
+const WORDLE_MAX_GUESSES = 6;
+const WORDLE_STORAGE_KEY = 'coen-wordle-v1';
+
+let wordleState = null;
+
+function loadWordleState() {
+  try {
+    const ls = localStorage.getItem(WORDLE_STORAGE_KEY);
+    if (ls) return JSON.parse(ls);
+  } catch (e) {}
+  return { played: 0, won: 0, streak: 0, bestStreak: 0 };
+}
+
+function saveWordleState() {
+  try { localStorage.setItem(WORDLE_STORAGE_KEY, JSON.stringify(wordleState)); } catch (e) {}
+}
+
+// Pick today's word deterministically based on the date
+function getTodaysSlang() {
+  const today = effectiveToday();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  return SLANG_WORDS[seed % SLANG_WORDS.length];
+}
+
+let currentWordle = null;
+
+function initWordle() {
+  wordleState = loadWordleState();
+  const slang = getTodaysSlang();
+  const todayKey = dateKey(effectiveToday());
+  const savedGame = wordleState['game-' + todayKey];
+
+  currentWordle = {
+    answer: slang.word.toUpperCase(),
+    def: slang.def,
+    length: slang.word.length,
+    guesses: savedGame ? savedGame.guesses : [],
+    currentGuess: '',
+    gameOver: savedGame ? savedGame.gameOver : false,
+    won: savedGame ? savedGame.won : false,
+    todayKey: todayKey
+  };
+
+  renderWordleBoard();
+  renderWordleKeyboard();
+  updateWordleStats();
+
+  if (currentWordle.gameOver) {
+    const msg = document.getElementById('wordleMsg');
+    msg.textContent = currentWordle.won ? 'Brilliant! Well done.' : `The word was: ${currentWordle.answer}`;
+    showWordleDef();
+    document.getElementById('wordleNewBtn').style.display = 'inline-block';
+  }
+}
+
+function renderWordleBoard() {
+  const board = document.getElementById('wordleBoard');
+  board.innerHTML = '';
+  const len = currentWordle.length;
+
+  for (let r = 0; r < WORDLE_MAX_GUESSES; r++) {
+    const row = document.createElement('div');
+    row.className = 'wordle-row';
+    for (let c = 0; c < len; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'wordle-cell';
+
+      if (r < currentWordle.guesses.length) {
+        const guess = currentWordle.guesses[r];
+        cell.textContent = guess.letters[c];
+        cell.classList.add(guess.result[c]);
+      } else if (r === currentWordle.guesses.length && !currentWordle.gameOver) {
+        cell.textContent = currentWordle.currentGuess[c] || '';
+        if (currentWordle.currentGuess[c]) cell.classList.add('filled');
+      }
+      row.appendChild(cell);
+    }
+    board.appendChild(row);
+  }
+}
+
+function renderWordleKeyboard() {
+  const kb = document.getElementById('wordleKeyboard');
+  kb.innerHTML = '';
+  const rows = [
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L'],
+    ['ENTER','Z','X','C','V','B','N','M','⌫']
+  ];
+
+  // Build letter state map from all guesses
+  const letterStates = {};
+  currentWordle.guesses.forEach(g => {
+    g.letters.forEach((letter, i) => {
+      const st = g.result[i];
+      const prev = letterStates[letter];
+      if (st === 'correct') letterStates[letter] = 'correct';
+      else if (st === 'present' && prev !== 'correct') letterStates[letter] = 'present';
+      else if (st === 'absent' && !prev) letterStates[letter] = 'absent';
+    });
+  });
+
+  rows.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'wordle-kb-row';
+    row.forEach(key => {
+      const btn = document.createElement('button');
+      btn.className = 'wordle-key';
+      btn.textContent = key;
+      if (key === 'ENTER' || key === '⌫') btn.classList.add('wide');
+      if (letterStates[key]) btn.classList.add(letterStates[key]);
+      btn.addEventListener('click', () => handleWordleKey(key));
+      rowEl.appendChild(btn);
+    });
+    kb.appendChild(rowEl);
+  });
+}
+
+function handleWordleKey(key) {
+  if (currentWordle.gameOver) return;
+
+  if (key === '⌫') {
+    currentWordle.currentGuess = currentWordle.currentGuess.slice(0, -1);
+    renderWordleBoard();
+    return;
+  }
+
+  if (key === 'ENTER') {
+    submitWordleGuess();
+    return;
+  }
+
+  if (currentWordle.currentGuess.length < currentWordle.length) {
+    currentWordle.currentGuess += key;
+    renderWordleBoard();
+  }
+}
+
+function evaluateGuess(guess, answer) {
+  const result = Array(answer.length).fill('absent');
+  const answerArr = answer.split('');
+  const guessArr = guess.split('');
+  const used = Array(answer.length).fill(false);
+
+  // First pass: correct positions
+  for (let i = 0; i < answer.length; i++) {
+    if (guessArr[i] === answerArr[i]) {
+      result[i] = 'correct';
+      used[i] = true;
+    }
+  }
+
+  // Second pass: present but wrong position
+  for (let i = 0; i < answer.length; i++) {
+    if (result[i] === 'correct') continue;
+    for (let j = 0; j < answer.length; j++) {
+      if (!used[j] && guessArr[i] === answerArr[j]) {
+        result[i] = 'present';
+        used[j] = true;
+        break;
+      }
+    }
+  }
+
+  return result;
+}
+
+function submitWordleGuess() {
+  const guess = currentWordle.currentGuess.toUpperCase();
+  if (guess.length !== currentWordle.length) {
+    showWordleMsg('Not enough letters');
+    return;
+  }
+
+  const result = evaluateGuess(guess, currentWordle.answer);
+  currentWordle.guesses.push({ letters: guess.split(''), result });
+  currentWordle.currentGuess = '';
+
+  const won = result.every(r => r === 'correct');
+  const lost = !won && currentWordle.guesses.length >= WORDLE_MAX_GUESSES;
+
+  if (won) {
+    currentWordle.gameOver = true;
+    currentWordle.won = true;
+    wordleState.played++;
+    wordleState.won++;
+    wordleState.streak++;
+    if (wordleState.streak > wordleState.bestStreak) wordleState.bestStreak = wordleState.streak;
+    showWordleMsg('Brilliant! Well done.');
+    document.getElementById('wordleNewBtn').style.display = 'inline-block';
+    showWordleDef();
+  } else if (lost) {
+    currentWordle.gameOver = true;
+    currentWordle.won = false;
+    wordleState.played++;
+    wordleState.streak = 0;
+    showWordleMsg(`The word was: ${currentWordle.answer}`);
+    document.getElementById('wordleNewBtn').style.display = 'inline-block';
+    showWordleDef();
+  }
+
+  // Save game state
+  wordleState['game-' + currentWordle.todayKey] = {
+    guesses: currentWordle.guesses,
+    gameOver: currentWordle.gameOver,
+    won: currentWordle.won
+  };
+  saveWordleState();
+
+  // Animate reveal
+  renderWordleBoard();
+  renderWordleKeyboard();
+  updateWordleStats();
+}
+
+function showWordleMsg(msg) {
+  const el = document.getElementById('wordleMsg');
+  el.textContent = msg;
+  if (!currentWordle.gameOver) {
+    setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 2000);
+  }
+}
+
+function showWordleDef() {
+  const el = document.getElementById('wordleDef');
+  el.innerHTML = `<strong>${currentWordle.answer}</strong> — ${currentWordle.def}`;
+  el.classList.add('show');
+}
+
+function updateWordleStats() {
+  const el = document.getElementById('wordleStats');
+  el.textContent = `Played ${wordleState.played} · Won ${wordleState.won} · Streak ${wordleState.streak}`;
+}
+
+window.newWordleGame = function() {
+  // Pick a random word (not today's)
+  const randomIdx = Math.floor(Math.random() * SLANG_WORDS.length);
+  const slang = SLANG_WORDS[randomIdx];
+  const gameKey = 'extra-' + Date.now();
+
+  currentWordle = {
+    answer: slang.word.toUpperCase(),
+    def: slang.def,
+    length: slang.word.length,
+    guesses: [],
+    currentGuess: '',
+    gameOver: false,
+    won: false,
+    todayKey: gameKey
+  };
+
+  document.getElementById('wordleMsg').textContent = '';
+  document.getElementById('wordleDef').classList.remove('show');
+  document.getElementById('wordleNewBtn').style.display = 'none';
+  renderWordleBoard();
+  renderWordleKeyboard();
+};
+
+// Physical keyboard support for wordle
+document.addEventListener('keydown', (e) => {
+  // Only handle if wordle section is visible and modal is not open
+  if (document.getElementById('modalOverlay').classList.contains('active')) return;
+  if (!currentWordle || currentWordle.gameOver) return;
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleWordleKey('ENTER');
+  } else if (e.key === 'Backspace') {
+    e.preventDefault();
+    handleWordleKey('⌫');
+  } else if (/^[a-zA-Z]$/.test(e.key)) {
+    handleWordleKey(e.key.toUpperCase());
+  }
+});
+
 // ============ INIT ============
 (async function init() {
   state = await loadState();
   buildCalendar();
+  initWordle();
 })();
 </script>
 </body>
