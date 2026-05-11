@@ -1000,6 +1000,41 @@
     opacity: 0.85;
   }
 
+  /* ========== NAV BAR ========== */
+  .nav-bar {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--paper-darker);
+  }
+
+  .nav-link {
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  .nav-link:hover {
+    color: var(--navy-deep);
+    border-color: var(--paper-darker);
+    background: var(--paper-dark);
+  }
+
+  .nav-link .nav-icon {
+    margin-right: 4px;
+  }
+
   @media (max-width: 600px) {
     .grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
     .tile-num { font-size: 28px; }
@@ -1007,6 +1042,7 @@
     .modal-header { padding: 22px 24px 14px; }
     .modal-title { font-size: 22px; }
     .stats-strip { gap: 24px; }
+    .nav-link { font-size: 10px; padding: 5px 10px; }
   }
 </style>
 </head>
@@ -1019,7 +1055,14 @@
   <div class="dates-line">17 — 26 August 2026 · Heathrow</div>
 </div>
 
-<div class="hero-counter">
+<nav class="nav-bar">
+  <a class="nav-link" href="#countdown"><span class="nav-icon">⏱</span>Countdown</a>
+  <a class="nav-link" href="#calendar"><span class="nav-icon">📅</span>Calendar</a>
+  <a class="nav-link" href="#tripCalendar"><span class="nav-icon">✈️</span>The Trip</a>
+  <a class="nav-link" href="#wordleSection"><span class="nav-icon">🔤</span>Wordle</a>
+</nav>
+
+<div class="hero-counter" id="countdown">
   <div class="big-number" id="bigNumber">--</div>
   <div class="big-number-label" id="bigNumberLabel">Days to Departure</div>
   <div class="stats-strip">
