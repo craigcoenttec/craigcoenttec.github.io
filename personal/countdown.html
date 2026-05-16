@@ -913,6 +913,234 @@
     .wordle-key.wide { min-width: 42px; font-size: 10px; }
   }
 
+  /* ========== CONNECTIONS ========== */
+  .connections-section {
+    max-width: 540px;
+    margin: 50px auto 24px;
+    padding: 0 24px;
+  }
+
+  .connections-header {
+    text-align: center;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--paper-darker);
+    padding-bottom: 14px;
+  }
+
+  .connections-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 26px;
+    color: var(--navy-deep);
+  }
+
+  .connections-header h2 em {
+    font-style: italic;
+    color: var(--oxblood);
+    font-weight: 400;
+  }
+
+  .connections-header p {
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .connections-solved {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .connections-solved-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 16px;
+    border-radius: 4px;
+    color: var(--paper);
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 14px;
+    text-align: center;
+    animation: conn-reveal 0.4s ease;
+  }
+
+  .connections-solved-row .conn-cat-name {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-family: 'Special Elite', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .connections-solved-row .conn-cat-words {
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .conn-difficulty-0 { background: var(--moss); }
+  .conn-difficulty-1 { background: var(--brass); }
+  .conn-difficulty-2 { background: var(--navy); }
+  .conn-difficulty-3 { background: var(--oxblood); }
+
+  @keyframes conn-reveal {
+    0% { transform: scaleY(0); opacity: 0; }
+    100% { transform: scaleY(1); opacity: 1; }
+  }
+
+  .connections-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .connections-tile {
+    aspect-ratio: 1.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    border: 2px solid var(--paper-darker);
+    border-radius: 4px;
+    background: var(--paper);
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: clamp(11px, 2.5vw, 14px);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    color: var(--navy-deep);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .connections-tile:hover {
+    background: var(--paper-dark);
+    border-color: var(--ink-soft);
+  }
+
+  .connections-tile.selected {
+    background: var(--navy-deep);
+    color: var(--paper);
+    border-color: var(--navy-deep);
+    transform: scale(0.96);
+  }
+
+  .connections-tile.shake {
+    animation: conn-shake 0.4s ease;
+  }
+
+  @keyframes conn-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+  }
+
+  .connections-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .conn-btn {
+    background: transparent;
+    border: 1px solid var(--paper-darker);
+    color: var(--ink-soft);
+    padding: 8px 18px;
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .conn-btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .conn-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .conn-btn:disabled:hover {
+    background: transparent;
+    color: var(--ink-soft);
+    border-color: var(--paper-darker);
+  }
+
+  .conn-btn.primary {
+    background: var(--navy-deep);
+    color: var(--paper);
+    border-color: var(--navy-deep);
+  }
+
+  .conn-btn.primary:hover {
+    background: var(--navy);
+  }
+
+  .connections-message {
+    text-align: center;
+    font-family: 'Special Elite', monospace;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    min-height: 20px;
+    margin: 10px 0;
+    color: var(--oxblood);
+  }
+
+  .connections-mistakes {
+    text-align: center;
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+
+  .connections-mistakes .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--oxblood);
+    margin: 0 2px;
+    transition: opacity 0.3s;
+  }
+
+  .connections-mistakes .dot.used {
+    opacity: 0.2;
+  }
+
+  .connections-stats {
+    text-align: center;
+    font-family: 'Special Elite', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  @media (max-width: 600px) {
+    .connections-tile { font-size: 11px; aspect-ratio: 1.6; }
+    .connections-section { padding: 0 12px; }
+  }
+
   /* Locked tile messaging */
   .locked-msg {
     text-align: center;
@@ -1060,6 +1288,7 @@
   <a class="nav-link" href="#calendar"><span class="nav-icon">📅</span>Calendar</a>
   <a class="nav-link" href="#tripCalendar"><span class="nav-icon">✈️</span>The Trip</a>
   <a class="nav-link" href="#wordleSection"><span class="nav-icon">🔤</span>Wordle</a>
+  <a class="nav-link" href="#connectionsSection"><span class="nav-icon">🔗</span>Connections</a>
 </nav>
 
 <div class="hero-counter" id="countdown">
@@ -1099,6 +1328,27 @@
   <div class="wordle-stats" id="wordleStats"></div>
   <div class="wordle-controls">
     <button class="footer-btn" id="wordleNewBtn" style="display:none;" onclick="newWordleGame()">Next Word</button>
+  </div>
+</div>
+
+<!-- CONNECTIONS -->
+<div class="connections-section" id="connectionsSection">
+  <div class="connections-header">
+    <h2>British <em>Connections</em></h2>
+    <p>Group 16 words into 4 categories of 4. A new puzzle each day.</p>
+  </div>
+  <div class="connections-message" id="connMsg"></div>
+  <div class="connections-solved" id="connSolved"></div>
+  <div class="connections-board" id="connBoard"></div>
+  <div class="connections-mistakes" id="connMistakes"></div>
+  <div class="connections-controls">
+    <button class="conn-btn" id="connShuffleBtn" onclick="shuffleConnBoard()">Shuffle</button>
+    <button class="conn-btn" id="connDeselectBtn" onclick="deselectAllConn()">Deselect</button>
+    <button class="conn-btn primary" id="connSubmitBtn" onclick="submitConnGuess()" disabled>Submit</button>
+  </div>
+  <div class="connections-stats" id="connStats"></div>
+  <div class="connections-controls" style="margin-top:10px;">
+    <button class="footer-btn" id="connNewBtn" style="display:none;" onclick="newConnGame()">Next Puzzle</button>
   </div>
 </div>
 
@@ -2989,11 +3239,384 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ============ CONNECTIONS GAME ============
+const CONNECTIONS_PUZZLES = [
+  {
+    categories: [
+      { name: 'London Landmarks', difficulty: 0, words: ['BIG BEN', 'TOWER', 'SHARD', 'EYE'] },
+      { name: 'British Meals', difficulty: 1, words: ['ELEVENSES', 'TEA', 'SUPPER', 'BREKKIE'] },
+      { name: 'Tube Lines', difficulty: 2, words: ['JUBILEE', 'VICTORIA', 'CIRCLE', 'CENTRAL'] },
+      { name: 'York History', difficulty: 3, words: ['MINSTER', 'SHAMBLES', 'VIKING', 'WALLS'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'British Sweets', difficulty: 0, words: ['JELLY BABY', 'CRUNCHIE', 'SMARTIES', 'FLAKE'] },
+      { name: 'Royal Residences', difficulty: 1, words: ['WINDSOR', 'BALMORAL', 'KENSINGTON', 'BUCKINGHAM'] },
+      { name: 'Double Decker ___', difficulty: 2, words: ['BUS', 'SANDWICH', 'CHOCOLATE', 'BRIDGE'] },
+      { name: 'Things That Are Red', difficulty: 3, words: ['PHONE BOX', 'LETTERBOX', 'GUARD', 'SETTER'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'British Weather', difficulty: 0, words: ['DRIZZLE', 'OVERCAST', 'FOGGY', 'GREY'] },
+      { name: 'Harry Potter Places', difficulty: 1, words: ['DIAGON', 'HOGSMEADE', 'HOGWARTS', 'AZKABAN'] },
+      { name: 'English Counties', difficulty: 2, words: ['KENT', 'SUSSEX', 'SURREY', 'ESSEX'] },
+      { name: '___ Street', difficulty: 3, words: ['BAKER', 'DOWNING', 'OXFORD', 'ABBEY'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'British Biscuits', difficulty: 0, words: ['DIGESTIVE', 'HOBNOB', 'BOURBON', 'CUSTARD'] },
+      { name: 'London Parks', difficulty: 1, words: ['HYDE', 'REGENT', 'GREEN', 'RICHMOND'] },
+      { name: 'Shakespeare Words', difficulty: 2, words: ['FORSOOTH', 'PRITHEE', 'HARK', 'WHEREFORE'] },
+      { name: 'Can Follow "Crown"', difficulty: 3, words: ['JEWELS', 'COURT', 'PRINCE', 'PLAZA'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'British Coins', difficulty: 0, words: ['PENNY', 'QUID', 'FIVER', 'TENNER'] },
+      { name: 'Fish & Chip Shop', difficulty: 1, words: ['MUSHY', 'BATTERED', 'VINEGAR', 'SCRAPS'] },
+      { name: 'Beatles Songs', difficulty: 2, words: ['HELP', 'YESTERDAY', 'IMAGINE', 'BLACKBIRD'] },
+      { name: '___ Bridge', difficulty: 3, words: ['TOWER', 'LONDON', 'WATERLOO', 'MILLENNIUM'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'Pub Drinks', difficulty: 0, words: ['BITTER', 'LAGER', 'STOUT', 'SHANDY'] },
+      { name: 'British TV Shows', difficulty: 1, words: ['DOWNTON', 'PEAKY', 'BAKE OFF', 'SHERLOCK'] },
+      { name: 'Underground Slang', difficulty: 2, words: ['MIND GAP', 'OYSTER', 'ZONE', 'TAP IN'] },
+      { name: 'Queen ___', difficulty: 3, words: ['BEE', 'VICTORIA', 'ANNE', 'ELIZABETH'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'Roald Dahl Characters', difficulty: 0, words: ['MATILDA', 'WILLY', 'JAMES', 'DANNY'] },
+      { name: 'Cricket Terms', difficulty: 1, words: ['WICKET', 'BOWLER', 'MAIDEN', 'CREASE'] },
+      { name: 'British Car Brands', difficulty: 2, words: ['BENTLEY', 'ROLLS', 'ASTON', 'LOTUS'] },
+      { name: 'Things in a Full English', difficulty: 3, words: ['RASHER', 'BEANS', 'TOAST', 'TOMATO'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'River Thames Bridges', difficulty: 0, words: ['WESTMINSTER', 'VAUXHALL', 'LAMBETH', 'CHELSEA'] },
+      { name: 'Cockney Rhyming', difficulty: 1, words: ['PLATES', 'DOG', 'TROUBLE', 'APPLES'] },
+      { name: 'British Monarchy', difficulty: 2, words: ['CHARLES', 'WILLIAM', 'GEORGE', 'HENRY'] },
+      { name: '___ Garden', difficulty: 3, words: ['COVENT', 'BEER', 'KENSINGTON', 'SECRET'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'Football Clubs', difficulty: 0, words: ['ARSENAL', 'CHELSEA', 'SPURS', 'CITY'] },
+      { name: 'Afternoon Tea Items', difficulty: 1, words: ['SCONE', 'FINGER', 'CLOTTED', 'EARL GREY'] },
+      { name: 'Sherlock Holmes', difficulty: 2, words: ['WATSON', 'BAKER ST', 'MORIARTY', 'DEDUCT'] },
+      { name: 'British Exclamations', difficulty: 3, words: ['BLIMEY', 'CRIKEY', 'GOODNESS', 'CRUMBS'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'West End Musicals', difficulty: 0, words: ['WICKED', 'HAMILTON', 'PHANTOM', 'MATILDA'] },
+      { name: 'UK Breakfast Cereals', difficulty: 1, words: ['WEETABIX', 'SHREDDIES', 'PORRIDGE', 'MUESLI'] },
+      { name: 'Robin Hood', difficulty: 2, words: ['SHERWOOD', 'MARIAN', 'FRIAR', 'ARROW'] },
+      { name: 'King ___ (places)', difficulty: 3, words: ['CROSS', 'ROAD', 'STREET', 'LANDING'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'London Museums', difficulty: 0, words: ['TATE', 'NATURAL', 'SCIENCE', 'BRITISH'] },
+      { name: 'Hogwarts Houses', difficulty: 1, words: ['GRYFFINDOR', 'SLYTHERIN', 'RAVENCLAW', 'HUFFLEPUFF'] },
+      { name: 'Types of Pudding', difficulty: 2, words: ['STICKY', 'SPOTTED', 'TREACLE', 'BREAD'] },
+      { name: 'Words Meaning "Good"', difficulty: 3, words: ['BRILLIANT', 'SMASHING', 'LOVELY', 'CRACKING'] }
+    ]
+  },
+  {
+    categories: [
+      { name: 'British Dog Breeds', difficulty: 0, words: ['CORGI', 'BULLDOG', 'TERRIER', 'SPANIEL'] },
+      { name: 'Doctor Who', difficulty: 1, words: ['TARDIS', 'DALEK', 'SONIC', 'COMPANION'] },
+      { name: 'UK Universities', difficulty: 2, words: ['OXFORD', 'CAMBRIDGE', 'EDINBURGH', 'YORK'] },
+      { name: 'Words for "Drunk"', difficulty: 3, words: ['LEGLESS', 'SLOSHED', 'BLADDERED', 'HAMMERED'] }
+    ]
+  }
+];
+
+const CONN_STORAGE_KEY = 'coen-connections-v1';
+const CONN_MAX_MISTAKES = 4;
+
+let connState = null;
+let connGame = null;
+
+function loadConnState() {
+  try {
+    const ls = localStorage.getItem(CONN_STORAGE_KEY);
+    if (ls) return JSON.parse(ls);
+  } catch (e) {}
+  return { played: 0, won: 0, streak: 0, bestStreak: 0 };
+}
+
+function saveConnState() {
+  try { localStorage.setItem(CONN_STORAGE_KEY, JSON.stringify(connState)); } catch (e) {}
+}
+
+function getTodaysConnPuzzle() {
+  const today = effectiveToday();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  return CONNECTIONS_PUZZLES[seed % CONNECTIONS_PUZZLES.length];
+}
+
+function initConnections() {
+  connState = loadConnState();
+  const puzzle = getTodaysConnPuzzle();
+  const todayKey = dateKey(effectiveToday());
+  const savedGame = connState['game-' + todayKey];
+
+  if (savedGame) {
+    connGame = savedGame;
+  } else {
+    // Flatten all words and shuffle
+    const allWords = [];
+    puzzle.categories.forEach(cat => {
+      cat.words.forEach(w => allWords.push(w));
+    });
+    connGame = {
+      categories: puzzle.categories,
+      remaining: shuffleArray([...allWords]),
+      selected: [],
+      solved: [],
+      mistakes: 0,
+      gameOver: false,
+      won: false,
+      todayKey: todayKey
+    };
+  }
+
+  renderConnBoard();
+  renderConnSolved();
+  renderConnMistakes();
+  updateConnStats();
+
+  if (connGame.gameOver) {
+    const msg = connGame.won ? 'Brilliant! All groups found.' : 'Better luck next time!';
+    showConnMsg(msg);
+    document.getElementById('connNewBtn').style.display = 'inline-block';
+    document.getElementById('connSubmitBtn').disabled = true;
+    document.getElementById('connShuffleBtn').disabled = true;
+    document.getElementById('connDeselectBtn').disabled = true;
+  }
+}
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderConnBoard() {
+  const board = document.getElementById('connBoard');
+  board.innerHTML = '';
+
+  connGame.remaining.forEach(word => {
+    const tile = document.createElement('div');
+    tile.className = 'connections-tile';
+    if (connGame.selected.includes(word)) tile.classList.add('selected');
+    tile.textContent = word;
+    tile.addEventListener('click', () => toggleConnTile(word));
+    board.appendChild(tile);
+  });
+
+  // Update submit button state
+  const submitBtn = document.getElementById('connSubmitBtn');
+  submitBtn.disabled = connGame.selected.length !== 4 || connGame.gameOver;
+}
+
+function renderConnSolved() {
+  const el = document.getElementById('connSolved');
+  el.innerHTML = '';
+
+  connGame.solved.forEach(cat => {
+    const row = document.createElement('div');
+    row.className = `connections-solved-row conn-difficulty-${cat.difficulty}`;
+    row.innerHTML = `<span class="conn-cat-name">${cat.name}</span><span class="conn-cat-words">${cat.words.join(', ')}</span>`;
+    el.appendChild(row);
+  });
+}
+
+function renderConnMistakes() {
+  const el = document.getElementById('connMistakes');
+  let html = 'Mistakes remaining: ';
+  for (let i = 0; i < CONN_MAX_MISTAKES; i++) {
+    html += `<span class="dot${i < connGame.mistakes ? ' used' : ''}"></span>`;
+  }
+  el.innerHTML = html;
+}
+
+function toggleConnTile(word) {
+  if (connGame.gameOver) return;
+
+  const idx = connGame.selected.indexOf(word);
+  if (idx > -1) {
+    connGame.selected.splice(idx, 1);
+  } else if (connGame.selected.length < 4) {
+    connGame.selected.push(word);
+  }
+  renderConnBoard();
+}
+
+window.shuffleConnBoard = function() {
+  if (connGame.gameOver) return;
+  connGame.remaining = shuffleArray([...connGame.remaining]);
+  renderConnBoard();
+};
+
+window.deselectAllConn = function() {
+  connGame.selected = [];
+  renderConnBoard();
+};
+
+window.submitConnGuess = function() {
+  if (connGame.selected.length !== 4 || connGame.gameOver) return;
+
+  // Check if selection matches any category
+  const selected = [...connGame.selected].sort();
+  let matchedCat = null;
+
+  for (const cat of connGame.categories) {
+    if (connGame.solved.some(s => s.name === cat.name)) continue;
+    const catWords = [...cat.words].sort();
+    if (JSON.stringify(selected) === JSON.stringify(catWords)) {
+      matchedCat = cat;
+      break;
+    }
+  }
+
+  if (matchedCat) {
+    // Correct!
+    connGame.solved.push(matchedCat);
+    connGame.remaining = connGame.remaining.filter(w => !connGame.selected.includes(w));
+    connGame.selected = [];
+
+    renderConnSolved();
+    renderConnBoard();
+
+    if (connGame.solved.length === 4) {
+      connGame.gameOver = true;
+      connGame.won = true;
+      connState.played++;
+      connState.won++;
+      connState.streak++;
+      if (connState.streak > connState.bestStreak) connState.bestStreak = connState.streak;
+      showConnMsg('Brilliant! All groups found.');
+      document.getElementById('connNewBtn').style.display = 'inline-block';
+      document.getElementById('connSubmitBtn').disabled = true;
+      document.getElementById('connShuffleBtn').disabled = true;
+      document.getElementById('connDeselectBtn').disabled = true;
+    }
+  } else {
+    // Check if 3 of 4 are from the same category (one away)
+    let oneAway = false;
+    for (const cat of connGame.categories) {
+      if (connGame.solved.some(s => s.name === cat.name)) continue;
+      const overlap = connGame.selected.filter(w => cat.words.includes(w));
+      if (overlap.length === 3) { oneAway = true; break; }
+    }
+
+    connGame.mistakes++;
+    if (oneAway) {
+      showConnMsg('One away!');
+    } else {
+      showConnMsg('Not quite — try again.');
+    }
+
+    // Shake selected tiles
+    document.querySelectorAll('.connections-tile.selected').forEach(t => {
+      t.classList.add('shake');
+      setTimeout(() => t.classList.remove('shake'), 500);
+    });
+
+    renderConnMistakes();
+
+    if (connGame.mistakes >= CONN_MAX_MISTAKES) {
+      connGame.gameOver = true;
+      connGame.won = false;
+      connState.played++;
+      connState.streak = 0;
+
+      // Reveal all remaining categories
+      connGame.categories.forEach(cat => {
+        if (!connGame.solved.some(s => s.name === cat.name)) {
+          connGame.solved.push(cat);
+        }
+      });
+      connGame.remaining = [];
+      connGame.selected = [];
+
+      renderConnSolved();
+      renderConnBoard();
+      showConnMsg('Better luck next time!');
+      document.getElementById('connNewBtn').style.display = 'inline-block';
+      document.getElementById('connSubmitBtn').disabled = true;
+      document.getElementById('connShuffleBtn').disabled = true;
+      document.getElementById('connDeselectBtn').disabled = true;
+    }
+  }
+
+  // Save game
+  connState['game-' + connGame.todayKey] = connGame;
+  saveConnState();
+  updateConnStats();
+};
+
+function showConnMsg(msg) {
+  const el = document.getElementById('connMsg');
+  el.textContent = msg;
+  if (!connGame.gameOver) {
+    setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
+  }
+}
+
+function updateConnStats() {
+  const el = document.getElementById('connStats');
+  el.textContent = `Played ${connState.played} · Won ${connState.won} · Streak ${connState.streak}`;
+}
+
+window.newConnGame = function() {
+  const randomIdx = Math.floor(Math.random() * CONNECTIONS_PUZZLES.length);
+  const puzzle = CONNECTIONS_PUZZLES[randomIdx];
+  const gameKey = 'extra-' + Date.now();
+
+  const allWords = [];
+  puzzle.categories.forEach(cat => {
+    cat.words.forEach(w => allWords.push(w));
+  });
+
+  connGame = {
+    categories: puzzle.categories,
+    remaining: shuffleArray([...allWords]),
+    selected: [],
+    solved: [],
+    mistakes: 0,
+    gameOver: false,
+    won: false,
+    todayKey: gameKey
+  };
+
+  document.getElementById('connMsg').textContent = '';
+  document.getElementById('connNewBtn').style.display = 'none';
+  document.getElementById('connSubmitBtn').disabled = true;
+  document.getElementById('connShuffleBtn').disabled = false;
+  document.getElementById('connDeselectBtn').disabled = false;
+  renderConnBoard();
+  renderConnSolved();
+  renderConnMistakes();
+};
+
 // ============ INIT ============
 (async function init() {
   state = await loadState();
   buildCalendar();
   initWordle();
+  initConnections();
 })();
 </script>
 </body>
