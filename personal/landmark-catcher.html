@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landmark Catcher</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #score-display {
+            position: absolute;
+            top: 16px;
+            right: 24px;
+            color: #f0e68c;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        }
+
+        #streak-display {
+            position: absolute;
+            top: 52px;
+            right: 24px;
+            color: #87ceeb;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        }
+
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 30, 0.92);
+            pointer-events: all;
+            z-index: 10;
+        }
+
+        #game-over-screen { display: none; }
+
+        .screen-title {
+            font-size: 52px;
+            color: #f0e68c;
+            margin-bottom: 12px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+        }
+
+        .screen-subtitle {
+            font-size: 20px;
+            color: #c0c0c0;
+            margin-bottom: 36px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .final-score {
+            font-size: 36px;
+            color: #87ceeb;
+            margin-bottom: 8px;
+        }
+
+        .best-score {
+            font-size: 18px;
+            color: #aaa;
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            padding: 14px 48px;
+            font-size: 22px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #e63946;
+            color: white;
+            font-weight: bold;
+            transition: transform 0.1s, background 0.2s;
+            pointer-events: all;
+        }
+
+        .btn:hover { background: #c1121f; transform: scale(1.05); }
+        .btn:active { transform: scale(0.97); }
+
+        .controls-hint {
+            margin-top: 24px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        #caught-label {
+            position: absolute;
+            color: #7fff7f;
+            font-size: 20px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+            transition: none;
+        }
+
+        /* Mobile controls */
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            bottom: 18px;
+            left: 0;
+            width: 100%;
+            justify-content: space-between;
+            padding: 0 16px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .mobile-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+        }
+
+        .mobile-btn:active {
+            background: rgba(255,255,255,0.3);
+        }
+
+        @media (pointer: coarse) {
+            #mobile-controls { display: flex; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+
+    <div id="ui-overlay">
+        <div id="score-display">Score: 0</div>
+        <div id="streak-display"></div>
+        <div id="caught-label"></div>
+    </div>
+
+    <div id="mobile-controls">
+        <button class="mobile-btn" id="btn-left" aria-label="Move left">&#9664;</button>
+        <button class="mobile-btn" id="btn-right" aria-label="Move right">&#9654;</button>
+    </div>
+
+    <div id="start-screen">
+        <div class="screen-title">Landmark Catcher</div>
+        <div class="screen-subtitle">
+            Catch falling British landmarks on your platter!<br>
+            Miss one and it's game over.
+        </div>
+        <button class="btn" id="start-btn">Play</button>
+        <div class="controls-hint">Arrow keys / A-D / touch to move</div>
+    </div>
+
+    <div id="game-over-screen">
+        <div class="screen-title">Game Over</div>
+        <div class="final-score" id="final-score">Score: 0</div>
+        <div class="best-score" id="best-score">Best: 0</div>
+        <button class="btn" id="restart-btn">Play Again</button>
+        <div class="controls-hint">Arrow keys / A-D / touch to move</div>
+    </div>
+
+    <script>
+    (() => {
+        // --- Canvas setup ---
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Landmarks ---
+        const LANDMARKS = [
+            { name: 'Big Ben', emoji: '\u{1F559}', icon: drawBigBen },
+            { name: 'Tower Bridge', emoji: '\u{1F309}', icon: drawTowerBridge },
+            { name: 'London Eye', emoji: '\u{1F3A1}', icon: drawLondonEye },
+            { name: 'Stonehenge', emoji: '\u{1FAA8}', icon: drawStonehenge },
+            { name: 'Crown', emoji: '\u{1F451}', icon: drawCrown },
+            { name: 'Red Phone Box', emoji: '\u{260E}', icon: drawPhoneBox },
+            { name: 'Double Decker', emoji: '\u{1F68C}', icon: drawDoubleDecker },
+            { name: 'Cup of Tea', emoji: '\u{2615}', icon: drawTeaCup },
+            { name: 'Palace Guard', emoji: '\u{1F482}', icon: drawGuard },
+            { name: 'Castle', emoji: '\u{1F3F0}', icon: drawCastle },
+        ];
+
+        // --- Drawing functions for landmarks ---
+        function drawBigBen(ctx, x, y, size) {
+            const s = size;
+            ctx.fillStyle = '#c9a84c';
+            ctx.fillRect(x - s * 0.15, y - s * 0.5, s * 0.3, s * 0.7);
+            ctx.fillStyle = '#a07830';
+            ctx.fillRect(x - s * 0.2, y + s * 0.2, s * 0.4, s * 0.3);
+            // clock face
+            ctx.fillStyle = '#fffff0';
+            ctx.beginPath();
+            ctx.arc(x, y - s * 0.2, s * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#333';
+            ctx.fillRect(x - 1, y - s * 0.2 - s * 0.08, 2, s * 0.08);
+            ctx.fillRect(x, y - s * 0.2, s * 0.06, 2);
+            // spire
+            ctx.fillStyle = '#c9a84c';
+            ctx.beginPath();
+            ctx.moveTo(x, y - s * 0.65);
+            ctx.lineTo(x - s * 0.08, y - s * 0.5);
+            ctx.lineTo(x + s * 0.08, y - s * 0.5);
+            ctx.fill();
+            // label
+            drawLabel(ctx, 'Big Ben', x, y + s * 0.6);
+        }
+
+        function drawTowerBridge(ctx, x, y, size) {
+            const s = size;
+            ctx.fillStyle = '#5b8fa8';
+            // towers
+            ctx.fillRect(x - s * 0.35, y - s * 0.35, s * 0.15, s * 0.7);
+            ctx.fillRect(x + s * 0.2, y - s * 0.35, s * 0.15, s * 0.7);
+            // bridge span
+            ctx.fillStyle = '#4a7a90';
+            ctx.fillRect(x - s * 0.2, y + s * 0.05, s * 0.4, s * 0.08);
+            // top span
+            ctx.fillRect(x - s * 0.2, y - s * 0.2, s * 0.4, s * 0.06);
+            // tower tops
+            ctx.fillStyle = '#3a6a80';
+            ctx.beginPath();
+            ctx.moveTo(x - s * 0.275, y - s * 0.5);
+            ctx.lineTo(x - s * 0.35, y - s * 0.35);
+            ctx.lineTo(x - s * 0.2, y - s * 0.35);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + s * 0.275, y - s * 0.5);
+            ctx.lineTo(x + s * 0.2, y - s * 0.35);
+            ctx.lineTo(x + s * 0.35, y - s * 0.35);
+            ctx.fill();
+            drawLabel(ctx, 'Tower Bridge', x, y + s * 0.6);
+        }
+
+        function drawLondonEye(ctx, x, y, size) {
+            const s = size;
+            ctx.strokeStyle = '#b0b0b0';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x, y - s * 0.05, s * 0.35, 0, Math.PI * 2);
+            ctx.stroke();
+            // spokes
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(x, y - s * 0.05);
+                ctx.lineTo(x + Math.cos(angle) * s * 0.35, y - s * 0.05 + Math.sin(angle) * s * 0.35);
+                ctx.stroke();
+            }
+            // capsules
+            ctx.fillStyle = '#5599dd';
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.arc(x + Math.cos(angle) * s * 0.35, y - s * 0.05 + Math.sin(angle) * s * 0.35, s * 0.05, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // stand
+            ctx.fillStyle = '#888';
+            ctx.fillRect(x - 3, y + s * 0.3, 6, s * 0.2);
+            drawLabel(ctx, 'London Eye', x, y + s * 0.6);
+        }
+
+        function drawStonehenge(ctx, x, y, size) {
+            const s = size;
+            ctx.fillStyle = '#8a8a7a';
+            // standing stones
+            ctx.fillRect(x - s * 0.35, y - s * 0.15, s * 0.12, s * 0.5);
+            ctx.fillRect(x - s * 0.1, y - s * 0.2, s * 0.12, s * 0.55);
+            ctx.fillRect(x + s * 0.15, y - s * 0.15, s * 0.12, s * 0.5);
+            // lintels
+            ctx.fillStyle = '#7a7a6a';
+            ctx.fillRect(x - s * 0.38, y - s * 0.22, s * 0.34, s * 0.08);
+            ctx.fillRect(x - s * 0.13, y - s * 0.28, s * 0.34, s * 0.08);
+            drawLabel(ctx, 'Stonehenge', x, y + s * 0.55);
+        }
+
+        function drawCrown(ctx, x, y, size) {
+            const s = size;
+            ctx.fillStyle = '#daa520';
+            // base
+            ctx.fillRect(x - s * 0.25, y + s * 0.1, s * 0.5, s * 0.15);
+            // crown body
+            ctx.beginPath();
+            ctx.moveTo(x - s * 0.3, y + s * 0.1);
+            ctx.lineTo(x - s * 0.25, y - s * 0.2);
+            ctx.lineTo(x - s * 0.1, y);
+            ctx.lineTo(x, y - s * 0.35);
+            ctx.lineTo(x + s * 0.1, y);
+            ctx.lineTo(x + s * 0.25, y - s * 0.2);
+            ctx.lineTo(x + s * 0.3, y + s * 0.1);
+            ctx.fill();
+            // gems
+            ctx.fillStyle = '#e63946';
+            ctx.beginPath(); ctx.arc(x, y - s * 0.15, s * 0.04, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#2196f3';
+            ctx.beginPath(); ctx.arc(x - s * 0.15, y - s * 0.02, s * 0.03, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + s * 0.15, y - s * 0.02, s * 0.03, 0, Math.PI * 2); ctx.fill();
+            // band
+            ctx.fillStyle = '#b8860b';
+            ctx.fillRect(x - s * 0.26, y + s * 0.1, s * 0.52, s * 0.05);
+            drawLabel(ctx, 'Crown', x, y + s * 0.5);
+        }
+
+        function drawPhoneBox(ctx, x, y, size) {
+            const s = size;
+            ctx.fillStyle = '#cc0000';
+            ctx.fillRect(x - s * 0.15, y - s * 0.35, s * 0.3, s * 0.7);
+            // roof
+            ctx.fillStyle = '#aa0000';
+            ctx.fillRect(x - s * 0.18, y - s * 0.38, s * 0.36, s * 0.06);
+            // windows
+            ctx.fillStyle = '#aaddff';
+            ctx.fillRect(x - s * 0.1, y - s * 0.28, s * 0.2, s * 0.2);
+            ctx.fillRect(x - s * 0.1, y, s * 0.2, s * 0.2);
+            // cross bars
+            ctx.fillStyle = '#cc0000';
+            ctx.fillRect(x - 1, y - s * 0.28, 2, s * 0.2);
+            ctx.fillRect(x - s * 0.1, y - s * 0.19, s * 0.2, 2);
+            drawLabel(ctx, 'Phone Box', x, y + s * 0.55);
+        }
+
+        function drawDoubleDecker(ctx, x, y, size) {
+            const s = size;
+            // bottom deck
+            ctx.fillStyle = '#cc0000';
+            ctx.fillRect(x - s * 0.35, y + s * 0.05, s * 0.7, s * 0.2);
+            // top deck
+            ctx.fillStyle = '#dd1111';
+            ctx.fillRect(x - s * 0.33, y - s * 0.2, s * 0.66, s * 0.25);
+            // roof
+            ctx.fillStyle = '#eeeeee';
+            ctx.fillRect(x - s * 0.33, y - s * 0.24, s * 0.66, s * 0.05);
+            // windows bottom
+            ctx.fillStyle = '#aaddff';
+            for (let i = 0; i < 4; i++) {
+                ctx.fillRect(x - s * 0.3 + i * s * 0.16, y + s * 0.08, s * 0.1, s * 0.12);
+            }
+            // windows top
+            for (let i = 0; i < 4; i++) {
+                ctx.fillRect(x - s * 0.28 + i * s * 0.16, y - s * 0.16, s * 0.1, s * 0.12);
+            }
+            // wheels
+            ctx.fillStyle = '#333';
+            ctx.beginPath(); ctx.arc(x - s * 0.2, y + s * 0.28, s * 0.06, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + s * 0.2, y + s * 0.28, s * 0.06, 0, Math.PI * 2); ctx.fill();
+            drawLabel(ctx, 'Double Decker', x, y + s * 0.55);
+        }
+
+        function drawTeaCup(ctx, x, y, size) {
+            const s = size;
+            // saucer
+            ctx.fillStyle = '#ddd';
+            ctx.beginPath();
+            ctx.ellipse(x, y + s * 0.25, s * 0.3, s * 0.08, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // cup body
+            ctx.fillStyle = '#f5f5f5';
+            ctx.beginPath();
+            ctx.moveTo(x - s * 0.2, y - s * 0.15);
+            ctx.lineTo(x - s * 0.15, y + s * 0.2);
+            ctx.lineTo(x + s * 0.15, y + s * 0.2);
+            ctx.lineTo(x + s * 0.2, y - s * 0.15);
+            ctx.closePath();
+            ctx.fill();
+            // tea
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.moveTo(x - s * 0.18, y - s * 0.1);
+            ctx.lineTo(x - s * 0.15, y + s * 0.2);
+            ctx.lineTo(x + s * 0.15, y + s * 0.2);
+            ctx.lineTo(x + s * 0.18, y - s * 0.1);
+            ctx.closePath();
+            ctx.fill();
+            // handle
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x + s * 0.25, y + s * 0.02, s * 0.1, -Math.PI * 0.5, Math.PI * 0.5);
+            ctx.stroke();
+            // steam
+            ctx.strokeStyle = 'rgba(200,200,200,0.5)';
+            ctx.lineWidth = 2;
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + i * s * 0.08, y - s * 0.18);
+                ctx.quadraticCurveTo(x + i * s * 0.08 + s * 0.05, y - s * 0.28, x + i * s * 0.08, y - s * 0.38);
+                ctx.stroke();
+            }
+            drawLabel(ctx, 'Cup of Tea', x, y + s * 0.5);
+        }
+
+        function drawGuard(ctx, x, y, size) {
+            const s = size;
+            // body
+            ctx.fillStyle = '#cc0000';
+            ctx.fillRect(x - s * 0.12, y - s * 0.05, s * 0.24, s * 0.35);
+            // head
+            ctx.fillStyle = '#f5cba7';
+            ctx.beginPath();
+            ctx.arc(x, y - s * 0.12, s * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            // bearskin hat
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(x - s * 0.13, y - s * 0.45, s * 0.26, s * 0.3);
+            ctx.beginPath();
+            ctx.arc(x, y - s * 0.45, s * 0.13, Math.PI, 0);
+            ctx.fill();
+            // legs
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(x - s * 0.1, y + s * 0.3, s * 0.08, s * 0.2);
+            ctx.fillRect(x + s * 0.02, y + s * 0.3, s * 0.08, s * 0.2);
+            // belt
+            ctx.fillStyle = '#f0e68c';
+            ctx.fillRect(x - s * 0.13, y + s * 0.15, s * 0.26, s * 0.04);
+            drawLabel(ctx, 'Palace Guard', x, y + s * 0.6);
+        }
+
+        function drawCastle(ctx, x, y, size) {
+            const s = size;
+            // main wall
+            ctx.fillStyle = '#a0916a';
+            ctx.fillRect(x - s * 0.3, y - s * 0.1, s * 0.6, s * 0.45);
+            // towers
+            ctx.fillRect(x - s * 0.35, y - s * 0.3, s * 0.15, s * 0.65);
+            ctx.fillRect(x + s * 0.2, y - s * 0.3, s * 0.15, s * 0.65);
+            // battlements
+            ctx.fillStyle = '#8a7a5a';
+            for (let i = 0; i < 3; i++) {
+                ctx.fillRect(x - s * 0.35 + i * s * 0.06, y - s * 0.38, s * 0.04, s * 0.08);
+            }
+            for (let i = 0; i < 3; i++) {
+                ctx.fillRect(x + s * 0.2 + i * s * 0.06, y - s * 0.38, s * 0.04, s * 0.08);
+            }
+            // gate
+            ctx.fillStyle = '#4a3a2a';
+            ctx.beginPath();
+            ctx.arc(x, y + s * 0.1, s * 0.1, Math.PI, 0);
+            ctx.fillRect(x - s * 0.1, y + s * 0.1, s * 0.2, s * 0.25);
+            ctx.fill();
+            // windows
+            ctx.fillStyle = '#aaddff';
+            ctx.fillRect(x - s * 0.3, y - s * 0.15, s * 0.06, s * 0.08);
+            ctx.fillRect(x + s * 0.24, y - s * 0.15, s * 0.06, s * 0.08);
+            drawLabel(ctx, 'Castle', x, y + s * 0.55);
+        }
+
+        function drawLabel(ctx, text, x, y) {
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, x, y);
+        }
+
+        // --- Game state ---
+        let state = 'start'; // start | playing | gameover
+        let score = 0;
+        let bestScore = parseInt(localStorage.getItem('landmark-catcher-best') || '0');
+        let player = { x: 0, y: 0, width: 100, height: 20 };
+        let fallingObjects = [];
+        let spawnTimer = 0;
+        let spawnInterval = 2200; // ms between spawns
+        let fallSpeed = 1.8; // pixels per frame at 60fps
+        let keysDown = {};
+        let mobileDir = 0; // -1 left, 0 none, 1 right
+        let lastTime = 0;
+        let caughtAnim = { active: false, text: '', x: 0, y: 0, timer: 0 };
+
+        // --- Background stars ---
+        const stars = [];
+        for (let i = 0; i < 80; i++) {
+            stars.push({
+                x: Math.random(),
+                y: Math.random(),
+                size: Math.random() * 2 + 0.5,
+                brightness: Math.random() * 0.5 + 0.3
+            });
+        }
+
+        // --- UI refs ---
+        const scoreDisplay = document.getElementById('score-display');
+        const streakDisplay = document.getElementById('streak-display');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        const bestScoreEl = document.getElementById('best-score');
+        const caughtLabel = document.getElementById('caught-label');
+
+        // --- Input ---
+        window.addEventListener('keydown', e => {
+            keysDown[e.key] = true;
+            if ((e.key === ' ' || e.key === 'Enter') && state !== 'playing') {
+                startGame();
+            }
+        });
+        window.addEventListener('keyup', e => { keysDown[e.key] = false; });
+
+        // Mobile buttons — hold to move continuously
+        function bindMobileBtn(id, dir) {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', e => { e.preventDefault(); mobileDir = dir; });
+            btn.addEventListener('touchend', e => { e.preventDefault(); if (mobileDir === dir) mobileDir = 0; });
+            btn.addEventListener('touchcancel', e => { e.preventDefault(); if (mobileDir === dir) mobileDir = 0; });
+        }
+        bindMobileBtn('btn-left', -1);
+        bindMobileBtn('btn-right', 1);
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        // --- Game functions ---
+        function startGame() {
+            state = 'playing';
+            score = 0;
+            fallingObjects = [];
+            spawnTimer = 0;
+            spawnInterval = 2200;
+            fallSpeed = 1.8;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 60;
+            player.width = 100;
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            updateScoreUI();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            state = 'gameover';
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('landmark-catcher-best', bestScore);
+            }
+            finalScoreEl.textContent = `Landmarks Caught: ${score}`;
+            bestScoreEl.textContent = `Best: ${bestScore}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function spawnObject() {
+            const landmark = LANDMARKS[Math.floor(Math.random() * LANDMARKS.length)];
+            const objSize = 55 + Math.random() * 15;
+            const margin = objSize;
+            const x = margin + Math.random() * (canvas.width - margin * 2);
+            fallingObjects.push({
+                x: x,
+                y: -objSize,
+                size: objSize,
+                landmark: landmark,
+                rotation: (Math.random() - 0.5) * 0.3,
+            });
+        }
+
+        function updateScoreUI() {
+            scoreDisplay.textContent = `Score: ${score}`;
+            if (score >= 5) {
+                streakDisplay.textContent = `Streak: ${score}!`;
+            } else {
+                streakDisplay.textContent = '';
+            }
+        }
+
+        function showCaughtAnim(name, x, y) {
+            caughtAnim = { active: true, text: name + '!', x, y, timer: 60 };
+        }
+
+        // --- Difficulty scaling ---
+        function getDifficulty() {
+            const level = Math.floor(score / 5);
+            return {
+                spawnInterval: Math.max(700, 2200 - level * 180),
+                fallSpeed: Math.min(5.5, 1.8 + level * 0.35),
+            };
+        }
+
+        // --- Main loop ---
+        function gameLoop(time) {
+            if (state !== 'playing') return;
+
+            const dt = Math.min(time - lastTime, 50); // cap delta for tab switches
+            const dtFactor = dt / 16.667; // normalise to ~60fps
+            lastTime = time;
+
+            const diff = getDifficulty();
+
+            // --- Player movement ---
+            const speed = 7 * dtFactor;
+            if (keysDown['ArrowLeft'] || keysDown['a'] || keysDown['A'] || mobileDir === -1) {
+                player.x -= speed;
+            }
+            if (keysDown['ArrowRight'] || keysDown['d'] || keysDown['D'] || mobileDir === 1) {
+                player.x += speed;
+            }
+            player.x = Math.max(player.width / 2, Math.min(canvas.width - player.width / 2, player.x));
+
+            // --- Spawn ---
+            spawnTimer += dt;
+            if (spawnTimer >= diff.spawnInterval) {
+                spawnTimer = 0;
+                spawnObject();
+            }
+
+            // --- Update falling objects ---
+            for (let i = fallingObjects.length - 1; i >= 0; i--) {
+                const obj = fallingObjects[i];
+                obj.y += diff.fallSpeed * dtFactor;
+
+                // Check catch
+                const catchZoneY = player.y - 10;
+                const objBottom = obj.y + obj.size * 0.4;
+                const objCenterX = obj.x;
+
+                if (objBottom >= catchZoneY && objBottom <= catchZoneY + 30 &&
+                    Math.abs(objCenterX - player.x) < (player.width / 2 + obj.size * 0.25)) {
+                    // Caught!
+                    score++;
+                    updateScoreUI();
+                    showCaughtAnim(obj.landmark.name, obj.x, player.y - 30);
+                    fallingObjects.splice(i, 1);
+                    continue;
+                }
+
+                // Check miss
+                if (obj.y - obj.size * 0.3 > canvas.height) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // --- Caught animation ---
+            if (caughtAnim.active) {
+                caughtAnim.timer--;
+                caughtAnim.y -= 1.2 * dtFactor;
+                if (caughtAnim.timer <= 0) caughtAnim.active = false;
+            }
+
+            // --- Draw ---
+            draw(diff);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function draw(diff) {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Sky gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, '#0a0a2e');
+            grad.addColorStop(0.6, '#1a1a4e');
+            grad.addColorStop(1, '#2a2a3e');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            // Stars
+            for (const star of stars) {
+                ctx.fillStyle = `rgba(255,255,255,${star.brightness})`;
+                ctx.beginPath();
+                ctx.arc(star.x * w, star.y * h * 0.7, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Ground
+            ctx.fillStyle = '#1a3a1a';
+            ctx.fillRect(0, h - 30, w, 30);
+            ctx.fillStyle = '#2a5a2a';
+            ctx.fillRect(0, h - 30, w, 3);
+
+            // Falling objects
+            for (const obj of fallingObjects) {
+                ctx.save();
+                ctx.translate(obj.x, obj.y);
+                ctx.rotate(obj.rotation);
+                obj.landmark.icon(ctx, 0, 0, obj.size);
+                ctx.restore();
+            }
+
+            // Player (character with platter)
+            drawPlayer(ctx, player.x, player.y);
+
+            // Caught animation
+            if (caughtAnim.active) {
+                const alpha = Math.min(1, caughtAnim.timer / 30);
+                caughtLabel.style.opacity = alpha;
+                caughtLabel.style.left = caughtAnim.x + 'px';
+                caughtLabel.style.top = caughtAnim.y + 'px';
+                caughtLabel.style.transform = 'translate(-50%, -50%)';
+                caughtLabel.textContent = caughtAnim.text;
+            } else {
+                caughtLabel.style.opacity = 0;
+            }
+        }
+
+        function drawPlayer(ctx, x, y) {
+            // Platter
+            ctx.fillStyle = '#c0c0c0';
+            ctx.beginPath();
+            ctx.ellipse(x, y - 8, player.width / 2, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#d8d8d8';
+            ctx.beginPath();
+            ctx.ellipse(x, y - 10, player.width / 2 - 4, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Platter rim shine
+            ctx.strokeStyle = '#eee';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(x, y - 10, player.width / 2 - 2, 7, 0, Math.PI * 1.1, Math.PI * 1.9);
+            ctx.stroke();
+
+            // Character body
+            ctx.fillStyle = '#2255aa';
+            ctx.fillRect(x - 8, y, 16, 22);
+
+            // Head
+            ctx.fillStyle = '#f5cba7';
+            ctx.beginPath();
+            ctx.arc(x, y + 28, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(x - 3, y + 27, 1.5, 0, Math.PI * 2);
+            ctx.arc(x + 3, y + 27, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Arms holding platter
+            ctx.strokeStyle = '#f5cba7';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y + 5);
+            ctx.lineTo(x - player.width / 2 + 5, y - 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + 8, y + 5);
+            ctx.lineTo(x + player.width / 2 - 5, y - 5);
+            ctx.stroke();
+
+            // Legs
+            ctx.strokeStyle = '#1a1a4e';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x - 4, y + 22);
+            ctx.lineTo(x - 6, y + 34);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + 4, y + 22);
+            ctx.lineTo(x + 6, y + 34);
+            ctx.stroke();
+        }
+
+        // --- Initial draw for start screen background ---
+        function drawStartBackground() {
+            resize();
+            const w = canvas.width;
+            const h = canvas.height;
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, '#0a0a2e');
+            grad.addColorStop(0.6, '#1a1a4e');
+            grad.addColorStop(1, '#2a2a3e');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+            for (const star of stars) {
+                ctx.fillStyle = `rgba(255,255,255,${star.brightness})`;
+                ctx.beginPath();
+                ctx.arc(star.x * w, star.y * h * 0.7, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.fillStyle = '#1a3a1a';
+            ctx.fillRect(0, h - 30, w, 30);
+            ctx.fillStyle = '#2a5a2a';
+            ctx.fillRect(0, h - 30, w, 3);
+
+            // Draw some landmarks floating as decoration
+            const demoLandmarks = [0, 2, 4, 7, 9];
+            demoLandmarks.forEach((li, i) => {
+                const lx = w * 0.15 + (i / (demoLandmarks.length - 1)) * w * 0.7;
+                const ly = h * 0.35 + Math.sin(i * 1.3) * 40;
+                LANDMARKS[li].icon(ctx, lx, ly, 60);
+            });
+
+            // Draw player in center
+            player.x = w / 2;
+            player.y = h - 60;
+            player.width = 100;
+            drawPlayer(ctx, player.x, player.y);
+        }
+
+        drawStartBackground();
+        window.addEventListener('resize', () => {
+            if (state === 'start') drawStartBackground();
+        });
+    })();
+    </script>
+</body>
+</html>
