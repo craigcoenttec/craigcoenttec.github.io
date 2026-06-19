@@ -114,6 +114,9 @@ class IframeCommunicationWrapper {
         // Automated call handling settings
         this.autoHandleIncomingCalls = true; // Default to enabled
         this.autoCallSequenceInProgress = false; // Track if auto sequence is running
+
+        // Conversation profile used by the automated join sequences
+        this.conversationProfileId = config.conversationProfileId || '0198e667-6540-727d-b6b0-d8f4de9db1c6';
         
         // Bind the message handlers to preserve 'this' context
         this.handleReceivedMessage = this.handleReceivedMessage.bind(this);
@@ -841,7 +844,71 @@ class IframeCommunicationWrapper {
             return false;
         }
     }
-    
+
+    /**
+     * Authenticate with Genesys Cloud using a pre-existing access token.
+     *
+     * This is the "configured usage" / SSO path: instead of performing an OAuth
+     * implicit grant login, we reuse the access token supplied by the embedded
+     * Agent Assist iframe (via the `authorized` message). The token is applied
+     * directly to the Platform Client so all subsequent API calls and the
+     * notification WebSocket are authenticated as the agent.
+     *
+     * @param {string} accessToken - The access token supplied by the iframe SSO
+     * @param {string} [userId] - The Genesys Cloud user ID (from the iframe payload)
+     * @returns {Promise<boolean>} - Whether authentication succeeded
+     */
+    async authenticateGenesysCloudWithToken(accessToken, userId = null) {
+        console.log('Authenticating with Genesys Cloud using SSO access token...');
+
+        if (!this.gcClient) {
+            console.error('Genesys Cloud Platform Client not initialized');
+            this.onGcAuthStatusChanged('Not Initialized');
+            return false;
+        }
+
+        if (!accessToken) {
+            console.error('No access token provided for Genesys Cloud authentication');
+            this.onGcAuthStatusChanged('No Token');
+            return false;
+        }
+
+        try {
+            this.onGcAuthStatusChanged('Authenticating...');
+
+            // Apply the SSO token directly - no interactive login required
+            this.gcClient.setAccessToken(accessToken);
+
+            // Resolve the current user. Prefer the id from the iframe payload, but
+            // fall back to getUsersMe() so we always have a confirmed user id.
+            let user = null;
+            try {
+                user = await this.gcUsersApi.getUsersMe({});
+                this.gcUserId = user.id;
+            } catch (lookupError) {
+                console.warn('getUsersMe() failed, falling back to supplied user id:', lookupError);
+                this.gcUserId = userId;
+            }
+
+            if (!this.gcUserId && userId) {
+                this.gcUserId = userId;
+            }
+
+            this.gcAuthenticated = true;
+            const displayName = (user && user.name) ? user.name : (this.gcUserId || 'agent');
+            console.log('Genesys Cloud SSO authentication successful. User:', displayName);
+            this.onGcAuthStatusChanged(`Authenticated as ${displayName}`);
+
+            return true;
+
+        } catch (error) {
+            console.error('Genesys Cloud SSO authentication failed:', error);
+            this.gcAuthenticated = false;
+            this.onGcAuthStatusChanged('Authentication Failed');
+            return false;
+        }
+    }
+
     /**
      * Connect to Genesys Cloud transcription WebSocket
      * @param {string} conversationId - The conversation ID to subscribe to transcription
@@ -1989,10 +2056,10 @@ class IframeCommunicationWrapper {
             const contactName = conversation.customerName || 'Customer';
             const contactEmail = 'customer@email.com';
             const contactPhone = this.extractPhoneFromConversation(conversation);
-            const profileId = '0198e667-6540-727d-b6b0-d8f4de9db1c6'; // Default profile ID
-            
+            const profileId = this.conversationProfileId; // Configurable profile ID
+
             this.sendJoinConversation(randomConversationId, profileId, contactName, contactEmail, contactPhone);
-            
+
             // Step 4: Wait for successful join response, then activate
             console.log('⏳ Auto Step 4: Waiting for join response to activate conversation...');
             await this.waitForConversationJoined();
@@ -2060,10 +2127,10 @@ class IframeCommunicationWrapper {
             const contactName = conversation.customerName || 'Customer';
             const contactEmail = 'customer@email.com';
             const contactPhone = this.extractPhoneFromConversation(conversation);
-            const profileId = '0198e667-6540-727d-b6b0-d8f4de9db1c6'; // Default profile ID
-            
+            const profileId = this.conversationProfileId; // Configurable profile ID
+
             this.sendJoinConversation(randomConversationId, profileId, contactName, contactEmail, contactPhone);
-            
+
             // Step 4: Wait for successful join response, then activate
             console.log('⏳ Auto Step 4: Waiting for join response to activate conversation...');
             await this.waitForConversationJoined();

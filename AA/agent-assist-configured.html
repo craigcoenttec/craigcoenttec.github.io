@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Assist</title>
+
+    <!-- Genesys Cloud Platform Client SDK -->
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f4f5f7;
+            color: #1d2433;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ---------- Status bar ---------- */
+        .status-bar {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 8px 16px;
+            background: #ffffff;
+            border-bottom: 1px solid #e1e4e8;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .status-bar .brand {
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .status-item .label {
+            color: #6b7280;
+        }
+
+        .status-item .value {
+            font-weight: 600;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #9ca3af;
+            flex: 0 0 auto;
+        }
+        .dot.ok      { background: #22c55e; }
+        .dot.busy    { background: #f59e0b; }
+        .dot.error   { background: #ef4444; }
+        .dot.idle    { background: #9ca3af; }
+
+        .spacer { flex: 1 1 auto; }
+
+        .toggle-notes {
+            border: 1px solid #d0d5dd;
+            background: #fff;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #344054;
+        }
+        .toggle-notes:hover { background: #f9fafb; }
+
+        /* ---------- Main area ---------- */
+        .main {
+            flex: 1 1 auto;
+            display: flex;
+            min-height: 0;
+        }
+
+        .iframe-wrap {
+            flex: 1 1 auto;
+            min-width: 0;
+            position: relative;
+            background: #fff;
+        }
+
+        iframe.agent-assist {
+            border: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .iframe-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        /* ---------- Notes panel ---------- */
+        .notes-panel {
+            flex: 0 0 360px;
+            max-width: 360px;
+            background: #fff;
+            border-left: 1px solid #e1e4e8;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .notes-panel.hidden { display: none; }
+
+        .notes-header {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid #eceef1;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .notes-header .clear-btn {
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .notes-header .clear-btn:hover { color: #1d2433; }
+
+        .notes-body {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .notes-empty {
+            color: #9ca3af;
+            font-size: 13px;
+            font-style: italic;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 760px) {
+            .notes-panel { flex-basis: 100%; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Status bar: minimal, read-only operational state -->
+    <div class="status-bar">
+        <span class="brand">🤝 Agent Assist</span>
+
+        <div class="status-item">
+            <span class="dot idle" id="iframeDot"></span>
+            <span class="label">Iframe</span>
+            <span class="value" id="iframeStatus">Loading…</span>
+        </div>
+
+        <div class="status-item">
+            <span class="dot idle" id="authDot"></span>
+            <span class="label">SSO</span>
+            <span class="value" id="authStatus">Waiting…</span>
+        </div>
+
+        <div class="status-item">
+            <span class="dot idle" id="subDot"></span>
+            <span class="label">Listening</span>
+            <span class="value" id="subStatus">Not started</span>
+        </div>
+
+        <div class="status-item">
+            <span class="label">Active conversation</span>
+            <span class="value" id="activeConversation">None</span>
+        </div>
+
+        <span class="spacer"></span>
+
+        <button class="toggle-notes" id="toggleNotesBtn" onclick="toggleNotesPanel()">Hide notes</button>
+    </div>
+
+    <!-- Main: the embedded Agent Assist surface + a side notes/summary panel -->
+    <div class="main">
+        <div class="iframe-wrap">
+            <iframe id="aaIframe" class="agent-assist" src="about:blank"
+                    allow="clipboard-write; microphone"></iframe>
+            <div class="iframe-loading" id="iframeLoading">Connecting to Agent Assist…</div>
+        </div>
+
+        <aside class="notes-panel" id="notesPanel">
+            <div class="notes-header">
+                <span>📝 Notes &amp; Summary</span>
+                <button class="clear-btn" onclick="clearLatestNotes()">Clear</button>
+            </div>
+            <div class="notes-body" id="latestNotesDisplay">
+                <div class="notes-empty">No notes received yet.</div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Core communication wrapper (shared with the debug demo) -->
+    <script src="iframe-communication-wrapper.js"></script>
+
+    <script>
+        // ======================================================================
+        // CONFIGURED AGENT ASSIST WRAPPER
+        //
+        // A focused, agent-facing wrapper around the Agent Assist iframe. Unlike
+        // the debug demo, there are no manual controls: it loads the iframe,
+        // reuses the SSO access token the iframe hands back in its `authorized`
+        // message to authenticate the Genesys Cloud SDK, then subscribes to the
+        // agent's conversations so transcription/messages are forwarded for
+        // analysis automatically.
+        //
+        // Configuration is supplied entirely via URL parameters:
+        //   iframe_url              Agent Assist base URL
+        //                           (default: https://agent-assist.tthcslabs.com)
+        //   gc_region               Genesys Cloud region (default: mypurecloud.com)
+        //   organization_id         Org id appended to the iframe URL (optional)
+        //   conversation_profile_id Conversation profile used when joining (optional)
+        // ======================================================================
+
+        const DEFAULTS = {
+            iframeUrl: 'https://agent-assist.tthcslabs.com',
+            region: 'mypurecloud.com',
+            conversationProfileId: '0198e667-6540-727d-b6b0-d8f4de9db1c6'
+        };
+
+        let communicationWrapper = null;
+        let gcInitialized = false; // Guard: only run GC setup once per session
+        let config = {};
+
+        // ----------------------------------------------------------------------
+        // Configuration
+        // ----------------------------------------------------------------------
+        function readConfig() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                iframeUrl: params.get('iframe_url') || DEFAULTS.iframeUrl,
+                region: params.get('gc_region') || DEFAULTS.region,
+                organizationId: params.get('organization_id') || '',
+                conversationProfileId: params.get('conversation_profile_id') || DEFAULTS.conversationProfileId
+            };
+        }
+
+        function buildIframeUrl(cfg) {
+            let url = cfg.iframeUrl;
+            if (cfg.organizationId && cfg.organizationId.trim() !== '') {
+                const sep = url.includes('?') ? '&' : '?';
+                url += sep + 'organization_id=' + encodeURIComponent(cfg.organizationId.trim());
+            }
+            return url;
+        }
+
+        // ----------------------------------------------------------------------
+        // Status helpers
+        // ----------------------------------------------------------------------
+        function setStatus(dotId, statusId, text, state) {
+            const dot = document.getElementById(dotId);
+            const status = document.getElementById(statusId);
+            if (status) status.textContent = text;
+            if (dot) dot.className = 'dot ' + (state || 'idle');
+        }
+
+        // Map a free-text status string to a dot state.
+        function stateFromText(text) {
+            const t = (text || '').toLowerCase();
+            if (t.includes('connected') || t.includes('authenticated')) return 'ok';
+            if (t.includes('connecting') || t.includes('authenticating')) return 'busy';
+            if (t.includes('fail') || t.includes('error') || t.includes('not ')) return 'error';
+            return 'idle';
+        }
+
+        // ----------------------------------------------------------------------
+        // Initialization
+        // ----------------------------------------------------------------------
+        window.addEventListener('DOMContentLoaded', init);
+
+        function init() {
+            config = readConfig();
+
+            communicationWrapper = new IframeCommunicationWrapper({
+                targetOrigin: '*', // For demo purposes - tighten to the iframe origin in production
+                conversationProfileId: config.conversationProfileId,
+
+                // Inspect every inbound message so we can react to the SSO handshake
+                onMessageReceived: function (messageData) {
+                    if (messageData && messageData.topic === 'authorized' && messageData.success) {
+                        handleAuthorized(messageData.details);
+                    }
+                },
+
+                onConnectionEstablished: function () {
+                    setStatus('iframeDot', 'iframeStatus', 'Loaded', 'ok');
+                    const loading = document.getElementById('iframeLoading');
+                    if (loading) loading.style.display = 'none';
+
+                    // Ask the iframe to authorize. If it pushes `authorized`
+                    // unprompted, onMessageReceived still handles it.
+                    communicationWrapper.sendAuthorizationRequest();
+                },
+
+                onConversationIdChanged: function (conversationId) {
+                    const el = document.getElementById('activeConversation');
+                    el.textContent = conversationId || 'None';
+                    el.style.color = conversationId ? '#22c55e' : '#6b7280';
+                },
+
+                onGcAuthStatusChanged: function (status) {
+                    setStatus('authDot', 'authStatus', status, stateFromText(status));
+                },
+
+                // Reflect whichever notification stream is connected
+                onGcConversationStatusChanged: function (status) {
+                    updateListeningStatus();
+                },
+                onGcMessageStatusChanged: function (status) {
+                    updateListeningStatus();
+                },
+                onGcTranscriptionStatusChanged: function (status) {
+                    updateListeningStatus();
+                },
+
+                onActiveConversationChanged: function (conversationId) {
+                    // Auto sequence will join/activate; activeConversation reflects the AA id
+                },
+
+                onNewNotesReceived: function (responseDetails) {
+                    displayLatestNotes(responseDetails);
+                }
+            });
+
+            const iframeElement = document.getElementById('aaIframe');
+            communicationWrapper.initialize(iframeElement);
+
+            // Kick off the iframe load
+            iframeElement.src = buildIframeUrl(config);
+        }
+
+        // ----------------------------------------------------------------------
+        // SSO handshake -> Genesys Cloud authentication & subscriptions
+        // ----------------------------------------------------------------------
+        async function handleAuthorized(details) {
+            if (gcInitialized) return; // only once
+            const token = details && details.sso && details.sso.access_token;
+            const userId = details && details.user && details.user.id;
+
+            if (!token) {
+                console.warn('Authorized message did not include an SSO access token');
+                setStatus('authDot', 'authStatus', 'No token', 'error');
+                return;
+            }
+
+            gcInitialized = true;
+
+            try {
+                // 1) Initialize the Platform Client for the configured region.
+                //    clientId/redirectUrl are unused for token-based auth.
+                const initialized = communicationWrapper.initializeGenesysCloud(
+                    config.region, 'sso', window.location.href
+                );
+                if (!initialized) {
+                    gcInitialized = false;
+                    return;
+                }
+
+                // 2) Authenticate by applying the iframe's SSO token directly.
+                const authed = await communicationWrapper.authenticateGenesysCloudWithToken(token, userId);
+                if (!authed) {
+                    gcInitialized = false;
+                    return;
+                }
+
+                // 3) Subscribe to the agent's conversations. From here the
+                //    wrapper auto-handles new calls/messages: it connects
+                //    transcription, joins + activates the iframe conversation,
+                //    and forwards utterances/messages for analysis.
+                const subscriberId = communicationWrapper.gcUserId || userId;
+                await communicationWrapper.connectToGcConversationNotifications(subscriberId);
+                await communicationWrapper.connectToGcMessageNotifications(subscriberId);
+
+                updateListeningStatus();
+            } catch (error) {
+                console.error('Failed to complete Genesys Cloud setup:', error);
+                setStatus('subDot', 'subStatus', 'Setup failed', 'error');
+                gcInitialized = false;
+            }
+        }
+
+        // Summarize the various notification streams into one "Listening" status
+        function updateListeningStatus() {
+            if (!communicationWrapper) return;
+            const calls = communicationWrapper.isGcConversationNotificationsConnected &&
+                          communicationWrapper.isGcConversationNotificationsConnected();
+            const wsOpen = communicationWrapper.gcWebSocket &&
+                           communicationWrapper.gcWebSocket.readyState === WebSocket.OPEN;
+
+            if (calls || wsOpen) {
+                setStatus('subDot', 'subStatus', 'Listening', 'ok');
+            } else if (communicationWrapper.gcAuthenticated) {
+                setStatus('subDot', 'subStatus', 'Subscribing…', 'busy');
+            } else {
+                setStatus('subDot', 'subStatus', 'Not started', 'idle');
+            }
+        }
+
+        // ----------------------------------------------------------------------
+        // Notes / summary rendering (mirrors the debug demo formatting)
+        // ----------------------------------------------------------------------
+        function displayLatestNotes(responseDetails) {
+            const displayElement = document.getElementById('latestNotesDisplay');
+            const timestamp = new Date().toLocaleTimeString();
+
+            // Remove the empty-state placeholder on first real note
+            const empty = displayElement.querySelector('.notes-empty');
+            if (empty) empty.remove();
+
+            if (!responseDetails || !responseDetails.notes) {
+                displayElement.insertAdjacentHTML('afterbegin',
+                    `<div style="color:#ef4444;font-size:12px;">[${timestamp}] Invalid notes data received</div>`);
+                return;
+            }
+
+            const { conversation, notes } = responseDetails;
+            const conversationId = conversation?.id || 'Unknown';
+
+            let html = `<div style="font-size:12px;padding:10px;border:1px solid #e5e7eb;border-radius:6px;margin:0 0 10px 0;background:#f9fafb;">`;
+            html += `<div style="font-weight:600;color:#1d2433;margin-bottom:6px;">📝 New Notes</div>`;
+            html += `<div style="color:#6b7280;font-size:11px;margin-bottom:10px;">${timestamp} · ${conversationId}</div>`;
+
+            if (notes.sections && notes.sections.length > 0) {
+                html += `<div style="background:#fff;padding:8px;border-radius:4px;">`;
+                notes.sections.forEach(section => {
+                    const friendlyKey = getFriendlyKeyName(section.key);
+                    const friendlyValue = getFriendlyValue(section.value);
+                    const keyColor = getKeyColor(section.key);
+                    html += `<div style="margin:6px 0;display:flex;align-items:flex-start;">`;
+                    html += `<span style="font-weight:600;color:${keyColor};min-width:120px;margin-right:8px;">${friendlyKey}:</span>`;
+                    html += `<span style="flex:1;">${friendlyValue}</span>`;
+                    html += `</div>`;
+                });
+                html += `</div>`;
+            }
+
+            if (notes.entities && notes.entities.length > 0) {
+                html += `<div style="margin-top:10px;padding:8px;background:#eef6fb;border-radius:4px;">`;
+                html += `<div style="font-weight:600;color:#0056b3;margin-bottom:5px;">🏷️ Entities</div>`;
+                notes.entities.forEach(entity => {
+                    html += `<span style="background:#007bff;color:#fff;padding:2px 6px;border-radius:12px;font-size:10px;margin:2px;display:inline-block;">${entity}</span>`;
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            displayElement.insertAdjacentHTML('afterbegin', html);
+        }
+
+        function getFriendlyKeyName(key) {
+            const keyMappings = {
+                'situation': '🔍 Situation',
+                'action': '⚡ Action Taken',
+                'resolution': '✅ Resolution',
+                'customer_satisfaction': '😊 Customer Satisfaction',
+                'reason_for_cancellation': '❌ Cancellation Reason',
+                'summary': '📋 Summary',
+                'next_steps': '👉 Next Steps',
+                'issue_type': '🏷️ Issue Type',
+                'priority': '🔥 Priority',
+                'outcome': '🎯 Outcome'
+            };
+            return keyMappings[key] || (key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function getFriendlyValue(value) {
+            if (!value || value === 'N' || value === 'N/A') {
+                return '<span style="color:#9ca3af;font-style:italic;">Not specified</span>';
+            }
+            if (value === 'Y' || value === 'Yes') {
+                return '<span style="color:#22c55e;font-weight:600;">✓ Yes</span>';
+            }
+            if (value === 'No') {
+                return '<span style="color:#ef4444;font-weight:600;">✗ No</span>';
+            }
+            return value;
+        }
+
+        function getKeyColor(key) {
+            const colorMappings = {
+                'situation': '#007bff',
+                'action': '#22c55e',
+                'resolution': '#d97706',
+                'customer_satisfaction': '#e83e8c',
+                'reason_for_cancellation': '#ef4444'
+            };
+            return colorMappings[key] || '#6b7280';
+        }
+
+        function clearLatestNotes() {
+            document.getElementById('latestNotesDisplay').innerHTML =
+                '<div class="notes-empty">No notes received yet.</div>';
+        }
+
+        // ----------------------------------------------------------------------
+        // Notes panel toggle
+        // ----------------------------------------------------------------------
+        function toggleNotesPanel() {
+            const panel = document.getElementById('notesPanel');
+            const btn = document.getElementById('toggleNotesBtn');
+            const hidden = panel.classList.toggle('hidden');
+            btn.textContent = hidden ? 'Show notes' : 'Hide notes';
+        }
+    </script>
+</body>
+</html>
