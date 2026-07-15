@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+    ============================================
+    ADDI Translation Widget - NiCE CXone Edition
+    ============================================
+    A standalone widget for real-time translation using ADDI
+    services, styled to match the NiCE CXone chat experience.
+
+    No Genesys Cloud dependencies. No Spark components.
+    Requires: ?transactionId=xxx&bearer=xxx
+    Optional: &addi_host=https://...
+
+    Version: 1.0.0
+    ============================================
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="robots" content="noindex">
+    <title>ADDI Translation</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="./styles/main.css">
+</head>
+<body>
+    <div class="app-container">
+
+        <!-- ============================================
+             Header / Control Panel
+             ============================================ -->
+        <header class="app-header">
+            <div class="app-header__title-row">
+                <div class="app-header__title">
+                    <span id="connectionDot" class="connection-dot" title="Disconnected"></span>
+                    <span>Live Translation</span>
+                </div>
+                <div id="loadingIndicator" class="spinner" role="status" aria-label="Loading"></div>
+            </div>
+
+            <div class="control-panel">
+                <div class="control-panel__field">
+                    <label for="sourceLanguageSelect">Customer Language</label>
+                    <select id="sourceLanguageSelect" aria-label="Customer Language">
+                        <!-- Options populated by JavaScript -->
+                    </select>
+                </div>
+
+                <div class="control-panel__field">
+                    <label for="targetLanguageSelect">Agent Language</label>
+                    <select id="targetLanguageSelect" aria-label="Agent Language">
+                        <!-- Options populated by JavaScript -->
+                    </select>
+                </div>
+
+                <button type="button" id="updateButton" class="btn btn--primary" onclick="App.updateLanguages()">
+                    Update
+                </button>
+            </div>
+
+            <div id="warningMessage" class="warning-banner" role="alert"></div>
+        </header>
+
+        <!-- ============================================
+             Main Content / Conversation Panel
+             ============================================ -->
+        <main class="app-content">
+            <div id="conversationPanel" class="conversation-panel">
+                <div id="conversation" class="conversation-messages">
+                    <!-- Message bubbles inserted here by JavaScript -->
+                </div>
+            </div>
+        </main>
+
+        <!-- ============================================
+             Footer / Message Input
+             ============================================ -->
+        <footer id="footer" class="app-footer">
+            <div class="message-input-group">
+                <textarea
+                    id="messageInput"
+                    class="message-input"
+                    rows="1"
+                    placeholder="Type a message&hellip;"
+                    aria-label="Type a message"
+                    spellcheck="true"
+                    dir="auto"
+                ></textarea>
+                <button
+                    type="button"
+                    id="sendButton"
+                    class="send-button"
+                    aria-label="Send translated message"
+                    onclick="App.sendMessage()"
+                >
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                        <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </footer>
+
+        <!-- ============================================
+             Debug Panel (Collapsible)
+             ============================================ -->
+        <details class="debug-panel">
+            <summary>Debug Information</summary>
+            <div class="debug-panel__content">
+                <div class="debug-panel__row">
+                    <span class="debug-panel__label">Version:</span>
+                    <span id="debugVersion" class="debug-panel__value">-</span>
+                </div>
+                <div class="debug-panel__row">
+                    <span class="debug-panel__label">ADDI Host:</span>
+                    <span id="debugHost" class="debug-panel__value">-</span>
+                </div>
+                <div class="debug-panel__row">
+                    <span class="debug-panel__label">Transaction ID:</span>
+                    <span id="debugTransaction" class="debug-panel__value">-</span>
+                </div>
+                <div class="debug-panel__row">
+                    <span class="debug-panel__label">Bearer:</span>
+                    <span id="debugBearer" class="debug-panel__value">-</span>
+                </div>
+                <div class="debug-panel__row">
+                    <span class="debug-panel__label">WebSocket:</span>
+                    <span id="debugWebSocket" class="debug-panel__value">-</span>
+                </div>
+                <div class="debug-panel__row">
+                    <span class="debug-panel__label">Agent Profile:</span>
+                    <span id="debugAgentProfile" class="debug-panel__value">-</span>
+                </div>
+                <div class="debug-panel__row">
+                    <span class="debug-panel__label">Customer Profile:</span>
+                    <span id="debugCustomerProfile" class="debug-panel__value">-</span>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <!-- ============================================
+         Application Scripts (Order matters!)
+         ============================================ -->
+    <script src="./scripts/config.js"></script>
+    <script src="./scripts/utils.js"></script>
+    <script src="./scripts/api.js"></script>
+    <script src="./scripts/ui.js"></script>
+    <script src="./scripts/websocket.js"></script>
+    <script src="./scripts/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+/**
+ * ADDI Translation Widget (NiCE CXone Edition) - Main Application Module
+ *
+ * Orchestrates the application flow, coordinating between
+ * Config, API, UI, Utils, and WebSocket modules.
+ *
+ * Standalone ADDI-only: requires transactionId (and bearer) via
+ * URL parameters. No Genesys Cloud integration.
+ */
+
+const App = (() => {
+    'use strict';
+
+    // Message tracking
+    let messageStore = {};
+    let eventCounter = 0;
+
+    /**
+     * Initialize the application
+     * Called on page load
+     */
+    async function init() {
+        Utils.log('ADDI Translation Widget (NiCE CXone Edition) starting...', 'info');
+
+        try {
+            // Initialize configuration from URL params
+            Config.init();
+
+            // Initialize UI
+            UI.init();
+
+            const transactionId = Config.addi.transactionId;
+
+            if (!transactionId) {
+                UI.showWarning('Missing transactionId URL parameter', 10000);
+                throw new Error('Transaction ID required (pass ?transactionId=...&bearer=...)');
+            }
+
+            // Load language definitions (ADDI API with JSON fallback)
+            await loadLanguageDefinitions();
+
+            // Apply default selections until the transaction languages load
+            UI.updateLanguageSelections(
+                Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE,
+                Config.TRANSLATION_DEFAULTS.AGENT_LANGUAGE
+            );
+
+            // Load language settings from ADDI transaction and connect WebSocket
+            await handleADDITransaction();
+
+            // Show footer for TTS message sending
+            UI.setFooterVisible(true);
+
+            // Update debug panel
+            updateDebugPanel();
+
+            Utils.log('Application initialized successfully', 'success');
+
+        } catch (error) {
+            Utils.log('Application initialization failed', 'error', error);
+            console.error(error);
+        }
+    }
+
+    /**
+     * Load language definitions - tries ADDI API first, falls back to static JSON
+     */
+    async function loadLanguageDefinitions() {
+        // Try ADDI language_maps API first
+        try {
+            Utils.log('Attempting to load languages from ADDI API...', 'info');
+            const languageMaps = await API.getLanguageMaps();
+
+            if (languageMaps && Array.isArray(languageMaps) && languageMaps.length > 0) {
+                const languageDefs = transformLanguageMaps(languageMaps);
+                Config.setLanguageDefinitions(languageDefs);
+                UI.populateLanguages(languageDefs);
+                Utils.log(`Language definitions loaded from ADDI (${languageMaps.length} languages)`, 'success');
+                return;
+            }
+        } catch (error) {
+            Utils.log('ADDI language_maps failed, falling back to static JSON', 'warning', error);
+        }
+
+        // Fallback to static JSON file
+        try {
+            const response = await fetch('./scripts/languageDefinition.json');
+            const languageDefs = await response.json();
+
+            Config.setLanguageDefinitions(languageDefs);
+            UI.populateLanguages(languageDefs);
+
+            Utils.log('Language definitions loaded from static JSON', 'success');
+
+        } catch (error) {
+            Utils.log('Failed to load language definitions from any source', 'error', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Transform ADDI language maps response to internal format
+     * @param {Array} languageMapList - Array from ADDI /language_maps endpoint
+     * @returns {Object} Language definitions keyed by ID
+     */
+    function transformLanguageMaps(languageMapList) {
+        const languageDefs = {};
+
+        languageMapList.forEach(entry => {
+            const dialectId = entry.dialect_id;
+            const displayName = entry.dialect_display || entry.map_name || entry.dialect_id || entry.id;
+            const flagId = Config.resolveFlagId(dialectId);
+
+            languageDefs[entry.id] = {
+                key: entry.id,
+                name: displayName,
+                id: dialectId,
+                id_region: dialectId ? dialectId.split('-')[0].toLowerCase() : '',
+                flag_id: flagId
+            };
+        });
+
+        return languageDefs;
+    }
+
+    /**
+     * Handle ADDI transaction setup
+     */
+    async function handleADDITransaction() {
+        const transactionId = Config.addi.transactionId;
+
+        try {
+            // Get and update language settings from ADDI
+            const languageSettings = await API.getTransactionLanguage(transactionId);
+
+            // Handle both old format (agent/caller) and new format (agent_id/caller_id)
+            const agentLang = languageSettings.agent_id || languageSettings.agent;
+            const callerLang = languageSettings.caller_id || languageSettings.caller;
+
+            if (agentLang && callerLang) {
+                await updateLanguageSettings(agentLang, callerLang);
+            }
+
+            // Connect to ADDI transcription WebSocket
+            WebSocketManager.connectADDI(transactionId, handleADDITranscription);
+
+            Utils.log('ADDI transaction configured', 'success');
+
+        } catch (error) {
+            Utils.log('Failed to configure ADDI transaction', 'error', error);
+        }
+    }
+
+    /**
+     * Update language settings and translation profiles
+     * @param {string} agentLanguage - Agent language key
+     * @param {string} customerLanguage - Customer language key
+     */
+    async function updateLanguageSettings(agentLanguage, customerLanguage) {
+        const languageDefs = Config.languages.definitions;
+
+        // Find language objects - try direct match first, then search
+        const agentLangObj = findLanguageObject(languageDefs, agentLanguage);
+        const customerLangObj = findLanguageObject(languageDefs, customerLanguage);
+
+        Config.updateLanguageSettings({
+            agentLanguage,
+            customerLanguage,
+            agentLanguageObject: agentLangObj,
+            customerLanguageObject: customerLangObj
+        });
+
+        UI.updateLanguageSelections(customerLanguage, agentLanguage);
+
+        // Load translation profiles
+        await loadTranslationProfiles();
+    }
+
+    /**
+     * Find a language object by ID or name (case-insensitive)
+     * @param {Object} languageDefs - Language definitions
+     * @param {string} idOrName - Language ID or name to find
+     * @returns {Object|null} Language object or null
+     */
+    function findLanguageObject(languageDefs, idOrName) {
+        if (!languageDefs || !idOrName) return null;
+
+        // Direct match
+        if (languageDefs[idOrName]) {
+            return languageDefs[idOrName];
+        }
+
+        // Case-insensitive search
+        const searchLower = idOrName.toLowerCase();
+        for (const key in languageDefs) {
+            const def = languageDefs[key];
+            if (key.toLowerCase() === searchLower ||
+                def.id?.toLowerCase() === searchLower ||
+                def.name?.toLowerCase() === searchLower) {
+                return def;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Load and set translation profiles/engines from ADDI
+     * Uses /translation_engines endpoint
+     */
+    async function loadTranslationProfiles() {
+        try {
+            const profiles = await API.getTranslationEngines();
+            const langSettings = Config.languages;
+
+            let agentProfile = null;
+            let customerProfile = null;
+
+            // Get language IDs for matching (case-insensitive)
+            const agentId = langSettings.agentLanguageObject?.id?.toLowerCase() || '';
+            const customerId = langSettings.customerLanguageObject?.id?.toLowerCase() || '';
+
+            Object.values(profiles).forEach(profile => {
+                const profileSource = profile.Source?.toLowerCase() || '';
+                const profileTarget = profile.Target?.toLowerCase() || '';
+
+                // Agent profile: agent language -> customer language
+                if (profileSource === agentId && profileTarget === customerId) {
+                    agentProfile = profile;
+                }
+                // Customer profile: customer language -> agent language
+                if (profileSource === customerId && profileTarget === agentId) {
+                    customerProfile = profile;
+                }
+            });
+
+            Config.updateLanguageSettings({
+                agentProfile,
+                customerProfile
+            });
+
+            if (!agentProfile || !customerProfile) {
+                Utils.log(`No translation profiles found for Agent[${agentId}] -> Customer[${customerId}]`, 'warning');
+            } else {
+                Utils.log(`Profiles set - Agent: ${agentProfile?.ProfileId}, Customer: ${customerProfile?.ProfileId}`, 'info');
+            }
+
+            updateDebugPanel();
+
+        } catch (error) {
+            Utils.log('Failed to load translation profiles', 'error', error);
+        }
+    }
+
+    /**
+     * Handle ADDI transcription event
+     * @param {Object} event - Transcription event data
+     */
+    function handleADDITranscription(event) {
+        const eventId = `event_${eventCounter++}`;
+        const langSettings = Config.languages;
+        const selections = UI.getLanguageSelections();
+
+        let senderType = Config.SENDER_TYPES.CUSTOMER;
+        let sourceLang = selections.source;
+        let targetLang = selections.target;
+
+        if (event.participant !== 'caller') {
+            senderType = Config.SENDER_TYPES.AGENT;
+            sourceLang = selections.target;
+            targetLang = selections.source;
+        }
+
+        const messageObj = Utils.createMessageObject({
+            messageid: eventId,
+            Timestamp: event.timestamp,
+            OriginalText: event.text,
+            OriginalLanguage: sourceLang,
+            OriginalFlag: langSettings.definitions?.[sourceLang]?.flag_id || 'us',
+            TranslatedText: event.translated,
+            TranslatedLanguage: targetLang,
+            TranslatedFlag: langSettings.definitions?.[targetLang]?.flag_id || 'us',
+            SenderType: senderType
+        });
+
+        messageStore[eventId] = messageObj;
+        UI.addMessageBubble(messageObj);
+    }
+
+    /**
+     * Send a message (public method)
+     * Sends as a translated TTS message to the caller.
+     * @param {string} text - Optional text to send (defaults to input value)
+     */
+    async function sendMessage(text = '') {
+        const messageText = text || UI.getMessageInput();
+
+        if (!messageText.trim()) return;
+
+        UI.clearMessageInput();
+        UI.showLoading();
+
+        try {
+            await sendVoiceMessage(messageText);
+        } catch (error) {
+            Utils.log('Failed to send message', 'error', error);
+            UI.showWarning('Failed to send message');
+        } finally {
+            UI.hideLoading();
+        }
+    }
+
+    /**
+     * Send a voice TTS message
+     * @param {string} text - Message text
+     */
+    async function sendVoiceMessage(text) {
+        const transactionId = Config.addi.transactionId;
+
+        if (!transactionId) {
+            Utils.log('No ADDI transaction for voice message', 'warning');
+            return;
+        }
+
+        await API.sendTTSMessage(transactionId, 'caller', text);
+    }
+
+    /**
+     * Update language settings from UI (public method)
+     */
+    async function updateLanguages() {
+        const selections = UI.getLanguageSelections();
+        const langDefs = Config.languages.definitions;
+        const transactionId = Config.addi.transactionId;
+
+        if (transactionId) {
+            const status = await API.updateTransactionLanguage(
+                transactionId,
+                selections.target,
+                selections.source
+            );
+
+            if (status === 200) {
+                const callerLabel = langDefs?.[selections.source]?.name || selections.source;
+                const agentLabel = langDefs?.[selections.target]?.name || selections.target;
+                Utils.log(`Languages updated: Caller=${callerLabel}, Agent=${agentLabel}`, 'success');
+            } else {
+                UI.showWarning('Failed to update languages');
+            }
+        }
+
+        await updateLanguageSettings(selections.target, selections.source);
+    }
+
+    /**
+     * Update debug panel with current state
+     */
+    function updateDebugPanel() {
+        const addi = Config.addi;
+        const langSettings = Config.languages;
+
+        UI.updateDebugInfo({
+            version: Config.VERSION,
+            addiHost: addi.apiHost,
+            transactionId: addi.transactionId,
+            bearer: addi.bearer ? 'Present' : 'None',
+            agentProfile: langSettings.agentProfile?.ProfileId,
+            customerProfile: langSettings.customerProfile?.ProfileId
+        });
+    }
+
+    // Public API
+    return {
+        init,
+        sendMessage,
+        updateLanguages
+    };
+})();
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', () => {
+    App.init();
+});
