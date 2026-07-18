@@ -135,11 +135,31 @@ const UI = (() => {
      * @param {string} agentLanguage - Agent language key
      */
     function updateLanguageSelections(customerLanguage, agentLanguage) {
-        if (elements.sourceLanguageSelect) {
-            elements.sourceLanguageSelect.value = customerLanguage;
-        }
-        if (elements.targetLanguageSelect) {
-            elements.targetLanguageSelect.value = agentLanguage;
+        setSelectValue(elements.sourceLanguageSelect, customerLanguage, 'customer');
+        setSelectValue(elements.targetLanguageSelect, agentLanguage, 'agent');
+    }
+
+    /**
+     * Set a select's value only if a matching option exists,
+     * otherwise keep the current selection (setting an unmatched
+     * value would blank the dropdown).
+     * @param {HTMLSelectElement} select - The select element
+     * @param {string} value - Desired option value
+     * @param {string} label - Label for warning logs
+     */
+    function setSelectValue(select, value, label) {
+        if (!select || value == null || value === '') return;
+
+        const stringValue = String(value);
+        const hasOption = Array.from(select.options).some(o => o.value === stringValue);
+
+        if (hasOption) {
+            select.value = stringValue;
+        } else {
+            console.warn(
+                `No dropdown option matches ${label} language "${stringValue}". Available values:`,
+                Array.from(select.options).map(o => o.value)
+            );
         }
     }
 

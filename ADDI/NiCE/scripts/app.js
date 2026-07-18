@@ -75,6 +75,7 @@ const App = (() => {
         try {
             Utils.log('Attempting to load languages from ADDI API...', 'info');
             const languageMaps = await API.getLanguageMaps();
+            console.log('ADDI /language_maps response:', languageMaps);
 
             if (languageMaps && Array.isArray(languageMaps) && languageMaps.length > 0) {
                 const languageDefs = transformLanguageMaps(languageMaps);
@@ -137,6 +138,7 @@ const App = (() => {
         try {
             // Get and update language settings from ADDI
             const languageSettings = await API.getTransactionLanguage(transactionId);
+            console.log('ADDI transaction /languages response:', languageSettings);
 
             // Handle both old format (agent/caller) and new format (agent_id/caller_id)
             const agentLang = languageSettings.agent_id || languageSettings.agent;
@@ -144,6 +146,12 @@ const App = (() => {
 
             if (agentLang && callerLang) {
                 await updateLanguageSettings(agentLang, callerLang);
+            } else {
+                Utils.log('Transaction has no languages set, applying defaults', 'info');
+                await updateLanguageSettings(
+                    Config.TRANSLATION_DEFAULTS.AGENT_LANGUAGE,
+                    Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE
+                );
             }
 
             // Connect to ADDI transcription WebSocket
@@ -168,6 +176,15 @@ const App = (() => {
         const agentLangObj = findLanguageObject(languageDefs, agentLanguage);
         const customerLangObj = findLanguageObject(languageDefs, customerLanguage);
 
+        if (!agentLangObj || !customerLangObj) {
+            Utils.log(
+                `Could not resolve language(s) - agent "${agentLanguage}" ${agentLangObj ? 'OK' : 'NOT FOUND'}, ` +
+                `customer "${customerLanguage}" ${customerLangObj ? 'OK' : 'NOT FOUND'}. ` +
+                `Available: ${Object.keys(languageDefs || {}).join(', ')}`,
+                'warning'
+            );
+        }
+
         Config.updateLanguageSettings({
             agentLanguage,
             customerLanguage,
@@ -175,7 +192,11 @@ const App = (() => {
             customerLanguageObject: customerLangObj
         });
 
-        UI.updateLanguageSelections(customerLanguage, agentLanguage);
+        // Use resolved keys so the dropdowns match their option values
+        UI.updateLanguageSelections(
+            customerLangObj?.key || customerLanguage,
+            agentLangObj?.key || agentLanguage
+        );
 
         // Load translation profiles
         await loadTranslationProfiles();
@@ -187,22 +208,48 @@ const App = (() => {
      * @param {string} idOrName - Language ID or name to find
      * @returns {Object|null} Language object or null
      */
+    // Friendly language names to ISO 639 prefixes, for matching against
+    // dialect IDs like 'es-MX' when the exact key/name doesn't match
+    const LANGUAGE_NAME_TO_ISO = {
+        english: 'en', spanish: 'es', french: 'fr', german: 'de',
+        dutch: 'nl', polish: 'pl', portuguese: 'pt', arabic: 'ar',
+        hindi: 'hi', japanese: 'ja', korean: 'ko', finnish: 'fi'
+    };
+
     function findLanguageObject(languageDefs, idOrName) {
-        if (!languageDefs || !idOrName) return null;
+        if (!languageDefs || idOrName == null || idOrName === '') return null;
+
+        const search = String(idOrName);
 
         // Direct match
-        if (languageDefs[idOrName]) {
-            return languageDefs[idOrName];
+        if (languageDefs[search]) {
+            return languageDefs[search];
         }
 
         // Case-insensitive search
-        const searchLower = idOrName.toLowerCase();
+        const searchLower = search.toLowerCase();
         for (const key in languageDefs) {
             const def = languageDefs[key];
             if (key.toLowerCase() === searchLower ||
                 def.id?.toLowerCase() === searchLower ||
                 def.name?.toLowerCase() === searchLower) {
                 return def;
+            }
+        }
+
+        // Region match: 'spanish' -> 'es', or dialect codes like 'es'/'es-MX'
+        const region = LANGUAGE_NAME_TO_ISO[searchLower] || searchLower.split('-')[0];
+        for (const key in languageDefs) {
+            if (languageDefs[key].id_region === region) {
+                return languageDefs[key];
+            }
+        }
+
+        // Loose name match (e.g. 'spanish' vs 'Spanish (Mexico)')
+        for (const key in languageDefs) {
+            const name = languageDefs[key].name?.toLowerCase();
+            if (name && (name.includes(searchLower) || searchLower.includes(name))) {
+                return languageDefs[key];
             }
         }
 
@@ -246,6 +293,8 @@ const App = (() => {
 
             if (!agentProfile || !customerProfile) {
                 Utils.log(`No translation profiles found for Agent[${agentId}] -> Customer[${customerId}]`, 'warning');
+                console.warn('Available translation profiles:',
+                    Object.values(profiles || {}).map(p => `${p.Source} -> ${p.Target} (${p.ProfileId})`));
             } else {
                 Utils.log(`Profiles set - Agent: ${agentProfile?.ProfileId}, Customer: ${customerProfile?.ProfileId}`, 'info');
             }
