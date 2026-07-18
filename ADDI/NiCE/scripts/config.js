@@ -23,7 +23,7 @@ const Config = (() => {
         SOURCE_LANGUAGE: 'auto',
         TARGET_LANGUAGE: 'english',
         AGENT_LANGUAGE: 'english',
-        CUSTOMER_LANGUAGE: 'english'
+        CUSTOMER_LANGUAGE: 'spanish'
     };
 
     // Message Sender Types

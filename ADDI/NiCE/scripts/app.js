@@ -39,10 +39,15 @@ const App = (() => {
             // Load language definitions (ADDI API with JSON fallback)
             await loadLanguageDefinitions();
 
-            // Apply default selections until the transaction languages load
+            // Apply default selections until the transaction languages load.
+            // Resolve through the loaded definitions so defaults work whether
+            // languages came from the ADDI API (map IDs) or the static JSON.
+            const defs = Config.languages.definitions;
+            const defaultCustomer = findLanguageObject(defs, Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE);
+            const defaultAgent = findLanguageObject(defs, Config.TRANSLATION_DEFAULTS.AGENT_LANGUAGE);
             UI.updateLanguageSelections(
-                Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE,
-                Config.TRANSLATION_DEFAULTS.AGENT_LANGUAGE
+                defaultCustomer?.key || Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE,
+                defaultAgent?.key || Config.TRANSLATION_DEFAULTS.AGENT_LANGUAGE
             );
 
             // Load language settings from ADDI transaction and connect WebSocket
