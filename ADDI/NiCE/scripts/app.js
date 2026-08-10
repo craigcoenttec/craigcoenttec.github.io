@@ -40,8 +40,6 @@ const App = (() => {
             await loadLanguageDefinitions();
 
             // Apply default selections until the transaction languages load.
-            // Resolve through the loaded definitions so defaults work whether
-            // languages came from the ADDI API (map IDs) or the static JSON.
             const defs = Config.languages.definitions;
             const defaultCustomer = findLanguageObject(defs, Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE);
             const defaultAgent = findLanguageObject(defs, Config.TRANSLATION_DEFAULTS.AGENT_LANGUAGE);
@@ -50,8 +48,10 @@ const App = (() => {
                 defaultAgent?.key || Config.TRANSLATION_DEFAULTS.AGENT_LANGUAGE
             );
 
-            // Load language settings from ADDI transaction and connect WebSocket
+            // Load language settings from ADDI transaction, then connect the
+            // WebSocket regardless of whether the languages resolved.
             await handleADDITransaction();
+            WebSocketManager.connectADDI(transactionId, handleADDITranscription);
 
             // Show footer for TTS message sending
             UI.setFooterVisible(true);
@@ -91,7 +91,8 @@ const App = (() => {
         // Fallback to static JSON file
         try {
             const response = await fetch('./scripts/languageDefinition.json');
-            const languageDefs = await response.json();
+            const staticDefs = await response.json();
+            const languageDefs = transformStaticDefinitions(staticDefs);
 
             Config.setLanguageDefinitions(languageDefs);
             UI.populateLanguages(languageDefs);
@@ -105,28 +106,126 @@ const App = (() => {
     }
 
     /**
+     * Build a language entry keyed by its canonical dialect code.
+     *
+     * The dialect code is the key rather than the ADDI map ID because it is
+     * the one identifier shared by every source of language information:
+     * /language_maps (dialect_id), the transaction (agent/caller), and the
+     * live transcription events (source/target). The map ID is retained for
+     * the transaction-update path, which needs it later.
+     *
+     * @param {string} dialectId - Dialect code (e.g., 'JA-JP')
+     * @param {Object} options - Optional display name and ADDI map ID
+     * @returns {Object|null} Language entry, or null without a usable code
+     */
+    function makeLanguageEntry(dialectId, { name = null, mapId = null } = {}) {
+        const code = Config.normalizeDialectId(dialectId);
+        if (!code) return null;
+
+        return {
+            key: code,
+            name: name || Config.resolveDialectDisplay(code),
+            id: code,
+            id_region: code.split('-')[0].toLowerCase(),
+            flag_id: Config.resolveFlagId(code),
+            mapId
+        };
+    }
+
+    /**
      * Transform ADDI language maps response to internal format
      * @param {Array} languageMapList - Array from ADDI /language_maps endpoint
-     * @returns {Object} Language definitions keyed by ID
+     * @returns {Object} Language definitions keyed by dialect code
      */
     function transformLanguageMaps(languageMapList) {
         const languageDefs = {};
 
         languageMapList.forEach(entry => {
-            const dialectId = entry.dialect_id;
-            const displayName = entry.dialect_display || entry.map_name || entry.dialect_id || entry.id;
-            const flagId = Config.resolveFlagId(dialectId);
+            const languageEntry = makeLanguageEntry(entry.dialect_id, {
+                name: entry.dialect_display || entry.map_name,
+                mapId: entry.id
+            });
 
-            languageDefs[entry.id] = {
-                key: entry.id,
-                name: displayName,
-                id: dialectId,
-                id_region: dialectId ? dialectId.split('-')[0].toLowerCase() : '',
-                flag_id: flagId
+            if (languageEntry) {
+                languageDefs[languageEntry.key] = languageEntry;
+            } else {
+                Utils.log(`Skipping language map "${entry.map_name || entry.id}" - no dialect_id`, 'warning');
+            }
+        });
+
+        return languageDefs;
+    }
+
+    /**
+     * Transform the static languageDefinition.json into dialect-code-keyed
+     * entries so both language sources produce the same shape.
+     *
+     * The static file has entries that collide on dialect code (Australian
+     * and British are both 'en-GB'); prefer the one whose flag matches the
+     * dialect's country so 'en-GB' keeps the British flag.
+     *
+     * @param {Object} staticDefs - Parsed languageDefinition.json
+     * @returns {Object} Language definitions keyed by dialect code
+     */
+    function transformStaticDefinitions(staticDefs) {
+        const languageDefs = {};
+
+        Object.values(staticDefs || {}).forEach(def => {
+            const languageEntry = makeLanguageEntry(def.id, { name: def.name });
+            if (!languageEntry) return;
+
+            const existing = languageDefs[languageEntry.key];
+            if (existing) {
+                const country = languageEntry.key.split('-')[1]?.toLowerCase();
+                const existingMatchesCountry = existing.flag_id === country;
+                const candidateMatchesCountry = def.flag_id?.toLowerCase() === country;
+                if (existingMatchesCountry || !candidateMatchesCountry) return;
+            }
+
+            // Trust the curated flag from the static file over the derived one
+            languageDefs[languageEntry.key] = {
+                ...languageEntry,
+                flag_id: def.flag_id || languageEntry.flag_id
             };
         });
 
         return languageDefs;
+    }
+
+    /**
+     * Ensure the given dialect codes are present in the language list,
+     * adding any that the ADDI catalog does not advertise.
+     *
+     * ADDI translates language pairs that /language_maps omits, so the
+     * catalog is treated as a starting point rather than the whole truth:
+     * languages observed on the transaction or on the wire are added here so
+     * they are selectable and render with the right flag.
+     *
+     * @param {...string} dialectIds - Dialect codes to ensure exist
+     * @returns {boolean} True if any language was added
+     */
+    function ensureLanguages(...dialectIds) {
+        const languageDefs = { ...(Config.languages.definitions || {}) };
+        const added = [];
+
+        dialectIds.forEach(dialectId => {
+            const code = Config.normalizeDialectId(dialectId);
+            if (!code || languageDefs[code]) return;
+
+            const languageEntry = makeLanguageEntry(code);
+            if (!languageEntry) return;
+
+            languageDefs[code] = languageEntry;
+            added.push(`${languageEntry.name} (${code})`);
+        });
+
+        if (added.length === 0) return false;
+
+        Config.setLanguageDefinitions(languageDefs);
+        UI.populateLanguages(languageDefs);
+        Utils.log(`Added language(s) not in the ADDI catalog: ${added.join(', ')}`, 'info');
+
+        return true;
     }
 
     /**
@@ -140,11 +239,17 @@ const App = (() => {
             const languageSettings = await API.getTransactionLanguage(transactionId);
             console.log('ADDI transaction /languages response:', languageSettings);
 
-            // Handle both old format (agent/caller) and new format (agent_id/caller_id)
-            const agentLang = languageSettings.agent_id || languageSettings.agent;
-            const callerLang = languageSettings.caller_id || languageSettings.caller;
+            // Prefer the dialect codes (agent/caller). The agent_id/caller_id
+            // UUIDs belong to a different namespace than /language_maps IDs and
+            // cannot be resolved to a language through any available endpoint,
+            // so using them here leaves both dropdowns stuck on their defaults.
+            const agentLang = languageSettings.agent || languageSettings.agent_id;
+            const callerLang = languageSettings.caller || languageSettings.caller_id;
 
             if (agentLang && callerLang) {
+                // Make the transaction's languages selectable even when the
+                // ADDI catalog does not list them.
+                ensureLanguages(agentLang, callerLang);
                 await updateLanguageSettings(agentLang, callerLang);
             } else {
                 Utils.log('Transaction has no languages set, applying defaults', 'info');
@@ -153,9 +258,6 @@ const App = (() => {
                     Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE
                 );
             }
-
-            // Connect to ADDI transcription WebSocket
-            WebSocketManager.connectADDI(transactionId, handleADDITranscription);
 
             Utils.log('ADDI transaction configured', 'success');
 
@@ -177,12 +279,21 @@ const App = (() => {
         const customerLangObj = findLanguageObject(languageDefs, customerLanguage);
 
         if (!agentLangObj || !customerLangObj) {
+            const unresolved = [
+                !agentLangObj ? `agent "${agentLanguage}"` : null,
+                !customerLangObj ? `customer "${customerLanguage}"` : null
+            ].filter(Boolean).join(' and ');
+
             Utils.log(
                 `Could not resolve language(s) - agent "${agentLanguage}" ${agentLangObj ? 'OK' : 'NOT FOUND'}, ` +
                 `customer "${customerLanguage}" ${customerLangObj ? 'OK' : 'NOT FOUND'}. ` +
                 `Available: ${Object.keys(languageDefs || {}).join(', ')}`,
                 'warning'
             );
+
+            // Surface this: an unresolved language means the dropdown is showing
+            // something other than what the transaction is actually set to.
+            UI.showWarning(`Unrecognized ${unresolved} - the selection below may not match the call`, 8000);
         }
 
         Config.updateLanguageSettings({
@@ -221,12 +332,14 @@ const App = (() => {
 
         const search = String(idOrName);
 
-        // Direct match
-        if (languageDefs[search]) {
-            return languageDefs[search];
+        // Canonical dialect code - the normal path now that entries are keyed
+        // by code ('ja-JP', 'JA-JP' and 'JA-jp' all land here)
+        const normalized = Config.normalizeDialectId(search);
+        if (normalized && languageDefs[normalized]) {
+            return languageDefs[normalized];
         }
 
-        // Case-insensitive search
+        // Case-insensitive match on key, dialect code, or display name
         const searchLower = search.toLowerCase();
         for (const key in languageDefs) {
             const def = languageDefs[key];
@@ -237,7 +350,7 @@ const App = (() => {
             }
         }
 
-        // Region match: 'spanish' -> 'es', or dialect codes like 'es'/'es-MX'
+        // Language match: 'spanish' -> 'es', or a bare code like 'es'
         const region = LANGUAGE_NAME_TO_ISO[searchLower] || searchLower.split('-')[0];
         for (const key in languageDefs) {
             if (languageDefs[key].id_region === region) {
@@ -245,10 +358,13 @@ const App = (() => {
             }
         }
 
-        // Loose name match (e.g. 'spanish' vs 'Spanish (Mexico)')
+        // Loose name match (e.g. 'spanish' vs 'Spanish (Mexico)'). Only the
+        // name-contains-search direction: the reverse lets a short catalog
+        // name swallow an unrelated search and return a wrong language, which
+        // is worse than reporting nothing.
         for (const key in languageDefs) {
             const name = languageDefs[key].name?.toLowerCase();
-            if (name && (name.includes(searchLower) || searchLower.includes(name))) {
+            if (name && name.includes(searchLower)) {
                 return languageDefs[key];
             }
         }
@@ -259,6 +375,11 @@ const App = (() => {
     /**
      * Load and set translation profiles/engines from ADDI
      * Uses /translation_engines endpoint
+     *
+     * Diagnostic only: the profiles are surfaced in the debug panel and are
+     * not used to translate. ADDI performs translation server-side (the live
+     * events arrive already translated) and outbound TTS via /speak carries
+     * no profile, so a missing profile here does not mean translation is down.
      */
     async function loadTranslationProfiles() {
         try {
@@ -292,8 +413,10 @@ const App = (() => {
             });
 
             if (!agentProfile || !customerProfile) {
-                Utils.log(`No translation profiles found for Agent[${agentId}] -> Customer[${customerId}]`, 'warning');
-                console.warn('Available translation profiles:',
+                // Not a warning: ADDI translates pairs that /translation_engines
+                // does not list, so this is expected and has no user impact.
+                console.debug(
+                    `No /translation_engines entry for Agent[${agentId}] -> Customer[${customerId}] (informational). Available:`,
                     Object.values(profiles || {}).map(p => `${p.Source} -> ${p.Target} (${p.ProfileId})`));
             } else {
                 Utils.log(`Profiles set - Agent: ${agentProfile?.ProfileId}, Customer: ${customerProfile?.ProfileId}`, 'info');
@@ -312,28 +435,36 @@ const App = (() => {
      */
     function handleADDITranscription(event) {
         const eventId = `event_${eventCounter++}`;
-        const langSettings = Config.languages;
+
+        const senderType = event.participant === 'caller'
+            ? Config.SENDER_TYPES.CUSTOMER
+            : Config.SENDER_TYPES.AGENT;
+
+        // Each event reports the pair ADDI actually translated, which is
+        // authoritative and independent of the dropdowns - ADDI translates
+        // pairs the catalog does not advertise, and the agent can change the
+        // selection mid-call. Fall back to the selections only if absent.
         const selections = UI.getLanguageSelections();
+        const isCustomer = senderType === Config.SENDER_TYPES.CUSTOMER;
+        const sourceLang = Config.normalizeDialectId(event.source)
+            || (isCustomer ? selections.source : selections.target);
+        const targetLang = Config.normalizeDialectId(event.target)
+            || (isCustomer ? selections.target : selections.source);
 
-        let senderType = Config.SENDER_TYPES.CUSTOMER;
-        let sourceLang = selections.source;
-        let targetLang = selections.target;
+        // Keep languages seen on the wire selectable in the dropdowns
+        ensureLanguages(sourceLang, targetLang);
 
-        if (event.participant !== 'caller') {
-            senderType = Config.SENDER_TYPES.AGENT;
-            sourceLang = selections.target;
-            targetLang = selections.source;
-        }
+        const languageDefs = Config.languages.definitions;
 
         const messageObj = Utils.createMessageObject({
             messageid: eventId,
             Timestamp: event.timestamp,
             OriginalText: event.text,
             OriginalLanguage: sourceLang,
-            OriginalFlag: langSettings.definitions?.[sourceLang]?.flag_id || 'us',
+            OriginalFlag: languageDefs?.[sourceLang]?.flag_id || Config.resolveFlagId(sourceLang),
             TranslatedText: event.translated,
             TranslatedLanguage: targetLang,
-            TranslatedFlag: langSettings.definitions?.[targetLang]?.flag_id || 'us',
+            TranslatedFlag: languageDefs?.[targetLang]?.flag_id || Config.resolveFlagId(targetLang),
             SenderType: senderType
         });
 

@@ -27,11 +27,32 @@ without needing the query string again.
 ## Features (parity with V2 standalone mode)
 
 - Dynamic language loading from the ADDI `/language_maps` endpoint, with fallback
-  to the static `scripts/languageDefinition.json`
-- Loads the transaction's current agent/caller languages on startup
+  to the static `scripts/languageDefinition.json`. The catalog is a starting
+  point, not the whole list: ADDI translates pairs that `/language_maps` does
+  not advertise, so any language seen on the transaction or on the live
+  WebSocket is added to the dropdowns automatically.
+- Languages are keyed by ADDI dialect code (`EN-US`, `JA-JP`), the one
+  identifier shared by the catalog, the transaction, and the live events
+- Loads the transaction's current agent/caller languages on startup, reading
+  the `agent`/`caller` dialect codes. The `agent_id`/`caller_id` UUIDs are a
+  separate namespace from `/language_maps` IDs and cannot be resolved to a
+  language through any available endpoint, so they are only a last resort.
+- Message bubbles take their languages and flags from each event's own
+  `source`/`target` rather than from the dropdowns, so they stay correct
+  regardless of what is selected
 - Customer/Agent language selection with same-language validation, and language
-  updates pushed via `PUT /transactions/{id}/languages`
-- Translation profile matching via `/translation_engines`
+  updates pushed via `PUT /transactions/{id}/languages`.
+  **Known limitation:** the Update button does not currently take effect. The
+  endpoint only honors the `agent_id`/`caller_id` UUID namespace, returns `200`
+  while silently ignoring IDs it does not recognize, and rejects a body of
+  `agent`/`caller` dialect codes with `424`. There is no endpoint that maps a
+  dialect code to the UUID the write path wants, so this needs an ADDI-side
+  change. Language entries carry the `/language_maps` ID as `mapId` ready for
+  that fix. Display and live translation are unaffected.
+- Translation profile matching via `/translation_engines` — **diagnostic only**.
+  The profiles appear in the debug panel and are not used to translate: ADDI
+  translates server-side (live events arrive already translated) and `/speak`
+  carries no profile. A missing profile does not mean translation is down.
 - Live transcription/translation via the ADDI WebSocket
   (`/live/{id}/ws?bearer=...`) with auto-reconnect
 - Dual-text message bubbles showing original and translated text with flag emoji

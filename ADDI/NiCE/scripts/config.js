@@ -19,11 +19,11 @@ const Config = (() => {
     };
 
     // Translation Settings
+    // Expressed as ADDI dialect codes, which are the canonical language
+    // key everywhere in this widget (see normalizeDialectId).
     const TRANSLATION_DEFAULTS = {
-        SOURCE_LANGUAGE: 'auto',
-        TARGET_LANGUAGE: 'english',
-        AGENT_LANGUAGE: 'english',
-        CUSTOMER_LANGUAGE: 'spanish'
+        AGENT_LANGUAGE: 'EN-US',
+        CUSTOMER_LANGUAGE: 'ES-ES'
     };
 
     // Message Sender Types
@@ -44,6 +44,7 @@ const Config = (() => {
         'yue-HK': 'hk',
         'es-CO': 'co',
         'es-ES': 'es',
+        'es-US': 'us',
         'nl-NL': 'nl',
         'fi-FI': 'fi',
         'fr-FR': 'fr',
@@ -153,13 +154,66 @@ const Config = (() => {
             if (key.toLowerCase() === lowerDialect) return value;
         }
 
-        // Try region code only (e.g., 'en' from 'en-US')
-        const region = lowerDialect.split('-')[0];
+        // Use the dialect's own country suffix when it has one. This is
+        // correct for any dialect not in the map ('es-US' -> 'us') and must
+        // be tried before the language-prefix scan below, which would other-
+        // wise return the first same-language entry ('es-US' -> 'es-CO').
+        const [languagePart, countryPart] = lowerDialect.split('-');
+        if (countryPart && countryPart.length === 2) {
+            return countryPart;
+        }
+
+        // Fall back to any entry sharing the language prefix ('en' from 'en-US')
         for (const [key, value] of Object.entries(LANGUAGE_FLAG_MAP)) {
-            if (key.toLowerCase().startsWith(region + '-')) return value;
+            if (key.toLowerCase().startsWith(languagePart + '-')) return value;
         }
 
         return 'us'; // Default fallback
+    }
+
+    /**
+     * Normalize an ADDI dialect code to its canonical form: lowercase
+     * language, uppercase country ('ja-jp' / 'JA-JP' -> 'JA-JP').
+     * This is the key every language is stored and looked up under.
+     * @param {string} dialectId - A dialect code in any casing
+     * @returns {string} The normalized code, or '' when there is nothing to normalize
+     */
+    function normalizeDialectId(dialectId) {
+        if (dialectId == null || dialectId === '') return '';
+
+        const [languagePart, countryPart] = String(dialectId).trim().split('-');
+        if (!languagePart) return '';
+
+        return countryPart
+            ? `${languagePart.toUpperCase()}-${countryPart.toUpperCase()}`
+            : languagePart.toUpperCase();
+    }
+
+    /**
+     * Derive a human-readable label for a dialect code, for languages that
+     * are not in the ADDI catalog and therefore have no dialect_display.
+     * Uses Intl so 'JA-JP' becomes 'Japanese (Japan)' without a lookup table.
+     * @param {string} dialectId - The dialect code (e.g., 'JA-JP')
+     * @returns {string} A display name, falling back to the code itself
+     */
+    function resolveDialectDisplay(dialectId) {
+        const code = normalizeDialectId(dialectId);
+        if (!code) return '';
+
+        const [languagePart, countryPart] = code.split('-');
+        const tag = countryPart
+            ? `${languagePart.toLowerCase()}-${countryPart}`
+            : languagePart.toLowerCase();
+
+        try {
+            const displayNames = new Intl.DisplayNames(['en'], {
+                type: 'language',
+                fallback: 'none'
+            });
+            return displayNames.of(tag) || code;
+        } catch (error) {
+            return code;
+        }
     }
 
     /**
@@ -204,6 +258,8 @@ const Config = (() => {
 
         // Utility functions
         resolveFlagId,
+        normalizeDialectId,
+        resolveDialectDisplay,
         getAddiApiUrl,
         getAddiWebSocketUrl
     };

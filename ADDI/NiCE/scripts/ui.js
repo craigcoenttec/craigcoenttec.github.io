@@ -70,15 +70,14 @@ const UI = (() => {
 
     /**
      * Set up language dropdown validation
-     * Prevents selecting the same language for both source and target (except "auto")
+     * Prevents selecting the same language for both source and target
      */
     function setupLanguageValidation() {
         const enforceUnique = () => {
             const sourceVal = elements.sourceLanguageSelect?.value;
             const targetVal = elements.targetLanguageSelect?.value;
 
-            // Allow if either is "auto" or if they're different
-            if (sourceVal === targetVal && sourceVal !== 'auto') {
+            if (sourceVal && sourceVal === targetVal) {
                 elements.updateButton?.setAttribute('disabled', 'true');
                 showWarning('Customer and agent languages cannot be the same', 3000);
             } else {
@@ -106,13 +105,20 @@ const UI = (() => {
             return;
         }
 
-        // Clear existing options
+        // This can be called again when a language is discovered mid-call, so
+        // remember the selections and restore them after rebuilding.
+        const previousSource = elements.sourceLanguageSelect.value;
+        const previousTarget = elements.targetLanguageSelect.value;
+
         elements.sourceLanguageSelect.innerHTML = '';
         elements.targetLanguageSelect.innerHTML = '';
 
-        // Add options for each language
-        Object.keys(languageDefs).forEach((key) => {
-            const lang = languageDefs[key];
+        // Sort by display name so languages added mid-call are not just
+        // appended to the bottom of the list
+        const languages = Object.values(languageDefs)
+            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+        languages.forEach((lang) => {
             const label = `${Utils.flagEmoji(lang.flag_id)} ${lang.name}`;
 
             const option1 = document.createElement('option');
@@ -126,7 +132,10 @@ const UI = (() => {
             elements.targetLanguageSelect.appendChild(option2);
         });
 
-        console.log('%cLanguage dropdowns populated', 'color: green');
+        setSelectValue(elements.sourceLanguageSelect, previousSource, 'customer', true);
+        setSelectValue(elements.targetLanguageSelect, previousTarget, 'agent', true);
+
+        console.log(`%cLanguage dropdowns populated (${languages.length})`, 'color: green');
     }
 
     /**
@@ -146,8 +155,9 @@ const UI = (() => {
      * @param {HTMLSelectElement} select - The select element
      * @param {string} value - Desired option value
      * @param {string} label - Label for warning logs
+     * @param {boolean} quiet - Suppress the warning (used when restoring)
      */
-    function setSelectValue(select, value, label) {
+    function setSelectValue(select, value, label, quiet = false) {
         if (!select || value == null || value === '') return;
 
         const stringValue = String(value);
@@ -155,7 +165,7 @@ const UI = (() => {
 
         if (hasOption) {
             select.value = stringValue;
-        } else {
+        } else if (!quiet) {
             console.warn(
                 `No dropdown option matches ${label} language "${stringValue}". Available values:`,
                 Array.from(select.options).map(o => o.value)
@@ -169,8 +179,8 @@ const UI = (() => {
      */
     function getLanguageSelections() {
         return {
-            source: elements.sourceLanguageSelect?.value || 'auto',
-            target: elements.targetLanguageSelect?.value || 'english'
+            source: elements.sourceLanguageSelect?.value || Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE,
+            target: elements.targetLanguageSelect?.value || Config.TRANSLATION_DEFAULTS.AGENT_LANGUAGE
         };
     }
 
