@@ -41,6 +41,7 @@ const UI = (() => {
             debugHost: document.getElementById('debugHost'),
             debugTransaction: document.getElementById('debugTransaction'),
             debugBearer: document.getElementById('debugBearer'),
+            debugSubclient: document.getElementById('debugSubclient'),
             debugWebSocket: document.getElementById('debugWebSocket'),
             debugAgentProfile: document.getElementById('debugAgentProfile'),
             debugCustomerProfile: document.getElementById('debugCustomerProfile')
@@ -69,24 +70,42 @@ const UI = (() => {
     }
 
     /**
-     * Set up language dropdown validation
-     * Prevents selecting the same language for both source and target
+     * Set up language dropdown validation.
+     *
+     * Two rules, deliberately of different strengths: the same language on
+     * both sides is nonsense and blocks Update, whereas a combination ADDI has
+     * no configured pair for only warns - it is unusual but not impossible,
+     * and blocking it would make an in-flight call unmanageable.
      */
     function setupLanguageValidation() {
-        const enforceUnique = () => {
+        const validate = () => {
             const sourceVal = elements.sourceLanguageSelect?.value;
             const targetVal = elements.targetLanguageSelect?.value;
 
             if (sourceVal && sourceVal === targetVal) {
                 elements.updateButton?.setAttribute('disabled', 'true');
                 showWarning('Customer and agent languages cannot be the same', 3000);
-            } else {
-                elements.updateButton?.removeAttribute('disabled');
+                return;
+            }
+
+            elements.updateButton?.removeAttribute('disabled');
+
+            if (sourceVal && targetVal && Config.hasRouteData() &&
+                !Config.isConfiguredPair(sourceVal, targetVal)) {
+                showWarning('ADDI has no configured translation pair for that combination', 4000);
             }
         };
 
-        elements.sourceLanguageSelect?.addEventListener('change', enforceUnique);
-        elements.targetLanguageSelect?.addEventListener('change', enforceUnique);
+        // Changing one side re-groups the other, so the configured options for
+        // the new selection surface without anything being removed
+        elements.sourceLanguageSelect?.addEventListener('change', () => {
+            regroupOptions(elements.targetLanguageSelect, elements.sourceLanguageSelect.value);
+            validate();
+        });
+        elements.targetLanguageSelect?.addEventListener('change', () => {
+            regroupOptions(elements.sourceLanguageSelect, elements.targetLanguageSelect.value);
+            validate();
+        });
 
         console.log('%cLanguage validation initialized', 'color: green');
     }
@@ -110,32 +129,99 @@ const UI = (() => {
         const previousSource = elements.sourceLanguageSelect.value;
         const previousTarget = elements.targetLanguageSelect.value;
 
-        elements.sourceLanguageSelect.innerHTML = '';
-        elements.targetLanguageSelect.innerHTML = '';
+        const languages = sortedLanguages(languageDefs);
 
-        // Sort by display name so languages added mid-call are not just
-        // appended to the bottom of the list
-        const languages = Object.values(languageDefs)
-            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-        languages.forEach((lang) => {
-            const label = `${Utils.flagEmoji(lang.flag_id)} ${lang.name}`;
-
-            const option1 = document.createElement('option');
-            option1.value = lang.key;
-            option1.textContent = label;
-            elements.sourceLanguageSelect.appendChild(option1);
-
-            const option2 = document.createElement('option');
-            option2.value = lang.key;
-            option2.textContent = label;
-            elements.targetLanguageSelect.appendChild(option2);
-        });
+        renderOptions(elements.sourceLanguageSelect, languages, previousTarget);
+        renderOptions(elements.targetLanguageSelect, languages, previousSource);
 
         setSelectValue(elements.sourceLanguageSelect, previousSource, 'customer', true);
         setSelectValue(elements.targetLanguageSelect, previousTarget, 'agent', true);
 
         console.log(`%cLanguage dropdowns populated (${languages.length})`, 'color: green');
+    }
+
+    /**
+     * Language entries sorted by display name, so languages discovered
+     * mid-call are not just appended to the bottom of the list
+     * @param {Object} languageDefs - Language definitions object
+     * @returns {Array} Sorted language entries
+     */
+    function sortedLanguages(languageDefs) {
+        return Object.values(languageDefs || {})
+            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
+    /**
+     * Render one select's options, split into languages ADDI has a configured
+     * translation pair with the counterpart and languages it does not.
+     *
+     * Grouped rather than filtered on purpose. The pair list is accurate for
+     * the tenant it came from, but the bearer picks the tenant and can point
+     * somewhere other than the transaction - and hiding a language then makes
+     * the live call unrepresentable, which is the failure this widget exists
+     * to avoid. Grouping conveys the same information and still degrades
+     * safely.
+     *
+     * @param {HTMLSelectElement} select - The select to fill
+     * @param {Array} languages - Sorted language entries
+     * @param {string} counterpartValue - The other select's current value
+     */
+    function renderOptions(select, languages, counterpartValue) {
+        if (!select) return;
+
+        select.innerHTML = '';
+
+        const buildOption = (lang) => {
+            const option = document.createElement('option');
+            option.value = lang.key;
+            option.textContent = `${Utils.flagEmoji(lang.flag_id)} ${lang.name}`;
+            return option;
+        };
+
+        if (!Config.hasRouteData() || !counterpartValue) {
+            languages.forEach(lang => select.appendChild(buildOption(lang)));
+            return;
+        }
+
+        const configured = [];
+        const unconfigured = [];
+        languages.forEach(lang => {
+            (Config.isConfiguredPair(lang.key, counterpartValue) ? configured : unconfigured).push(lang);
+        });
+
+        appendGroup(select, 'Configured pairs', configured, buildOption);
+        appendGroup(select, 'Not configured', unconfigured, buildOption);
+    }
+
+    /**
+     * Append a labelled group of options, skipping empty groups
+     * @param {HTMLSelectElement} select - The select to append to
+     * @param {string} label - Group label
+     * @param {Array} languages - Language entries for this group
+     * @param {Function} buildOption - Option factory
+     */
+    function appendGroup(select, label, languages, buildOption) {
+        if (languages.length === 0) return;
+
+        const group = document.createElement('optgroup');
+        group.label = label;
+        languages.forEach(lang => group.appendChild(buildOption(lang)));
+        select.appendChild(group);
+    }
+
+    /**
+     * Re-group one select against a new counterpart value, keeping its
+     * current selection
+     * @param {HTMLSelectElement} select - The select to re-group
+     * @param {string} counterpartValue - The other select's current value
+     */
+    function regroupOptions(select, counterpartValue) {
+        const definitions = Config.languages.definitions;
+        if (!select || !definitions) return;
+
+        const current = select.value;
+        renderOptions(select, sortedLanguages(definitions), counterpartValue);
+        setSelectValue(select, current, 'regroup', true);
     }
 
     /**
@@ -146,6 +232,10 @@ const UI = (() => {
     function updateLanguageSelections(customerLanguage, agentLanguage) {
         setSelectValue(elements.sourceLanguageSelect, customerLanguage, 'customer');
         setSelectValue(elements.targetLanguageSelect, agentLanguage, 'agent');
+
+        // Re-group both lists now that each has a counterpart to judge against
+        regroupOptions(elements.sourceLanguageSelect, elements.targetLanguageSelect?.value);
+        regroupOptions(elements.targetLanguageSelect, elements.sourceLanguageSelect?.value);
     }
 
     /**
@@ -388,6 +478,7 @@ const UI = (() => {
         setDebugValue('debugHost', info.addiHost);
         setDebugValue('debugTransaction', info.transactionId);
         setDebugValue('debugBearer', info.bearer);
+        setDebugValue('debugSubclient', info.subclient);
         setDebugValue('debugAgentProfile', info.agentProfile);
         setDebugValue('debugCustomerProfile', info.customerProfile);
     }

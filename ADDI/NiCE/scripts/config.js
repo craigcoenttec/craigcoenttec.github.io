@@ -84,6 +84,22 @@ const Config = (() => {
     };
 
     /**
+     * Configured translation routes from /translation_pairs, keyed by dialect
+     * code. /language_maps says which languages exist; only this says which
+     * combinations ADDI is actually set up to translate between.
+     */
+    let routeMap = {};
+
+    /**
+     * Which tenant the bearer resolves to. Every /language_maps entry carries
+     * its client/subclient, and the bearer is what selects the subclient - so
+     * reading it off the catalog is the only way the widget can tell which
+     * tenant it is talking to, and therefore the only way to catch a bearer
+     * pointed at a different subclient than the transaction.
+     */
+    let tenant = { clientId: null, subclientId: null };
+
+    /**
      * Initialize configuration from URL parameters and session storage
      * @returns {Object} The initialized ADDI configuration
      */
@@ -134,6 +150,61 @@ const Config = (() => {
      */
     function updateLanguageSettings(settings) {
         Object.assign(languageSettings, settings);
+    }
+
+    /**
+     * Store the tenant's configured translation pairs, indexed by dialect code
+     * so they join directly onto the rest of the widget's language handling.
+     * @param {Array} pairs - Array from ADDI /translation_pairs
+     */
+    function setTranslationPairs(pairs) {
+        routeMap = {};
+
+        (Array.isArray(pairs) ? pairs : []).forEach(pair => {
+            const source = normalizeDialectId(pair.source_dialect);
+            const target = normalizeDialectId(pair.target_dialect);
+            if (!source || !target) return;
+
+            routeMap[source] = routeMap[source] || new Set();
+            routeMap[source].add(target);
+        });
+    }
+
+    /**
+     * Whether any route information was loaded. Callers use this to fall back
+     * to ungrouped behavior rather than treating "no data" as "no valid pair".
+     * @returns {boolean} True when at least one route is known
+     */
+    function hasRouteData() {
+        return Object.keys(routeMap).length > 0;
+    }
+
+    /**
+     * Whether ADDI is configured to translate between two languages in both
+     * directions. A translated call has to travel both ways, so a one-way
+     * route is not enough to call the combination usable.
+     * @param {string} a - A dialect code
+     * @param {string} b - The other dialect code
+     * @returns {boolean} True when both directions are configured
+     */
+    function isConfiguredPair(a, b) {
+        const first = normalizeDialectId(a);
+        const second = normalizeDialectId(b);
+        if (!first || !second) return false;
+
+        return Boolean(
+            routeMap[first] && routeMap[first].has(second) &&
+            routeMap[second] && routeMap[second].has(first)
+        );
+    }
+
+    /**
+     * Record the client/subclient the current bearer resolves to
+     * @param {string} clientId - ADDI client ID
+     * @param {string} subclientId - ADDI subclient ID
+     */
+    function setTenant(clientId, subclientId) {
+        tenant = { clientId: clientId || null, subclientId: subclientId || null };
     }
 
     /**
@@ -250,11 +321,18 @@ const Config = (() => {
         // Getters for configuration objects
         get addi() { return { ...addiConfig }; },
         get languages() { return { ...languageSettings }; },
+        get tenant() { return { ...tenant }; },
 
         // Initialization and setters
         init,
         setLanguageDefinitions,
         updateLanguageSettings,
+        setTranslationPairs,
+        setTenant,
+
+        // Translation route topology
+        hasRouteData,
+        isConfiguredPair,
 
         // Utility functions
         resolveFlagId,

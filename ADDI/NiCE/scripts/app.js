@@ -39,6 +39,9 @@ const App = (() => {
             // Load language definitions (ADDI API with JSON fallback)
             await loadLanguageDefinitions();
 
+            // Load the tenant's configured routes, used to group the dropdowns
+            await loadTranslationPairs();
+
             // Apply default selections until the transaction languages load.
             const defs = Config.languages.definitions;
             const defaultCustomer = findLanguageObject(defs, Config.TRANSLATION_DEFAULTS.CUSTOMER_LANGUAGE);
@@ -78,6 +81,7 @@ const App = (() => {
             console.log('ADDI /language_maps response:', languageMaps);
 
             if (languageMaps && Array.isArray(languageMaps) && languageMaps.length > 0) {
+                captureTenant(languageMaps);
                 const languageDefs = transformLanguageMaps(languageMaps);
                 Config.setLanguageDefinitions(languageDefs);
                 UI.populateLanguages(languageDefs);
@@ -102,6 +106,40 @@ const App = (() => {
         } catch (error) {
             Utils.log('Failed to load language definitions from any source', 'error', error);
             throw error;
+        }
+    }
+
+    /**
+     * Load the tenant's configured translation pairs.
+     *
+     * Advisory, not authoritative: it drives how the dropdowns are grouped,
+     * never which languages appear in them. Failing to load it costs grouping
+     * and nothing else.
+     */
+    async function loadTranslationPairs() {
+        try {
+            const pairs = await API.getTranslationPairs();
+            Config.setTranslationPairs(pairs);
+            Utils.log(`Loaded ${pairs?.length || 0} configured translation pair(s)`, 'success');
+        } catch (error) {
+            Utils.log('Could not load translation pairs - dropdowns will not be grouped', 'warning', error);
+        }
+    }
+
+    /**
+     * Record which tenant this bearer resolves to, off the catalog itself.
+     *
+     * The bearer selects a subclient, and nothing in the widget's inputs says
+     * which one - so without this a bearer pointed at the wrong subclient is
+     * invisible, and shows up only as languages that mysteriously fail to
+     * resolve. See reportUncataloguedLanguages.
+     *
+     * @param {Array} languageMaps - Raw /language_maps response
+     */
+    function captureTenant(languageMaps) {
+        const scoped = languageMaps.find(entry => entry.subclient_id || entry.client_id);
+        if (scoped) {
+            Config.setTenant(scoped.client_id, scoped.subclient_id);
         }
     }
 
@@ -192,14 +230,19 @@ const App = (() => {
         return languageDefs;
     }
 
+    // Languages already reported as absent from the catalog, so a mid-call
+    // discovery does not re-banner on every subsequent WebSocket event.
+    const reportedUncatalogued = new Set();
+
     /**
-     * Ensure the given dialect codes are present in the language list,
-     * adding any that the ADDI catalog does not advertise.
+     * Ensure the given dialect codes are present in the language list, adding
+     * any the catalog does not contain.
      *
-     * ADDI translates language pairs that /language_maps omits, so the
-     * catalog is treated as a starting point rather than the whole truth:
-     * languages observed on the transaction or on the wire are added here so
-     * they are selectable and render with the right flag.
+     * This is a safety net, not a routine path. On a correctly configured
+     * tenant every language on the transaction is in /language_maps; a
+     * language that is not means something is wrong upstream, so the entry is
+     * added to keep the transcript readable and the condition is reported
+     * rather than absorbed.
      *
      * @param {...string} dialectIds - Dialect codes to ensure exist
      * @returns {boolean} True if any language was added
@@ -216,16 +259,53 @@ const App = (() => {
             if (!languageEntry) return;
 
             languageDefs[code] = languageEntry;
-            added.push(`${languageEntry.name} (${code})`);
+            added.push(languageEntry);
         });
 
         if (added.length === 0) return false;
 
         Config.setLanguageDefinitions(languageDefs);
         UI.populateLanguages(languageDefs);
-        Utils.log(`Added language(s) not in the ADDI catalog: ${added.join(', ')}`, 'info');
+        reportUncataloguedLanguages(added);
 
         return true;
+    }
+
+    /**
+     * Report a language that is live on this transaction but missing from
+     * /language_maps.
+     *
+     * The usual cause is that the bearer and the transaction resolve to
+     * different subclients, so the catalog being read is not the one the call
+     * runs under. Confirmed against a live JA-JP call: its agent_id/caller_id
+     * resolved cleanly to catalog entries in its own subclient and matched
+     * nothing at all in another's.
+     *
+     * Worth surfacing rather than quietly patching over, because the same
+     * mismatch also breaks profile matching and the Update button - both of
+     * which need a catalog entry that does not exist here.
+     *
+     * @param {Array<Object>} added - Language entries just added
+     */
+    function reportUncataloguedLanguages(added) {
+        const fresh = added.filter(entry => !reportedUncatalogued.has(entry.key));
+        if (fresh.length === 0) return;
+
+        fresh.forEach(entry => reportedUncatalogued.add(entry.key));
+
+        const names = fresh.map(entry => `${entry.name} (${entry.key})`).join(', ');
+        const subclient = Config.tenant.subclientId || 'unknown';
+
+        Utils.log(
+            `${names} is live on this transaction but absent from /language_maps for ` +
+            `subclient ${subclient}. The bearer and the transaction may belong to ` +
+            `different subclients - profile matching and Update will not work for it.`,
+            'warning'
+        );
+        UI.showWarning(
+            `${names} is not in this tenant's language catalog - check that the bearer matches the transaction`,
+            10000
+        );
     }
 
     /**
@@ -239,16 +319,16 @@ const App = (() => {
             const languageSettings = await API.getTransactionLanguage(transactionId);
             console.log('ADDI transaction /languages response:', languageSettings);
 
-            // Prefer the dialect codes (agent/caller). The agent_id/caller_id
-            // UUIDs belong to a different namespace than /language_maps IDs and
-            // cannot be resolved to a language through any available endpoint,
-            // so using them here leaves both dropdowns stuck on their defaults.
+            // Prefer the dialect codes (agent/caller) because they are what
+            // the live WebSocket events also carry, so one key spans both.
+            // agent_id/caller_id are /language_maps IDs and resolve fine as a
+            // fallback - findLanguageObject handles either.
             const agentLang = languageSettings.agent || languageSettings.agent_id;
             const callerLang = languageSettings.caller || languageSettings.caller_id;
 
             if (agentLang && callerLang) {
-                // Make the transaction's languages selectable even when the
-                // ADDI catalog does not list them.
+                // Keep the transaction's languages selectable even if this
+                // tenant's catalog somehow does not list them.
                 ensureLanguages(agentLang, callerLang);
                 await updateLanguageSettings(agentLang, callerLang);
             } else {
@@ -337,6 +417,14 @@ const App = (() => {
         const normalized = Config.normalizeDialectId(search);
         if (normalized && languageDefs[normalized]) {
             return languageDefs[normalized];
+        }
+
+        // /language_maps ID - what a transaction's agent_id/caller_id are, so
+        // a transaction still resolves if only the UUID form is available
+        for (const key in languageDefs) {
+            if (languageDefs[key].mapId === search) {
+                return languageDefs[key];
+            }
         }
 
         // Case-insensitive match on key, dialect code, or display name
@@ -519,18 +607,32 @@ const App = (() => {
         const transactionId = Config.addi.transactionId;
 
         if (transactionId) {
-            const status = await API.updateTransactionLanguage(
-                transactionId,
-                selections.target,
-                selections.source
-            );
+            const callerDef = langDefs?.[selections.source];
+            const agentDef = langDefs?.[selections.target];
 
-            if (status === 200) {
-                const callerLabel = langDefs?.[selections.source]?.name || selections.source;
-                const agentLabel = langDefs?.[selections.target]?.name || selections.target;
-                Utils.log(`Languages updated: Caller=${callerLabel}, Agent=${agentLabel}`, 'success');
+            // The write path takes /language_maps IDs. Anything added by
+            // ensureLanguages has no catalog entry and so no ID to send -
+            // better to say so than to send a dialect code the API rejects.
+            const missing = [
+                !agentDef?.mapId ? `agent "${selections.target}"` : null,
+                !callerDef?.mapId ? `customer "${selections.source}"` : null
+            ].filter(Boolean).join(' and ');
+
+            if (missing) {
+                Utils.log(`Cannot update languages - no /language_maps entry for ${missing}`, 'warning');
+                UI.showWarning(`Cannot update: ${missing} is not in this tenant's catalog`, 8000);
             } else {
-                UI.showWarning('Failed to update languages');
+                const status = await API.updateTransactionLanguage(
+                    transactionId,
+                    agentDef.mapId,
+                    callerDef.mapId
+                );
+
+                if (status === 200) {
+                    Utils.log(`Languages updated: Caller=${callerDef.name}, Agent=${agentDef.name}`, 'success');
+                } else {
+                    UI.showWarning(`Failed to update languages (HTTP ${status})`);
+                }
             }
         }
 
@@ -549,6 +651,7 @@ const App = (() => {
             addiHost: addi.apiHost,
             transactionId: addi.transactionId,
             bearer: addi.bearer ? 'Present' : 'None',
+            subclient: Config.tenant.subclientId,
             agentProfile: langSettings.agentProfile?.ProfileId,
             customerProfile: langSettings.customerProfile?.ProfileId
         });

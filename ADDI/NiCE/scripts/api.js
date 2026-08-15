@@ -67,6 +67,15 @@ const API = (() => {
     }
 
     /**
+     * Get the translation pairs configured for this tenant. Each entry carries
+     * both the dialect codes and the /language_maps IDs of its two ends.
+     * @returns {Promise<Array>} Array of configured source/target pairs
+     */
+    async function getTranslationPairs() {
+        return addiRequest('/translation_pairs');
+    }
+
+    /**
      * Get language settings for a transaction
      * @param {string} transactionId - The transaction ID
      * @returns {Promise<Object>} Language settings (agent_id, caller_id)
@@ -76,21 +85,29 @@ const API = (() => {
     }
 
     /**
-     * Update language settings for a transaction
+     * Update language settings for a transaction.
+     *
+     * The values are /language_maps IDs, not dialect codes. The matching GET
+     * returns agent_id/caller_id taken straight from the catalog (verified
+     * against a live JA-JP call, where both resolved to catalog entries in the
+     * transaction's own subclient), and sending dialect codes here is
+     * rejected. The field names stay agent/caller - only the namespace of the
+     * values matters.
+     *
      * @param {string} transactionId - The transaction ID
-     * @param {string} agentLanguage - Agent's language
-     * @param {string} callerLanguage - Caller's language
+     * @param {string} agentMapId - Agent language's /language_maps ID
+     * @param {string} callerMapId - Caller language's /language_maps ID
      * @returns {Promise<number>} HTTP status code
      */
-    async function updateTransactionLanguage(transactionId, agentLanguage, callerLanguage) {
+    async function updateTransactionLanguage(transactionId, agentMapId, callerMapId) {
         const url = Config.getAddiApiUrl(`/transactions/${transactionId}/languages`);
         const response = await fetch(url, {
             method: 'PUT',
             headers: getAddiHeaders(),
             body: JSON.stringify({
                 transaction_id: transactionId,
-                agent: agentLanguage,
-                caller: callerLanguage
+                agent: agentMapId,
+                caller: callerMapId
             })
         });
         return response.status;
@@ -177,6 +194,7 @@ const API = (() => {
     return {
         getLanguageMaps,
         getTranslationEngines,
+        getTranslationPairs,
         getTransactionLanguage,
         updateTransactionLanguage,
         translateText,
